@@ -10,8 +10,18 @@
 #include "qtzio.h"
 #include "common.h"
 #include "hfwfn.h"
+#include "util.h"
 
 int main() {
+/*
+ * To Do :: 
+ *  
+ *   implement stability 
+ *   matrix elements between determinants
+ *   wigner matrix
+ *
+ * */
+
 /* 
   job_file - file to read information about the job
   readfile - name of the job file being read in 
@@ -33,18 +43,11 @@ int main() {
   typedef std::complex<float> cf ;
   int junk ;
   int job=0  ;
-  int nbasis ;
-  int nbas ;
-  int nele ;
-  int nalp ;
-  int nbet ;
   float fjunk ;
   hfwfn detrr ;
-  hfwfn detcr ;
   hfwfn detru ;
-  hfwfn detcu ;
   hfwfn detrg ;
-  hfwfn detcg ;
+  Eigen::MatrixXf s ;
 
 /* Open and read the input file */
 
@@ -78,42 +81,18 @@ int main() {
       com.nbet(junk) ;
     }
   }
-    
-  nbasis = com.nbas() ;
-  nele = com.nele() ;
-  nalp = com.nalp() ;
-  nbet = com.nbet() ;
 
   getmel( "f00.fi1s", "f00.fi2s", intarr, com) ;
 
-//  std::cout << "real restricted" << std::endl ;
-//  detrr.set( com, intarr, "rrhf") ;
-//  detrr.prt_mos() ;
-//  detrr.prt_ene( com.nrep()) ;
-//  std::cout << std::endl << "real unrestricted" << std::endl ;
-//  detru.set( com, intarr, "ruhf") ;
-//  detru.prt_mos() ;
-//  detru.prt_ene( com.nrep()) ;
-  std::cout << std::endl << "real general" << std::endl ;
-  detrg.set( com, intarr, "rghf") ;
-  detrg.prt_mos() ;
-  detrg.prt_ene( com.nrep()) ;
-//  std::cout << std::endl << "cmplx restricted" << std::endl ;
-//  detcr.set( com, intarr, "crhf") ;
-//  detcr.prt_mos() ;
-//  detcr.prt_eig() ;
-//  detcr.prt_ene( com.nrep()) ;
-//  std::cout << std::endl << std::endl ;
-//  std::cout << std::endl << "cmplx unrestricted" << std::endl ;
-//  detcu.set( com, intarr, "cuhf") ;
-//  detcu.prt_mos() ;
-//  detcu.prt_eig() ;
-//  detcu.prt_ene( com.nrep()) ;
-  std::cout << std::endl << "cmplx general" << std::endl ;
-  detcg.set( com, intarr, "cghf") ;
-  detcg.prt_mos() ;
-  detcg.prt_eig() ;
-  detcg.prt_ene( com.nrep()) ;
+  detrr.init( com, intarr, "rrhf" ) ;
+  detru.init( com, intarr, "ruhf" ) ;
+  detrg.init( com, intarr, "rghf" ) ;
+  s.resize( com.nbas(), com.nbas()) ;
+  s = com.getS() ;
+  oao ( com.nbas(), detrr, s) ;
+  oao ( com.nbas(), detru, s) ;
+  oao ( com.nbas(), detrg, s) ;
+  s.resize( 0, 0) ;
   
   return 0 ;
 

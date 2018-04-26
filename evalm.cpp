@@ -2,6 +2,7 @@
 #include<vector>
 #include<Eigen/Dense>
 #include "tei.h"
+#include "hfwfn.h"
 #include "evalm.h"
 
 /* evalm is a collection of routines that evaluates matrix elements  */
@@ -754,3 +755,4 @@
 
   } ;
 
+/*   */
