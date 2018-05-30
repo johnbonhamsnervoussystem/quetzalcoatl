@@ -11,6 +11,7 @@
 #include "common.h"
 #include "hfwfn.h"
 #include "util.h"
+#include "evalm.h"
 
 int main() {
 /*
@@ -19,6 +20,9 @@ int main() {
  *   implement stability 
  *   matrix elements between determinants
  *   wigner matrix
+ *   Eventually, I will need to write a routine which grabs a chunk of memory,
+ *   rather than constantly allocating and dealllocating.  For now, I need things
+ *   that work and produce useful results.  
  *
  * */
 
@@ -39,15 +43,20 @@ int main() {
   std::string line ;
   common com ;
   std::vector<tei> intarr ;
+  std::vector<tei> tmparr ;
 
   typedef std::complex<float> cf ;
   int junk ;
   int job=0  ;
   float fjunk ;
-  hfwfn detrr ;
-  hfwfn detru ;
-  hfwfn detrg ;
+  hfwfn detrr1 ;
   Eigen::MatrixXf s ;
+  Eigen::MatrixXf h ;
+  Eigen::MatrixXf h_full ;
+  Eigen::MatrixXf s_full ;
+  Eigen::MatrixXf mos ;
+  Eigen::MatrixXf mosf ;
+  Eigen::MatrixXf tmp ;
 
 /* Open and read the input file */
 
@@ -84,16 +93,50 @@ int main() {
 
   getmel( "f00.fi1s", "f00.fi2s", intarr, com) ;
 
-  detrr.init( com, intarr, "rrhf" ) ;
-  detru.init( com, intarr, "ruhf" ) ;
-  detrg.init( com, intarr, "rghf" ) ;
+  h_full.resize( 2*com.nbas(), 2*com.nbas()) ;
+  s_full.resize( 2*com.nbas(), 2*com.nbas()) ;
+  h.resize( com.nbas(), com.nbas()) ;
   s.resize( com.nbas(), com.nbas()) ;
+  mos.resize( com.nbas(), 2*com.nbas()) ;
+  mosf.resize( 2*com.nbas(), 2*com.nbas()) ;
+  tmp.resize( 2*com.nbas(), 2*com.nbas()) ;
+  h = com.getH() ;
   s = com.getS() ;
-  oao ( com.nbas(), detrr, s) ;
-  oao ( com.nbas(), detru, s) ;
-  oao ( com.nbas(), detrg, s) ;
-  s.resize( 0, 0) ;
-  
+  oao ( com.nbas(), h, s) ;
+  s_full.setZero() ;
+  s_full.block( 0, 0, com.nbas(), com.nbas()) = s ;
+  s_full.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()) = s ;
+
+  detrr1.init( com, intarr, "ruhf") ;
+  detrr1.prt_ene ( com.nrep()) ;
+  std::cout << " Retrieving the mos" << std::endl;
+  detrr1.get_mos ( mos) ;
+  mosf.setZero() ;
+  mosf.block( 0, 0, com.nbas(), com.nbas()) = mos.block( 0, 0, com.nbas(), com.nbas()) ;
+  mosf.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()) = mos.block( 0, com.nbas(), com.nbas(), com.nbas()) ;
+  std::cout << " CtSC " << std::endl;
+  tmp = mosf.adjoint()*s_full*mosf ;
+  std::cout << tmp << std::endl ;
+
+  oao( com.nbas(), detrr1, s) ;
+  detrr1.get_mos ( mos) ;
+  mosf.setZero() ;
+  mosf.block( 0, 0, com.nbas(), com.nbas()) = mos.block( 0, 0, com.nbas(), com.nbas()) ;
+  mosf.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()) = mos.block( 0, com.nbas(), com.nbas(), com.nbas()) ;
+  std::cout << " Ct*C " << std::endl;
+  tmp = mosf.adjoint()*mosf ;
+  std::cout << tmp << std::endl ;
+
+  h_full.setZero() ;
+  h_full.block( 0, 0, com.nbas(), com.nbas()) = h ;
+  h_full.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()) = h ;
+
+  oao( com.nbas(), intarr, tmparr, s) ;
+
+  fjunk = fockop( com, h_full, tmparr, detrr1, detrr1) ;
+  std::cout << fjunk + com.nrep() << std::endl ;
+
   return 0 ;
 
 } /* End Quetzacoatl */
+

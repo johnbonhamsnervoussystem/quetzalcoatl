@@ -234,7 +234,7 @@
 
     for(int t = 0; t < n2ei; t++ ) {
       /*  ( 1 1| 2 2)
- *        ( i j| k l) = val */
+       *  ( i j| k l) = val */
       i = intarr[t].r_i() - 1 ;
       j = intarr[t].r_j() - 1 ;
       k = intarr[t].r_k() - 1 ;
@@ -755,4 +755,325 @@
 
   } ;
 
-/*   */
+/* Evaluate elements between Slater Determinants */
+
+void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dabmat){
+/*
+ * Given two Slater Determinants, return the transition density
+ *
+ * sum_{kl} C_{vl}D(k | l)C_{ku}^{*}
+ *
+ * D =
+ * [ d_{1_{a}1_{b}} d_{1_{a}2_{b}} d_{1_{a}3_{b}} ... ]
+ * [ d_{2_{a}1_{b}} d_{2_{a}2_{b}} d_{2_{a}3_{b}} ... ]
+ * [       |              |              |         |  ]
+ * [ d_{n_{a}1_{b}} d_{n_{a}2_{b}} d_{n_{a}3_{b}} ... ]
+ *
+ *  d_{kl} = int psi_{k}^{*}(1)psi_{l}(1)d1 
+ *
+ * -This routine assumes both determinants have the same symmetry structure.
+ * -This routine assumes that the determinants are in the orthongonal
+ *    ao basis.
+ * -This routine assumes that the determinants are normalized themselves
+ *  so the transition density is implicity divided by 1.
+ * -Returns a GHF style transition density matrix even if many elements
+ *  are zero
+ *
+ * Things that can be improved:
+ *   - Add logic to find the transition density between different types
+ *   of wavefunctions.
+ *   - Allow for evaluating matrix elements between determinants in the non-orthogonal
+ *   basis.
+ *
+ * */
+
+  int wfn_a ;
+  int wfn_b ;
+  int nocc ;
+  int nalp ;
+  int nbet ;
+  int nbasis ;
+  int lstrt ;
+  float ovl ;
+  Eigen::MatrixXf moa ;
+  Eigen::MatrixXf mob ;
+  Eigen::MatrixXf dkl ;
+  Eigen::MatrixXf tmp ;
+  wfn_a = a.get_wti() ;
+  wfn_b = b.get_wti() ;
+  nocc = com.nele() ;
+  dkl.resize( nocc, nocc) ;
+  dkl.setZero() ;
+
+  if ( wfn_a == 1 && wfn_b == 1 ) {
+
+    nalp = com.nalp() ;
+    nbasis = com.nbas() ;
+    moa.resize( nbasis, nbasis) ;
+    mob.resize( nbasis, nbasis) ;
+    a.get_mos( moa) ;
+    b.get_mos( mob) ;
+
+    /* Build D*/
+    dkl.block( 0, 0, nalp, nalp) = moa.block( 0, 0, nbasis, nalp).adjoint()*mob.block( 0, 0, nbasis, nalp) ;
+    dkl.block( nalp, nalp, nalp, nalp) = dkl.block( 0, 0, nalp, nalp) ;
+
+  } else if ( wfn_a == 3 && wfn_b == 3 ) {
+
+    nalp = com.nalp() ;
+    nbet = com.nbet() ;
+    nbasis = com.nbas() ;
+    moa.resize( nbasis, 2*nbasis) ;
+    mob.resize( nbasis, 2*nbasis) ;
+    a.get_mos( moa) ;
+    b.get_mos( mob) ;
+    dkl.block( 0, 0, nalp, nalp) = moa.block( 0, 0, nbasis, nalp).adjoint()*mob.block( 0, 0, nbasis, nalp) ;
+    dkl.block( nalp, nalp, nbet, nbet) = moa.block( 0, nbasis, nbasis, com.nbet()).adjoint()*mob.block( 0, nbasis, nbasis, com.nbet()) ;
+
+  } else if ( wfn_a == 5 && wfn_b == 5 ) {
+
+    nbasis = 2*com.nbas() ;
+    moa.resize( nbasis, nbasis) ;
+    mob.resize( nbasis, nbasis) ;
+    a.get_mos( moa) ;
+    b.get_mos( mob) ;
+    dkl = moa.block( 0, 0, nbasis, nocc).adjoint()*mob.block( 0, 0, nbasis, nocc) ;
+
+  }
+
+  /* Since all three will return the same size transition density handle the rest out here
+   *
+   * Build D(k | l) 
+   *
+   * */
+
+  ovl = dkl.determinant() ;
+
+  /* Build the adjugate */
+  tmp.resize( nocc, nocc) ;
+  tmp = ovl*dkl.inverse() ;
+
+  dkl = tmp.transpose() ;
+  tmp.resize( 0, 0) ;
+
+  /* Remove the cofactors to get the matrix of minors. */
+
+  for( int k = 0; k < nocc; k++ ){
+    lstrt = 1 - ( k % 2)  ;
+    for( int l = lstrt; l < nocc; l += 2 ){
+      dkl( k, l) = -1.0*dkl( k, l) ;
+    }
+  }
+
+  if ( wfn_a == 1 && wfn_b == 1 ) {
+    dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
+    dabmat.block( nbasis, nbasis, nbasis, nbasis) = dabmat.block( 0, 0, nbasis, nbasis) ;
+  } else if ( wfn_a == 3 && wfn_b == 3 ) {
+    dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
+    dabmat.block( nbasis, nbasis, nbasis, nbasis) = mob.block( 0, nbasis, nbasis, nbet)*dkl.block( nalp, nalp, nbet, nbet)*moa.block( 0, nbasis, nbasis, nbet).adjoint() ;
+  } else if ( wfn_a == 5 && wfn_b == 5 ) {
+    dabmat = mob.block( 0, 0, nbasis, nocc)*dkl*mob.block( 0, 0, nbasis, nocc).adjoint() ;
+  }
+
+  mob.resize( 0, 0) ;
+  moa.resize( 0, 0) ;
+  dkl.resize( 0, 0) ;
+
+} ;
+
+void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dabmat){
+/* 
+ *  This is an overloaded complex version of nointm
+ * */
+  int wfn_a ;
+  int wfn_b ;
+  int nocc ;
+  int nalp ;
+  int nbet ;
+  int nbasis ;
+  int lstrt ;
+  std::complex<float> ovl ;
+  Eigen::MatrixXcf moa ;
+  Eigen::MatrixXcf mob ;
+  Eigen::MatrixXcf dkl ;
+  Eigen::MatrixXcf tmp ;
+  wfn_a = a.get_wti() ;
+  wfn_b = b.get_wti() ;
+  nocc = com.nele() ;
+  dkl.resize( nocc, nocc) ;
+  dkl.setZero() ;
+
+  if ( wfn_a == 1 && wfn_b == 1 ) {
+
+    nalp = com.nalp() ;
+    nbasis = com.nbas() ;
+    moa.resize( nbasis, nbasis) ;
+    mob.resize( nbasis, nbasis) ;
+    a.get_mos( moa) ;
+    b.get_mos( mob) ;
+
+    /* Build D*/
+    dkl.block( 0, 0, nalp, nalp) = moa.block( 0, 0, nbasis, nalp).adjoint()*mob.block( 0, 0, nbasis, nalp) ;
+    dkl.block( nalp, nalp, nalp, nalp) = dkl.block( 0, 0, nalp, nalp) ;
+
+  } else if ( wfn_a == 3 && wfn_b == 3 ) {
+
+    nalp = com.nalp() ;
+    nbet = com.nbet() ;
+    nbasis = com.nbas() ;
+    moa.resize( nbasis, 2*nbasis) ;
+    mob.resize( nbasis, 2*nbasis) ;
+    a.get_mos( moa) ;
+    b.get_mos( mob) ;
+    dkl.block( 0, 0, nalp, nalp) = moa.block( 0, 0, nbasis, nalp).adjoint()*mob.block( 0, 0, nbasis, nalp) ;
+    dkl.block( nalp, nalp, nbet, nbet) = moa.block( 0, nbasis, nbasis, com.nbet()).adjoint()*mob.block( 0, nbasis, nbasis, com.nbet()) ;
+
+  } else if ( wfn_a == 5 && wfn_b == 5 ) {
+
+    nbasis = 2*com.nbas() ;
+    moa.resize( nbasis, nbasis) ;
+    mob.resize( nbasis, nbasis) ;
+    a.get_mos( moa) ;
+    b.get_mos( mob) ;
+    dkl = moa.block( 0, 0, nbasis, nocc).adjoint()*mob.block( 0, 0, nbasis, nocc) ;
+
+  }
+
+  /* Since all three will return the same size transition density handle the rest out here
+   *
+   * Build D(k | l) 
+   *
+   * */
+
+  ovl = dkl.determinant() ;
+
+  /* Build the adjugate */
+  tmp.resize( nocc, nocc) ;
+  tmp = ovl*dkl.inverse() ;
+
+  dkl = tmp.transpose() ;
+  tmp.resize( 0, 0) ;
+
+  /* Remove the cofactors to get the matrix of minors. */
+  
+  ovl = ( 1.0, 0.0) ;
+  for( int k = 0; k < nocc; k++ ){
+    lstrt = 1 - ( k % 2)  ;
+    for( int l = lstrt; l < nocc; l += 2 ){
+      dkl( k, l) = -ovl*dkl( k, l) ;
+    }
+  }
+
+  if ( wfn_a == 1 && wfn_b == 1 ) {
+    dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
+    dabmat.block( nbasis, nbasis, nbasis, nbasis) = dabmat.block( 0, 0, nbasis, nbasis) ;
+  } else if ( wfn_a == 3 && wfn_b == 3 ) {
+    dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
+    dabmat.block( nbasis, nbasis, nbasis, nbasis) = mob.block( 0, nbasis, nbasis, nbet)*dkl.block( nalp, nalp, nbet, nbet)*moa.block( 0, nbasis, nbasis, nbet).adjoint() ;
+  } else if ( wfn_a == 5 && wfn_b == 5 ) {
+    dabmat = mob.block( 0, 0, nbasis, nocc)*dkl*mob.block( 0, 0, nbasis, nocc).adjoint() ;
+  }
+
+  mob.resize( 0, 0) ;
+  moa.resize( 0, 0) ;
+  dkl.resize( 0, 0) ;
+
+} ;
+
+float obop ( common& com, Eigen::Ref<Eigen::MatrixXf> ouv, hfwfn& a, hfwfn& b) { 
+/*
+ * One body operator.  Return <A|O|B> = sum_{ l k}<k|O|l> = sum{ u v} <u|O|v>C_{vl}D(k|l)C_{ku}^{*}
+ * Passed two Slater determinants and matrix elements in an orthogonal basis, return the evaluated operator. */
+  int nocc ;
+  float aob ;
+  Eigen::MatrixXf pvu ;
+  Eigen::MatrixXf omega ;
+
+  /* Build pvu */
+ 
+  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
+  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
+  pvu.setZero() ;
+
+  tranden ( com, a, b, pvu) ;
+
+  omega = ouv*pvu ;
+  aob = omega.trace() ;
+
+  pvu.resize( 0, 0) ;
+  omega.resize( 0, 0) ;
+
+  return aob ;
+
+} ;
+
+std::complex<float> obop ( common& com, Eigen::Ref<Eigen::MatrixXcf> ouv, hfwfn& a, hfwfn& b) { 
+/*
+ * Overloaded for complex functions.
+ */
+  int nbas ;
+
+  std::complex<float> aob ;
+  Eigen::MatrixXcf pvu ;
+  Eigen::MatrixXcf omega ;
+
+  /* Build pvu */
+
+  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
+  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
+  pvu.setZero() ;
+
+  tranden ( com, a, b, pvu) ;
+
+  omega = ouv*pvu ;
+  aob = omega.trace() ;
+
+  return aob ;
+
+} ;
+
+float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b) { 
+
+/*
+ * While the fock operator is one body, it requires that we contract the two electron
+ * integrals with the density to build it.  This wraps up that procedure.  This routine assumes
+ *
+ *  - Everything has been put into an orthogonal ao basis.  
+ *  - Regardless of the flavor of hf wfn, this treats everything as ghf meaning 2*nbas dimensions.
+ *  
+ * */
+
+  int nocc ;
+  float aob ;
+  Eigen::MatrixXf pvu ;
+  Eigen::MatrixXf omega ;
+  Eigen::MatrixXf f ;
+  Eigen::MatrixXf g ;
+
+  /* Build pvu */
+
+  omega.resize( com.nbas(), com.nbas()) ;
+  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
+  f.resize( 2*com.nbas(), 2*com.nbas()) ;
+  g.resize( 2*com.nbas(), 2*com.nbas()) ;
+  pvu.setZero() ;
+  f.setZero() ;
+
+  tranden ( com, a, b, pvu) ;
+
+  ctr2eg( intarr, pvu, g, com.nbas()) ;
+
+  f =  h + g ;
+  g = h + f ;
+  omega = g*pvu ;
+  aob = 0.5*omega.trace() ;
+
+  g.resize( 0, 0) ;
+  f.resize( 0, 0) ;
+  pvu.resize( 0, 0) ;
+  omega.resize( 0, 0) ;
+
+  return aob ;
+
+} ;
+

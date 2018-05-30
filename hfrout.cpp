@@ -7,6 +7,7 @@
 #include "tei.h"
 #include "evalm.h"
 #include "solver.h"
+#include "util.h"
 
 /* This set of routines finds a wavefunction by repeated diagonalization of the fock matrix for 
  * all the flavors of HF.  
@@ -54,8 +55,11 @@ float rrhfdia( Eigen::Ref<Eigen::MatrixXf> h, Eigen::Ref<Eigen::MatrixXf> s, std
     c = f_diag.eigenvectors().real() ;
     p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
     ctr2er( intarr, p, g, nbasis) ;
+    f = g ;
+    oao ( nbasis, f, s) ;
     f = h + g ;
     g = p*( h + f) ;
+
     energy = g.trace() ;
 
     e_dif = abs(ene_p - energy) ;

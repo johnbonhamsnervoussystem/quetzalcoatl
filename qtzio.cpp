@@ -29,7 +29,7 @@ int getmel( string file1 , string file2, vector<tei>& intarr, common& com) {
   ifstream input_file ;
   tei tmp_tei ;
   
-  /* This reads in data formatted from a matrixelement file 
+  /* This reads in data formatted from a matrix element file 
    to a second file and finally to here. */
   nbasis = com.nbas() ;
   nbsuse = com.nbsu() ;
@@ -75,8 +75,6 @@ int getmel( string file1 , string file2, vector<tei>& intarr, common& com) {
 
   com.setS( ovl, nbasis) ;
   ovl.resize(0,0) ;
-  std::cout << "Read in hamiltonian " << std::endl ;
-  std::cout << ham << std::endl ;
   com.setH( ham, nbasis) ;
   ham.resize(0,0) ;
 
