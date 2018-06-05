@@ -1,3 +1,4 @@
+#include "constants.h"
 #include<Eigen/Dense>
 #include<Eigen/LU>
 #include<iostream>
@@ -7,6 +8,7 @@
 #include "hfwfn.h"
 #include "solver.h"
 #include "util.h"
+#include "integr.h"
 #include "tei.h"
 
 /* Utilities that don't belong elsewhere. */
@@ -226,10 +228,10 @@ void oao( int nbasis, hfwfn& a, Eigen::MatrixXf s) {
 
         shf_c.resize( nbasis, nbasis) ;
         canort( s, shf_c, nbasis) ;
-        tmpc.block( 0, 0, nbasis, nbasis) = shf_c.adjoint()*s*mor.block( 0, 0, nbasis, nbasis) ;
-        tmpc.block( 0, nbasis, nbasis, nbasis) = shf_c.adjoint()*s*mor.block( 0, nbasis, nbasis, nbasis) ;
-        tmpc.block( nbasis, 0, nbasis, nbasis) = shf_c.adjoint()*s*mor.block( nbasis, 0, nbasis, nbasis) ;
-        tmpc.block( nbasis, nbasis, nbasis, nbasis) = shf_c.adjoint()*s*mor.block( nbasis, nbasis, nbasis, nbasis) ;
+        tmpc.block( 0, 0, nbasis, nbasis) = shf_c.adjoint()*s*moc.block( 0, 0, nbasis, nbasis) ;
+        tmpc.block( 0, nbasis, nbasis, nbasis) = shf_c.adjoint()*s*moc.block( 0, nbasis, nbasis, nbasis) ;
+        tmpc.block( nbasis, 0, nbasis, nbasis) = shf_c.adjoint()*s*moc.block( nbasis, 0, nbasis, nbasis) ;
+        tmpc.block( nbasis, nbasis, nbasis, nbasis) = shf_c.adjoint()*s*moc.block( nbasis, nbasis, nbasis, nbasis) ;
   
         a.set_mos( tmpc) ;
 
@@ -373,3 +375,72 @@ void oao( int nbasis, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::Ma
   return ;
 
   } ;
+
+void eulrgrd ( int n_psi, int n_thet, int n_phi, std::vector<float>& w_psi, std::vector<float>& w_thet, 
+     std::vector<float>& w_phi, std::vector<float>& x_psi, std::vector<float>& x_thet, 
+     std::vector<float>& x_phi, int SG){
+
+/* Set up a grid to integrate over the Euler angles.  The grid and weights are set up to satisfy this equation
+ *
+ * If the integral is over O+(3) the euation is
+ * 1 = 1/(8 pi^2) \int_{0}^{2 pi} dpsi \int_{0}^{pi} sin(theta)dtheta int_{0}^{2 pi} dphi
+ *
+ * If the integral is over SU(2) the euation is
+ * 1 = 1/(8 pi^2) \int_{0}^{2 pi} dpsi \int_{0}^{pi} sin(theta)dtheta int_{0}^{4 pi} dphi
+ *
+ * Where the rotation operator is given by
+ *
+ * R( psi, theta, phi) = Exp[-psi S_{z}]*Exp[-theta S_{y}]*Exp[-phi S_{z}]
+ * R( alpha, beta, gamma) = Exp[-alpha S_{z}]*Exp[-beta S_{y}]*Exp[-gamma S_{z}]
+ *
+ * */
+
+  const float tpi=2.0*pi ;
+  float phi_lim ;
+  float fjunk ;
+
+  for ( int i=0; i< n_psi; i++ ){
+    w_psi.push_back(d0) ;
+    x_psi.push_back(d0) ;
+  }
+
+  gauleg( d0, tpi, n_psi, x_psi, w_psi) ;
+
+  for ( int i=0; i < n_psi; i++ ){
+    w_psi[i] = w_psi[i]/tpi ;
+  }
+ 
+  for ( int i=0; i< n_thet; i++ ){
+    w_thet.push_back(d0) ;
+    x_thet.push_back(d0) ;
+  }
+ 
+  gauleg( d0, pi, n_thet, x_thet, w_thet) ;
+
+  for ( int i=0; i< n_thet; i++ ){
+    w_thet[i] = std::sin(x_thet[i])*w_thet[i]/2.0 ;
+  }
+
+  for ( int i=0; i< n_phi; i++ ){
+    w_phi.push_back(d0) ;
+    x_phi.push_back(d0) ;
+  }
+
+  if ( SG == 2 ){
+    /* Do SU(2) integration */
+    phi_lim = tpi*2.0 ;
+  } else if ( SG == 3 ) {
+    /* Do O+(3) integration */
+    phi_lim = tpi ;
+  }
+
+  gauleg( d0, phi_lim, n_psi, x_phi, w_phi) ;
+
+  for ( int i=0; i< n_phi; i++ ){
+    w_phi[i] = w_phi[i]/phi_lim ;
+  }
+
+  return ;
+
+} ;
+

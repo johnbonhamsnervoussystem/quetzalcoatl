@@ -12,7 +12,7 @@ using namespace Eigen ;
 using namespace std ;
 
 
-int getmel( string file1 , string file2, vector<tei>& intarr, common& com) {
+void getmel( string file1 , string file2, vector<tei>& intarr, common& com) {
 /* Read matrix elements from phfinp */
   int nbasis=0 ;
   int nbsuse=0 ;
@@ -96,6 +96,6 @@ int getmel( string file1 , string file2, vector<tei>& intarr, common& com) {
 
   input_file.close() ;
 
-  return 0 ;
+  return ;
 
 }

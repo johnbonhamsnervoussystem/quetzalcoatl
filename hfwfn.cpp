@@ -8,10 +8,7 @@
 #include "hfrout.h"
 #include "tei.h"
 
-/* Initialize a hartree-fock solution object.
- *
- * -This routine can probably be simplified at some point but it is suffcient for now.
- */
+/* Initialization */
   void hfwfn::init( common& com, std::vector<tei>& intarr, std::string wfn){
 
     int nb ;
@@ -198,6 +195,64 @@
 
 } ;
 
+void hfwfn::fil_mos ( int nbasis, Eigen::Ref<Eigen::MatrixXf> mo, int wfn){
+
+/* Real :: Use the hf class as a container */
+  if ( wfn == 1 ) {
+
+    /* Initialize a single block */
+    mo_rcof.resize( nbasis, nbasis) ;
+    mo_rcof = mo ;
+
+  } else if ( wfn == 3 ) {
+
+    /* Initialize two spin blocks */
+    mo_rcof.resize( nbasis, 2*nbasis) ;
+    mo_rcof = mo ;
+
+  } else if ( wfn == 5 ) {
+
+    /* Initialize a single block */
+    mo_rcof.resize( 2*nbasis, 2*nbasis) ;
+    mo_rcof = mo ;
+
+  }
+
+  wfn_ityp = wfn ;
+
+  return ;
+
+} 
+
+void hfwfn::fil_mos ( int nbasis, Eigen::Ref<Eigen::MatrixXcf> mo, int wfn){
+
+/* Complex :: Use the hf class as a container */
+  if ( wfn == 2 ) {
+
+    /* Initialize a single block */
+    mo_ccof.resize( nbasis, nbasis) ;
+    mo_ccof = mo ;
+
+  } else if ( wfn == 4 ) {
+
+    /* Initialize two spin blocks */
+    mo_ccof.resize( nbasis, 2*nbasis) ;
+    mo_ccof = mo ;
+
+  } else if ( wfn == 6 ) {
+
+    /* Initialize a single block */
+    mo_ccof.resize( 2*nbasis, 2*nbasis) ;
+    mo_ccof = mo ;
+
+  }
+
+  wfn_ityp = wfn ;
+
+  return ;
+
+} 
+
 /* setter routines */
 void hfwfn::set_mos ( Eigen::Ref<Eigen::MatrixXf> mo){
   mo_rcof = mo ;
@@ -223,8 +278,8 @@ void hfwfn::get_mos ( Eigen::Ref<Eigen::MatrixXcf> mo){
 int hfwfn::get_wti ( void){ return wfn_ityp ;}
 std::string hfwfn::get_wts ( void){ return wfn_styp ;}
 
-/* Printing routines */
 
+/* Printing routines */
 void hfwfn::prt_mos( void) {
     if ( wfn_ityp % 2 == 0 ){
       std::cout << mo_ccof << std::endl ;
@@ -237,4 +292,20 @@ void hfwfn::prt_mos( void) {
 void hfwfn::prt_eig( void) { std::cout << eig_v << std::endl ; return ; }
 
 void hfwfn::prt_ene( float nn){ std::cout << energy + nn << std::endl ; return ; }
+
+/* Excitation operators */
+void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXf> mo, int nbas, int nele, int i, int a){
+  /* Return the mo coefficients with orbital i replaced by orbital a */
+  mo = mo_rcof ;
+  mo.col(i) = mo_rcof.col(a) ;
+  mo.col(a) = mo_rcof.col(i) ;
+  return ;
+}
+
+void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXcf> mo, int nbas, int nele, int i, int a){
+  mo = mo_ccof ;
+  mo.col(i) = mo_ccof.col(a) ;
+  mo.col(a) = mo_ccof.col(i) ;
+  return ;
+}
 

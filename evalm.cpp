@@ -1,3 +1,4 @@
+#include "constants.h"
 #include<iostream>
 #include<vector>
 #include<Eigen/Dense>
@@ -29,6 +30,7 @@
   *    sum_{lambda sigma}(p_{sigma lambda}^{alpha alpha)( mu nu| sigma lambda ) 
   *
   */
+
     Eigen::MatrixXf t_p ;
 
     g.setZero() ;
@@ -54,6 +56,7 @@
   * This is an overloaded function with complex matrices for complex
   * restricted Hartree-Fock.
   */
+
     Eigen::MatrixXcf t_p ;
 
     g.setZero() ;
@@ -75,11 +78,11 @@
   int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXf> pt, 
      Eigen::Ref<Eigen::MatrixXf> p, Eigen::Ref<Eigen::MatrixXf> g, const int nb) {
 
- /* G is split into four quadrants.  
+ /* G is split into four quadrants.
   *
   *    | alpha alpha | alpha beta |
-  *    ---------------------------- 
-  *    | beta alpha  | beta beta  | 
+  *    ----------------------------
+  *    | beta alpha  | beta beta  |
   *
   *    For urestricted Hartree-Fock calculations, the orbitals are either
   *    alpha or beta, not a combination of both so the mixed blocks are
@@ -92,6 +95,7 @@
   *    sum_{lambda sigma}(p_{sigma lambda}^{alpha alpha)( mu nu| sigma lambda ) 
   *
   */
+
     g.setZero() ;
 
     /* Do the coulomb terms for the alpha alpha block  */
@@ -147,6 +151,7 @@
   *    Pass each quadrant to be contracted with the two electron integrals.
   *
   */
+
     Eigen::MatrixXf t_p ;
 
     g.setZero() ;
@@ -243,7 +248,7 @@
 //   
       ieqj = ( ( i == j) ? true : false) ;
       keql = ( ( k == l) ? true : false) ;
-      
+
       if ( ieqj && keql && i == k ){
 
         /* ( i i| i i) */
@@ -342,8 +347,10 @@
 
   int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcf> p, 
     Eigen::Ref<Eigen::MatrixXcf> G, const int nbasis) {
+
     /* Contract exchange integrals for complex matrices
     Given a spin density block contract the exchange terms into G */
+
     int ntt ;
     int n2ei ;
     int i ;
@@ -486,8 +493,10 @@
 
   int coulblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXf> p, 
     Eigen::Ref<Eigen::MatrixXf> G, const int nbasis) {
+
     /* Given a spin density block contract the coulomb terms into G 
      Contract coulomb integrals for real matrices */
+
     int ntt ;
     int n2ei ;
     int i ;
@@ -613,8 +622,10 @@
 
   int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXf> p, 
     Eigen::Ref<Eigen::MatrixXf> G, const int nbasis) {
+
     /* Given a spin density block contract the exchange terms into G 
      Contract exchange integrals for real matrices */
+
     int ntt ;
     int n2ei ;
     int i ;
@@ -757,9 +768,11 @@
 
 /* Evaluate elements between Slater Determinants */
 
-void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dabmat){
+float tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dabmat){
+
 /*
- * Given two Slater Determinants, return the transition density
+ * Given two Slater Determinants, return the transition density in dabmat and return
+ * the overlap.
  *
  * sum_{kl} C_{vl}D(k | l)C_{ku}^{*}
  *
@@ -769,7 +782,7 @@ void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dabm
  * [       |              |              |         |  ]
  * [ d_{n_{a}1_{b}} d_{n_{a}2_{b}} d_{n_{a}3_{b}} ... ]
  *
- *  d_{kl} = int psi_{k}^{*}(1)psi_{l}(1)d1 
+ *  d_{kl} = int psi_{k}^{*}(1)psi_{l}(1) 
  *
  * -This routine assumes both determinants have the same symmetry structure.
  * -This routine assumes that the determinants are in the orthongonal
@@ -843,7 +856,7 @@ void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dabm
 
   /* Since all three will return the same size transition density handle the rest out here
    *
-   * Build D(k | l) 
+   * Build D(k | l)
    *
    * */
 
@@ -853,17 +866,8 @@ void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dabm
   tmp.resize( nocc, nocc) ;
   tmp = ovl*dkl.inverse() ;
 
-  dkl = tmp.transpose() ;
+  dkl = tmp ;
   tmp.resize( 0, 0) ;
-
-  /* Remove the cofactors to get the matrix of minors. */
-
-  for( int k = 0; k < nocc; k++ ){
-    lstrt = 1 - ( k % 2)  ;
-    for( int l = lstrt; l < nocc; l += 2 ){
-      dkl( k, l) = -1.0*dkl( k, l) ;
-    }
-  }
 
   if ( wfn_a == 1 && wfn_b == 1 ) {
     dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
@@ -872,19 +876,23 @@ void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dabm
     dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
     dabmat.block( nbasis, nbasis, nbasis, nbasis) = mob.block( 0, nbasis, nbasis, nbet)*dkl.block( nalp, nalp, nbet, nbet)*moa.block( 0, nbasis, nbasis, nbet).adjoint() ;
   } else if ( wfn_a == 5 && wfn_b == 5 ) {
-    dabmat = mob.block( 0, 0, nbasis, nocc)*dkl*mob.block( 0, 0, nbasis, nocc).adjoint() ;
+    dabmat = mob.block( 0, 0, nbasis, nocc)*dkl*moa.block( 0, 0, nbasis, nocc).adjoint() ;
   }
 
   mob.resize( 0, 0) ;
   moa.resize( 0, 0) ;
   dkl.resize( 0, 0) ;
 
+  return ovl ;
+
 } ;
 
-void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dabmat){
+std::complex<float> tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dabmat) {
+
 /* 
  *  This is an overloaded complex version of nointm
  * */
+
   int wfn_a ;
   int wfn_b ;
   int nocc ;
@@ -892,7 +900,7 @@ void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dab
   int nbet ;
   int nbasis ;
   int lstrt ;
-  std::complex<float> ovl ;
+  cf ovl ;
   Eigen::MatrixXcf moa ;
   Eigen::MatrixXcf mob ;
   Eigen::MatrixXcf dkl ;
@@ -903,7 +911,7 @@ void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dab
   dkl.resize( nocc, nocc) ;
   dkl.setZero() ;
 
-  if ( wfn_a == 1 && wfn_b == 1 ) {
+  if ( wfn_a == 2 && wfn_b == 2 ) {
 
     nalp = com.nalp() ;
     nbasis = com.nbas() ;
@@ -916,7 +924,7 @@ void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dab
     dkl.block( 0, 0, nalp, nalp) = moa.block( 0, 0, nbasis, nalp).adjoint()*mob.block( 0, 0, nbasis, nalp) ;
     dkl.block( nalp, nalp, nalp, nalp) = dkl.block( 0, 0, nalp, nalp) ;
 
-  } else if ( wfn_a == 3 && wfn_b == 3 ) {
+  } else if ( wfn_a == 4 && wfn_b == 4 ) {
 
     nalp = com.nalp() ;
     nbet = com.nbet() ;
@@ -928,7 +936,7 @@ void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dab
     dkl.block( 0, 0, nalp, nalp) = moa.block( 0, 0, nbasis, nalp).adjoint()*mob.block( 0, 0, nbasis, nalp) ;
     dkl.block( nalp, nalp, nbet, nbet) = moa.block( 0, nbasis, nbasis, com.nbet()).adjoint()*mob.block( 0, nbasis, nbasis, com.nbet()) ;
 
-  } else if ( wfn_a == 5 && wfn_b == 5 ) {
+  } else if ( wfn_a == 6 && wfn_b == 6 ) {
 
     nbasis = 2*com.nbas() ;
     moa.resize( nbasis, nbasis) ;
@@ -951,39 +959,33 @@ void tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dab
   tmp.resize( nocc, nocc) ;
   tmp = ovl*dkl.inverse() ;
 
-  dkl = tmp.transpose() ;
+  dkl = tmp ;
   tmp.resize( 0, 0) ;
 
-  /* Remove the cofactors to get the matrix of minors. */
-  
-  ovl = ( 1.0, 0.0) ;
-  for( int k = 0; k < nocc; k++ ){
-    lstrt = 1 - ( k % 2)  ;
-    for( int l = lstrt; l < nocc; l += 2 ){
-      dkl( k, l) = -ovl*dkl( k, l) ;
-    }
-  }
-
-  if ( wfn_a == 1 && wfn_b == 1 ) {
+  if ( wfn_a == 2 && wfn_b == 2 ) {
     dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
     dabmat.block( nbasis, nbasis, nbasis, nbasis) = dabmat.block( 0, 0, nbasis, nbasis) ;
-  } else if ( wfn_a == 3 && wfn_b == 3 ) {
+  } else if ( wfn_a == 4 && wfn_b == 4 ) {
     dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
     dabmat.block( nbasis, nbasis, nbasis, nbasis) = mob.block( 0, nbasis, nbasis, nbet)*dkl.block( nalp, nalp, nbet, nbet)*moa.block( 0, nbasis, nbasis, nbet).adjoint() ;
-  } else if ( wfn_a == 5 && wfn_b == 5 ) {
-    dabmat = mob.block( 0, 0, nbasis, nocc)*dkl*mob.block( 0, 0, nbasis, nocc).adjoint() ;
+  } else if ( wfn_a == 6 && wfn_b == 6 ) {
+    dabmat = mob.block( 0, 0, nbasis, nocc)*dkl*moa.block( 0, 0, nbasis, nocc).adjoint() ;
   }
 
   mob.resize( 0, 0) ;
   moa.resize( 0, 0) ;
   dkl.resize( 0, 0) ;
 
+  return ovl ;
+
 } ;
 
-float obop ( common& com, Eigen::Ref<Eigen::MatrixXf> ouv, hfwfn& a, hfwfn& b) { 
+float obop ( common& com, Eigen::Ref<Eigen::MatrixXf> ouv, hfwfn& a, hfwfn& b) {
+
 /*
  * One body operator.  Return <A|O|B> = sum_{ l k}<k|O|l> = sum{ u v} <u|O|v>C_{vl}D(k|l)C_{ku}^{*}
  * Passed two Slater determinants and matrix elements in an orthogonal basis, return the evaluated operator. */
+
   int nocc ;
   float aob ;
   Eigen::MatrixXf pvu ;
@@ -1007,10 +1009,12 @@ float obop ( common& com, Eigen::Ref<Eigen::MatrixXf> ouv, hfwfn& a, hfwfn& b) {
 
 } ;
 
-std::complex<float> obop ( common& com, Eigen::Ref<Eigen::MatrixXcf> ouv, hfwfn& a, hfwfn& b) { 
+std::complex<float> obop ( common& com, Eigen::Ref<Eigen::MatrixXcf> ouv, hfwfn& a, hfwfn& b) {
+
 /*
  * Overloaded for complex functions.
  */
+
   int nbas ;
 
   std::complex<float> aob ;
@@ -1032,7 +1036,8 @@ std::complex<float> obop ( common& com, Eigen::Ref<Eigen::MatrixXcf> ouv, hfwfn&
 
 } ;
 
-float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b) { 
+float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& intarr, hfwfn& a,
+               hfwfn& b, float& ovl) { 
 
 /*
  * While the fock operator is one body, it requires that we contract the two electron
@@ -1052,14 +1057,14 @@ float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& int
 
   /* Build pvu */
 
-  omega.resize( com.nbas(), com.nbas()) ;
+  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
   pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
   f.resize( 2*com.nbas(), 2*com.nbas()) ;
   g.resize( 2*com.nbas(), 2*com.nbas()) ;
   pvu.setZero() ;
   f.setZero() ;
 
-  tranden ( com, a, b, pvu) ;
+  ovl = tranden ( com, a, b, pvu) ;
 
   ctr2eg( intarr, pvu, g, com.nbas()) ;
 
@@ -1067,6 +1072,53 @@ float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& int
   g = h + f ;
   omega = g*pvu ;
   aob = 0.5*omega.trace() ;
+
+  g.resize( 0, 0) ;
+  f.resize( 0, 0) ;
+  pvu.resize( 0, 0) ;
+  omega.resize( 0, 0) ;
+
+  return aob ;
+
+} ;
+
+std::complex<float> fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, 
+                             hfwfn& b, cf& ovl) {
+
+/*
+ * While the fock operator is one body, it requires that we contract the two electron
+ * integrals with the density to build it.  This wraps up that procedure.  This routine assumes
+ *
+ *  - Everything has been put into an orthogonal ao basis.
+ *  - Regardless of the flavor of hf wfn, this treats everything as ghf meaning 2*nbas dimensions.
+ *
+ * */
+
+  int nocc ;
+  cf aob ;
+  cf pt5 = cf (0.5,0.0) ;
+  Eigen::MatrixXcf pvu ;
+  Eigen::MatrixXcf omega ;
+  Eigen::MatrixXcf f ;
+  Eigen::MatrixXcf g ;
+
+  /* Build pvu */
+
+  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
+  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
+  f.resize( 2*com.nbas(), 2*com.nbas()) ;
+  g.resize( 2*com.nbas(), 2*com.nbas()) ;
+  pvu.setZero() ;
+  f.setZero() ;
+
+  ovl = tranden ( com, a, b, pvu) ;
+
+  ctr2eg( intarr, pvu, g, com.nbas()) ;
+
+  f =  h + g ;
+  g = h + f ;
+  omega = g*pvu ;
+  aob = pt5*omega.trace() ;
 
   g.resize( 0, 0) ;
   f.resize( 0, 0) ;

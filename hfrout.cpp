@@ -1,3 +1,4 @@
+#include "constants.h"
 #include<iostream>
 #include<string>
 #include<vector>
@@ -32,7 +33,7 @@ float rrhfdia( Eigen::Ref<Eigen::MatrixXf> h, Eigen::Ref<Eigen::MatrixXf> s, std
   int occ ;
   float thresh=1e-8 ;
   float energy ;
-  float ene_p=0e0 ;
+  float ene_p=d0 ;
   float e_dif=1e0 ;
 
   occ = nele/2 ;
@@ -62,7 +63,7 @@ float rrhfdia( Eigen::Ref<Eigen::MatrixXf> h, Eigen::Ref<Eigen::MatrixXf> s, std
 
     energy = g.trace() ;
 
-    e_dif = abs(ene_p - energy) ;
+    e_dif = std::abs(ene_p - energy) ;
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
   }
@@ -87,9 +88,9 @@ float crhfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf
   int iter=0 ;
   int occ ;
   float thresh=1e-8 ;
-  float energy=0e0 ;
+  float energy=d0 ;
   std::complex<float> t_f ;
-  float ene_p=0e0 ;
+  float ene_p=d0 ;
   float e_dif=1e0 ;
 
   occ = nele/2 ;
@@ -116,7 +117,7 @@ float crhfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf
     g = p*(h + f) ;
     t_f = g.trace() ;
     energy = t_f.real() ;
-    e_dif = abs(ene_p - energy) ;
+    e_dif = std::abs(ene_p - energy) ;
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
   }
@@ -144,9 +145,9 @@ float ruhfdia( Eigen::Ref<Eigen::MatrixXf> const h, Eigen::Ref<Eigen::MatrixXf> 
   int iter=0 ;
   int nbas ;
   float thresh=1e-8 ;
-  float energy=0e0 ;
-  float t_f=0e0 ;
-  float ene_p=0e0 ;
+  float energy=d0 ;
+  float t_f=d0 ;
+  float ene_p=d0 ;
   float e_dif=1e0 ;
 
   nbas = 2*nbasis ;
@@ -192,7 +193,7 @@ float ruhfdia( Eigen::Ref<Eigen::MatrixXf> const h, Eigen::Ref<Eigen::MatrixXf> 
     t_f += g.trace() ;
     energy = t_f/2.0 ;
 
-    e_dif = abs(ene_p - energy) ;
+    e_dif = std::abs(ene_p - energy) ;
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
   }
@@ -227,9 +228,9 @@ float cuhfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf
   int iter=0 ;
   int nbas ;
   float thresh=1e-8 ;
-  float energy=0e0 ;
+  float energy=d0 ;
   std::complex<float> t_f ;
-  float ene_p=0e0 ;
+  float ene_p=d0 ;
   float e_dif=1e0 ;
 
   nbas = 2*nbasis ;
@@ -276,9 +277,8 @@ float cuhfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf
     temp = temp + g ;
     t_f =  temp.trace() ;
     energy = t_f.real()/2.0 ;
-    std::cout << energy << std::endl ;
 
-    e_dif = abs(ene_p - energy) ;
+    e_dif = std::abs(ene_p - energy) ;
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
   }
@@ -311,8 +311,8 @@ float rghfdia( Eigen::Ref<Eigen::MatrixXf> const h, Eigen::Ref<Eigen::MatrixXf> 
   int iter=0 ;
   int nbas ;
   float thresh=1e-8 ;
-  float energy=0e0 ;
-  float ene_p=0e0 ;
+  float energy=d0 ;
+  float ene_p=d0 ;
   float e_dif=1e0 ;
 
   nbas = nbasis*2 ;
@@ -348,7 +348,7 @@ float rghfdia( Eigen::Ref<Eigen::MatrixXf> const h, Eigen::Ref<Eigen::MatrixXf> 
     g = p*( h_f + f) ;
     energy = g.trace()/2.0 ;
 
-    e_dif = abs(ene_p - energy) ;
+    e_dif = std::abs(ene_p - energy) ;
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
   }
@@ -377,9 +377,9 @@ float cghfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf
   int iter=0 ;
   int nbas ;
   float thresh=1e-8 ;
-  float energy=0e0 ;
+  float energy=d0 ;
   std::complex<float> t_f ;
-  float ene_p=0e0 ;
+  float ene_p=d0 ;
   float e_dif=1e0 ;
 
   nbas = nbasis*2 ;
@@ -414,8 +414,7 @@ float cghfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf
     t_f = g.trace() ;
     energy = t_f.real()/2.0 ;
 
-    std::cout << energy << std::endl ;
-    e_dif = abs(ene_p - energy) ;
+    e_dif = std::abs(ene_p - energy) ;
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
   }

@@ -1,4 +1,5 @@
 /* Primary routine for Quetzalcoatl */
+#include "constants.h"
 #include<iostream>
 #include<complex>
 #include<string>
@@ -7,22 +8,32 @@
 #include<Eigen/Dense>
 #include<fstream>
 #include "tei.h"
+#include "project.h"
 #include "qtzio.h"
 #include "common.h"
 #include "hfwfn.h"
 #include "util.h"
 #include "evalm.h"
+#include "integr.h"
+#include "wigner.h"
 
 int main() {
 /*
+ * This is my own implementation of various electronic stucture methods.  
+ * There is lots of work to do and improvements to be made and the purpose
+ * is supposed to be minaly pedagoical as well as producing results.  More 
+ * accurate and faster implementations will always be possible.  This is 
+ * more like a sandbox to try new things.
+ *
  * To Do :: 
  *  
- *   implement stability 
- *   matrix elements between determinants
- *   wigner matrix
- *   Eventually, I will need to write a routine which grabs a chunk of memory,
+ *   -implement stability 
+ *   -matrix elements between determinants
+ *   -Eventually, I will need to write a routine which grabs a chunk of memory,
  *   rather than constantly allocating and dealllocating.  For now, I need things
  *   that work and produce useful results.  
+ *   - Debug spin rotations on a determinant.
+ *   - Interface with non-gaussian routines for matrix elements
  *
  * */
 
@@ -47,16 +58,17 @@ int main() {
 
   typedef std::complex<float> cf ;
   int junk ;
-  int job=0  ;
+  int job=0  ; 
   float fjunk ;
-  hfwfn detrr1 ;
-  Eigen::MatrixXf s ;
+  cf cjunk ;
+  hfwfn det1 ;
   Eigen::MatrixXf h ;
-  Eigen::MatrixXf h_full ;
+  Eigen::MatrixXf s ;
+  Eigen::MatrixXcf h_full ;
   Eigen::MatrixXf s_full ;
   Eigen::MatrixXf mos ;
-  Eigen::MatrixXf mosf ;
-  Eigen::MatrixXf tmp ;
+/*Eigen::MatrixXf mosf ;
+  Eigen::MatrixXf tmp ; */
 
 /* Open and read the input file */
 
@@ -93,48 +105,24 @@ int main() {
 
   getmel( "f00.fi1s", "f00.fi2s", intarr, com) ;
 
-  h_full.resize( 2*com.nbas(), 2*com.nbas()) ;
-  s_full.resize( 2*com.nbas(), 2*com.nbas()) ;
+  det1.init( com, intarr, "cghf") ;
+  det1.prt_ene( com.nrep()) ;
+  det1.prt_mos() ;
   h.resize( com.nbas(), com.nbas()) ;
   s.resize( com.nbas(), com.nbas()) ;
-  mos.resize( com.nbas(), 2*com.nbas()) ;
-  mosf.resize( 2*com.nbas(), 2*com.nbas()) ;
-  tmp.resize( 2*com.nbas(), 2*com.nbas()) ;
+  h_full.resize( 2*com.nbas(), 2*com.nbas()) ;
+  h_full.setZero() ;
+ 
   h = com.getH() ;
   s = com.getS() ;
-  oao ( com.nbas(), h, s) ;
-  s_full.setZero() ;
-  s_full.block( 0, 0, com.nbas(), com.nbas()) = s ;
-  s_full.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()) = s ;
-
-  detrr1.init( com, intarr, "ruhf") ;
-  detrr1.prt_ene ( com.nrep()) ;
-  std::cout << " Retrieving the mos" << std::endl;
-  detrr1.get_mos ( mos) ;
-  mosf.setZero() ;
-  mosf.block( 0, 0, com.nbas(), com.nbas()) = mos.block( 0, 0, com.nbas(), com.nbas()) ;
-  mosf.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()) = mos.block( 0, com.nbas(), com.nbas(), com.nbas()) ;
-  std::cout << " CtSC " << std::endl;
-  tmp = mosf.adjoint()*s_full*mosf ;
-  std::cout << tmp << std::endl ;
-
-  oao( com.nbas(), detrr1, s) ;
-  detrr1.get_mos ( mos) ;
-  mosf.setZero() ;
-  mosf.block( 0, 0, com.nbas(), com.nbas()) = mos.block( 0, 0, com.nbas(), com.nbas()) ;
-  mosf.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()) = mos.block( 0, com.nbas(), com.nbas(), com.nbas()) ;
-  std::cout << " Ct*C " << std::endl;
-  tmp = mosf.adjoint()*mosf ;
-  std::cout << tmp << std::endl ;
-
-  h_full.setZero() ;
-  h_full.block( 0, 0, com.nbas(), com.nbas()) = h ;
-  h_full.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()) = h ;
-
+  oao( com.nbas(), det1, s) ;
+  det1.prt_mos() ;
+  oao( com.nbas(), h, s) ;
   oao( com.nbas(), intarr, tmparr, s) ;
+  h_full.block( 0, 0, com.nbas(), com.nbas()).real() = h ;
+  h_full.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()).real() = h ;
 
-  fjunk = fockop( com, h_full, tmparr, detrr1, detrr1) ;
-  std::cout << fjunk + com.nrep() << std::endl ;
+  e_phf( com, det1, h_full, tmparr) ;
 
   return 0 ;
 
