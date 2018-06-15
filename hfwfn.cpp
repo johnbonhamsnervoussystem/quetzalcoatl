@@ -294,7 +294,7 @@ void hfwfn::prt_eig( void) { std::cout << eig_v << std::endl ; return ; }
 void hfwfn::prt_ene( float nn){ std::cout << energy + nn << std::endl ; return ; }
 
 /* Excitation operators */
-void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXf> mo, int nbas, int nele, int i, int a){
+void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXf> mo, int i, int a){
   /* Return the mo coefficients with orbital i replaced by orbital a */
   mo = mo_rcof ;
   mo.col(i) = mo_rcof.col(a) ;
@@ -302,7 +302,7 @@ void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXf> mo, int nbas, int nele, int i, int 
   return ;
 }
 
-void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXcf> mo, int nbas, int nele, int i, int a){
+void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXcf> mo, int i, int a){
   mo = mo_ccof ;
   mo.col(i) = mo_ccof.col(a) ;
   mo.col(a) = mo_ccof.col(i) ;
