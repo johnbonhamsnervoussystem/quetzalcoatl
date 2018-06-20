@@ -1,10 +1,10 @@
 #include "constants.h"
-#include<iostream>
-#include<vector>
-#include<Eigen/Dense>
-#include "tei.h"
-#include "hfwfn.h"
+#include <iostream>
+#include <vector>
+#include <Eigen/Dense>
 #include "evalm.h"
+#include "hfwfn.h"
+#include "tei.h"
 
 /* evalm is a collection of routines that evaluates matrix elements  */
 
@@ -1100,7 +1100,6 @@ std::complex<float> fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::v
   Eigen::MatrixXcf pvu ;
   Eigen::MatrixXcf omega ;
   Eigen::MatrixXcf f ;
-  Eigen::MatrixXcf fop ;
   Eigen::MatrixXcf g ;
   Eigen::MatrixXcf mos ;
 
@@ -1111,10 +1110,8 @@ std::complex<float> fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::v
   f.resize( 2*com.nbas(), 2*com.nbas()) ;
   g.resize( 2*com.nbas(), 2*com.nbas()) ;
   mos.resize( 2*com.nbas(), 2*com.nbas()) ;
-  fop.resize( 2*com.nbas(), 2*com.nbas()) ;
   pvu.setZero() ;
   f.setZero() ;
-  fop.setZero() ;
   a.get_mos( mos) ;
 
   ovl = tranden ( com, a, b, pvu) ;
@@ -1122,8 +1119,6 @@ std::complex<float> fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::v
   ctr2eg( intarr, pvu, g, com.nbas()) ;
 
   f =  h + g ;
-  fop = mos.adjoint()*f*mos ;
-  std::cout << " Fock matrix " << std::endl << fop << std::endl ;
   g = h + f ;
   omega = g*pvu ;
   aob = pt5*omega.trace() ;

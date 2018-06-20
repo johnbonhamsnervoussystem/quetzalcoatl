@@ -10,6 +10,7 @@
 #include "util.h"
 #include "integr.h"
 #include "tei.h"
+#include "wigner.h"
 
 /* Utilities that don't belong elsewhere. */
 
@@ -441,6 +442,69 @@ void eulrgrd ( int n_psi, int n_thet, int n_phi, std::vector<float>& w_psi, std:
   }
 
   return ;
+
+} ;
+
+void K_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
+/* 
+ * Apply the complex conjugation operator to the molecular orbitals. 
+ * Return the determinant to be used in the calling routine.
+ * 
+ * It is assumed mo has been dimensioned correctly already.
+ * */
+
+  Eigen::MatrixXcf tmp ;
+
+  tmp.resize( 2*nb, 2*nb) ;
+
+  a.get_mos( tmp) ;
+
+  mo = tmp.conjugate() ;
+
+  tmp.resize( 0, 0) ;
+
+  return  ;
+
+} ;
+
+void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
+/* 
+ * Apply the complex conjugation operator to the molecular orbitals. 
+ * Return the determinant to be used in the calling routine.
+ * 
+ * It is assumed mo has been dimensioned correctly already.
+ * */
+
+  float Nnty ;
+
+  Nnty = pi/2.0e0 ;
+
+  R_s ( nb, a, mo, d0, Nnty, d0) ;
+
+  return  ;
+
+} ;
+
+void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
+/* 
+ * Apply the complex conjugation operator to the molecular orbitals. 
+ * Return the determinant to be used in the calling routine.
+ * 
+ * It is assumed mo has been dimensioned correctly already.
+ * */
+
+  Eigen::MatrixXcf tmp ;
+  float Nnty ;
+
+  tmp.resize( 2*nb, 2*nb) ;
+  Nnty = pi/2.0e0 ;
+
+  a.get_mos( mo) ;
+  tmp = mo.conjugate() ;
+  R_s ( nb, tmp, mo, d0, Nnty, d0) ;
+  tmp.resize( 0, 0) ;
+
+  return  ;
 
 } ;
 

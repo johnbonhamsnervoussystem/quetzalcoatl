@@ -1,5 +1,6 @@
 #include "hfwfn.h"
 #include "common.h"
+#include <Eigen/Dense>
 
 #ifndef WIGNER_H
 #define WIGNER_H
@@ -16,6 +17,10 @@ std::complex<float> wigner_D( int j, int m, int k, float alpha, float beta, floa
  
 std::complex<float> wigner_D( float j, float m, float k, float alpha, float beta, float gamma) ;
 
-void R_s ( common& c, hfwfn& a, hfwfn& b, float alpha, float beta, float gamma) ;
+void R_s ( common& c, hfwfn& a, hfwfn& b, float al, float be, float ga) ;
+
+void R_s ( int n, hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> m, float al, float be, float ga) ;
+
+void R_s ( int n, Eigen::Ref<Eigen::MatrixXcf> moa, Eigen::Ref<Eigen::MatrixXcf> mob, float al, float be, float ga) ;
 
 #endif

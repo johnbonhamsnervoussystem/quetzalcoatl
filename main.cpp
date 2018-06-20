@@ -1,12 +1,12 @@
 /* Primary routine for Quetzalcoatl */
 #include "constants.h"
-#include<iostream>
-#include<complex>
-#include<string>
-#include<fstream>
-#include<vector>
-#include<Eigen/Dense>
-#include<fstream>
+#include <iostream>
+#include <complex>
+#include <string>
+#include <fstream>
+#include <vector>
+#include <Eigen/Dense>
+#include <fstream>
 #include "common.h"
 #include "evalm.h"
 #include "hfwfn.h"
@@ -64,6 +64,7 @@ int main() {
   cf cjunk ;
   cf ojunk ;
   hfwfn det1 ;
+  std::vector<hfwfn> tst_vec ;
   Eigen::MatrixXf h ;
   Eigen::MatrixXf s ;
   Eigen::MatrixXcf h_full ;
@@ -105,56 +106,27 @@ int main() {
     }
   }
 
-  getmel( "f00.fi1s", "f00.fi2s", intarr, com) ;
+  readcx( com.nbas()) ;
+/*  getmel( "f00.fi1s", "f00.fi2s", intarr, com) ;
+  det1.init( com, intarr, "cghf") ;
 
   s.resize( com.nbas(), com.nbas()) ;
-  mos.resize( com.nbas(), com.nbas()) ;
-  h_full.resize( com.nbas(), com.nbas()) ;
   s = com.getS() ;
-  mos.real() = s ;
-  mos = mos*zi ;
-  ahm_exp( mos, h_full, com.nbas(), 0) ;
-  std::cout << "Unitary matrix diag " << std::endl ;
-  std::cout << h_full << std::endl ;
-  mos = h_full.adjoint()*h_full ;
-  std::cout << "UtU " << std::endl ;
-  std::cout << mos << std::endl ;
-  mos.real() = s ;
-  mos = mos*zi ;
-  ahm_exp( mos, h_full, com.nbas(), 1) ;
-  std::cout << "Unitary matrix repeat mult " << std::endl ;
-  std::cout << h_full << std::endl ;
-  mos = h_full.adjoint()*h_full ;
-  std::cout << "UtU " << std::endl ;
-  std::cout << mos << std::endl ;
-/*  det1.init( com, intarr, "rrhf") ;
-  det1.prt_ene( com.nrep()) ;
-  std::cout << " Converged MOs " << std::endl ;
-  det1.prt_mos() ;
+
   h.resize( com.nbas(), com.nbas()) ;
-  mos.resize( 2*com.nbas(), 2*com.nbas()) ;
-  h_full.resize( 2*com.nbas(), 2*com.nbas()) ;
-  h_full.setZero() ;
- 
   h = com.getH() ;
+
   oao( com.nbas(), det1, s) ;
   oao( com.nbas(), h, s) ;
-
-  std::cout << "h in the oao" << std::endl ;
-  std::cout << h << std::endl ;
-
   oao( com.nbas(), intarr, tmparr, s) ;
+
+  h_full.resize( 2*com.nbas(), 2*com.nbas()) ;
+  h_full.setZero() ;
   h_full.block( 0, 0, com.nbas(), com.nbas()).real() = h ;
   h_full.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()).real() = h ;
-  std::cout << " Excited MOs " << std::endl ;
-  det1.prt_mos() ; 
-  std::cout << " Orthogonal MOs " << std::endl ;
-  det1.prt_mos() ;
-  cjunk = fockop ( com, h_full, tmparr, det1, det1, ojunk) ;
-  std::cout << " Energy = " << cjunk + cf( com.nrep(), 0.0) << std::endl ; */
 
-
-//  e_phf( com, det1, h_full, tmparr) ;
+  tst_vec.push_back(det1) ;
+  trci( com, tst_vec, h_full, tmparr) ; */
 
   return 0 ;
 

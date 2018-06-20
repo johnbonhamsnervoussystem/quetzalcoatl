@@ -6,8 +6,6 @@
 /* Here is the wishlist but for sanity, tackle this one constant
  * at a time.
  * 
- * typedef cf complex<float>
- * d0 = 0.0 
  * d1 = 1.0
  * d2 = 2.0
  * zi = complex( 0.0, 1.0)

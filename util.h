@@ -18,4 +18,10 @@ void eulrgrd ( int n_ps, int n_t, int n_ph, std::vector<float>& w_ps, std::vecto
      std::vector<float>& w_ph, std::vector<float>& x_ps, std::vector<float>& x_t, 
      std::vector<float>& x_ph, int S) ;
 
+void K_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> m, int b ) ;
+
+void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> m, int b ) ;
+
+void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> m, int b ) ;
+
 #endif

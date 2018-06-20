@@ -1,10 +1,14 @@
-#include<cmath>
-#include<iostream>
-#include<complex>
-#include<vector>
-#include<Eigen/Dense>
-#include<Eigen/Eigenvalues>
+#include <cmath>
+#include <iostream>
+#include <complex>
+#include <vector>
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
+#include "common.h"
+#include "hfwfn.h"
 #include "solver.h"
+#include "tei.h"
+#include "util.h"
 #include "evalm.h"
 
 /*
@@ -182,6 +186,104 @@ void ahm_exp( Eigen::Ref<Eigen::MatrixXcf> x, Eigen::Ref<Eigen::MatrixXcf> u, in
     u.setIdentity() ;
 
   }
+
+  return ;
+
+} ;
+
+void trci( common& com, std::vector<hfwfn>& det, Eigen::Ref<Eigen::MatrixXcf> H, std::vector<tei>& intarr) {
+
+/*
+ * This routine accepts N determinants into the vector. These determinants
+ * are expanded in the "Time Reversal" Basis of Complex Conjugation(K),
+ * Spin Flip(F), and Time Reversal(T).  This will generate 4N
+ * determinants.
+ * */
+
+  Eigen::MatrixXcf CI_s ;
+  Eigen::MatrixXcf CI_h ;
+  Eigen::MatrixXcf tmo ;
+  hfwfn bra ;
+  hfwfn ket ;
+  int CI_d ;
+  int idt_lb ;
+  int jdt_lb ;
+  int idt_ty ;
+  int jdt_ty ;
+
+  CI_d = 4*det.size() ;
+
+  CI_s.resize( CI_d, CI_d) ;
+  CI_h.resize( CI_d, CI_d) ;
+
+  /* Build a hfwfn container for calculations */
+  tmo.resize( 2*com.nbas(), 2*com.nbas()) ;
+  tmo.setIdentity() ;
+  bra.fil_mos( com.nbas(), tmo, 6) ;
+  ket.fil_mos( com.nbas(), tmo, 6) ;
+
+  for ( int i=0; i < CI_d; i++ ) {
+    idt_lb = i/4 ;
+    idt_ty = i % 4 ;
+
+    if ( idt_ty == 0 ){
+    /* |Phi> */
+      det[idt_lb].get_mos( tmo) ;
+      bra.set_mos( tmo) ;
+
+    } else if ( idt_ty == 1 ){
+    /* K|Phi> */
+      K_op( det[idt_lb], tmo, com.nbas()) ;
+      bra.set_mos( tmo) ;
+
+    } else if ( idt_ty == 2 ){
+    /* F|Phi> */
+      F_op( det[idt_lb], tmo, com.nbas()) ;
+      bra.set_mos( tmo) ;
+
+    } else if ( idt_ty == 3 ){
+    /* T|Phi> */
+      T_op( det[idt_lb], tmo, com.nbas()) ;
+      bra.set_mos( tmo) ;
+
+    }
+
+    for ( int j=0; j < CI_d; j++ ) {
+      jdt_lb = j/4 ;
+      jdt_ty = j % 4 ;
+
+      if ( jdt_ty == 0 ){
+      /* |Phi> */
+        det[jdt_lb].get_mos( tmo) ;
+        ket.set_mos( tmo) ;
+ 
+      } else if ( jdt_ty == 1 ){ 
+      /* K|Phi> */
+        K_op( det[jdt_lb], tmo, com.nbas()) ;
+        ket.set_mos( tmo) ;
+
+      } else if ( jdt_ty == 2 ){
+      /* F|Phi> */
+        F_op( det[jdt_lb], tmo, com.nbas()) ;
+        ket.set_mos( tmo) ;
+
+      } else if ( jdt_ty == 3 ){
+      /* T|Phi> */
+        T_op( det[jdt_lb], tmo, com.nbas()) ;
+        ket.set_mos( tmo) ;
+
+      }
+      /* Build <phi|H|psi> and <phi|psi> */
+        CI_h( i, j) = fockop( com, H, intarr, bra, ket, CI_s( i, j)) ;
+      }
+    }
+
+  std::cout << " CI_H " << std::endl << CI_h << std::endl ;
+  std::cout << " CI_S " << std::endl << CI_s << std::endl ;
+
+  tmo.resize( 0, 0) ;
+  CI_h.resize( 0, 0) ;
+  CI_s.resize( 0, 0) ;
 
   return ;
 

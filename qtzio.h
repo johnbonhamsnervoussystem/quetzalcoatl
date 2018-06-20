@@ -8,4 +8,6 @@
 
 void getmel(std::string file1, std::string file2, std::vector<tei>& I, common& c) ;
 
+void readcx ( int n) ;
+
 #endif

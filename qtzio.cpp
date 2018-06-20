@@ -1,10 +1,12 @@
 /* Routines for Quetz I/O */
-#include<iostream>
-#include<complex>
-#include<string>
-#include<fstream>
-#include<Eigen/Dense>
-#include<vector>
+#include "constants.h"
+#include <iostream>
+#include <complex>
+#include <string>
+#include <fstream>
+#include <Eigen/Dense>
+#include <vector>
+#include <sys/stat.h>
 #include "qtzio.h"
 #include "tei.h"
 #include "common.h"
@@ -91,7 +93,7 @@ void getmel( string file1 , string file2, vector<tei>& intarr, common& com) {
       int_v = stof(line.substr(13,25)) ;
       tmp_tei.set( i_v, j_v, k_v, l_v, int_v) ;
       intarr.push_back(tmp_tei) ;
-  }
+    }
   }
 
   input_file.close() ;
@@ -99,3 +101,59 @@ void getmel( string file1 , string file2, vector<tei>& intarr, common& com) {
   return ;
 
 }
+
+//void readcx ( int c_len, std::vector<string>& matel) {
+void readcx ( int nbasis) {
+/* 
+ * This routine will read in many quantities eventually. For now we
+ * just want to read the wavefunction from the list of matrix element
+ * files we have.
+ *
+ * */
+  int c_len ;
+//  int nfiles=matel.size() ;
+  int nfiles=1 ;
+  int jcol ;
+  int jrow ;
+  ifstream i_file ;
+  string file_read = "detfile" ;
+  string line ;
+  string rc_str ;
+  string ic_str ;
+  float rc_fl ;
+  float ic_fl ;
+  Eigen::MatrixXcf moc;
+
+  c_len = nbasis*nbasis*4 ;
+  moc.resize( 2*nbasis, 2*nbasis) ;
+
+  for ( int i=0; i < nfiles; i++ ){
+
+//    file_read = matel[i] ;
+    i_file.open(file_read) ;
+
+    if ( i_file.is_open() ) {
+
+      for ( int j=0; j < c_len; j++ ){
+
+        jrow = j % (2*nbasis) ;
+        jcol = j/(2*nbasis) ;
+        getline( i_file, line) ;
+        rc_str = line.substr(0,15) ;
+        ic_str = line.substr(16) ;
+        rc_fl = stof(rc_str) ;
+        ic_fl = stof(ic_str) ;
+        moc( jrow, jcol) = cf (rc_fl, ic_fl) ;
+      }
+
+    }
+
+    cout << " moc " << endl << moc << endl ;
+    i_file.close() ;
+
+  }
+
+  return ;
+
+}
+
