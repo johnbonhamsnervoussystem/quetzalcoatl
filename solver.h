@@ -1,4 +1,6 @@
 #include <Eigen/Dense>
+#include <fstream>
+#include <string>
 #include <vector>
 #include "common.h"
 #include "hfwfn.h"
@@ -16,6 +18,8 @@ void scfdia ( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf>
 void ahm_exp( Eigen::Ref<Eigen::MatrixXcf> x, Eigen::Ref<Eigen::MatrixXcf> u, int dim, int opt = 0) ;
 
 void trci( common& c, std::vector<hfwfn>& d, Eigen::Ref<Eigen::MatrixXcf> H, std::vector<tei>& intarr) ;
+
+void trci( common& com, std::vector<hfwfn>& det, Eigen::Ref<Eigen::MatrixXcf> H, std::vector<tei>& intarr, std::string& trd, std::string& fop) ;
 
 #endif
 

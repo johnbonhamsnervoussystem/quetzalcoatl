@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <Eigen/Dense>
+#include "binio.h"
 #include "evalm.h"
 #include "hfwfn.h"
 #include "tei.h"
@@ -887,7 +888,7 @@ float tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dab
 
 } ;
 
-std::complex<float> tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dabmat) {
+ cf tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dabmat) {
 
 /* 
  *  This is an overloaded complex version of nointm
@@ -1009,7 +1010,7 @@ float obop ( common& com, Eigen::Ref<Eigen::MatrixXf> ouv, hfwfn& a, hfwfn& b) {
 
 } ;
 
-std::complex<float> obop ( common& com, Eigen::Ref<Eigen::MatrixXcf> ouv, hfwfn& a, hfwfn& b) {
+ cf obop ( common& com, Eigen::Ref<Eigen::MatrixXcf> ouv, hfwfn& a, hfwfn& b) {
 
 /*
  * Overloaded for complex functions.
@@ -1017,7 +1018,7 @@ std::complex<float> obop ( common& com, Eigen::Ref<Eigen::MatrixXcf> ouv, hfwfn&
 
   int nbas ;
 
-  std::complex<float> aob ;
+  cf aob ;
   Eigen::MatrixXcf pvu ;
   Eigen::MatrixXcf omega ;
 
@@ -1082,7 +1083,7 @@ float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& int
 
 } ;
 
-std::complex<float> fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, 
+ cf fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, 
                              hfwfn& b, cf& ovl) {
 
 /*
@@ -1119,6 +1120,59 @@ std::complex<float> fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::v
   ctr2eg( intarr, pvu, g, com.nbas()) ;
 
   f =  h + g ;
+  g = h + f ;
+  omega = g*pvu ;
+  aob = pt5*omega.trace() ;
+
+  g.resize( 0, 0) ;
+  f.resize( 0, 0) ;
+  pvu.resize( 0, 0) ;
+  omega.resize( 0, 0) ;
+
+  return aob ;
+
+} ;
+
+ cf fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, 
+                             hfwfn& b, cf& ovl, std::ofstream& traden, std::ofstream& fockmat) {
+
+/*
+ * If passed file names, fockop will write the transition density and fock operator to files for 
+ * later contraction with derivatives.
+ * */
+
+  int nocc ;
+  cf aob ;
+  cf pt5 = cf (0.5,0.0) ;
+  Eigen::MatrixXcf pvu ;
+  Eigen::MatrixXcf omega ;
+  Eigen::MatrixXcf f ;
+  Eigen::MatrixXcf g ;
+  Eigen::MatrixXcf mos ;
+
+  /* Build pvu */
+
+  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
+  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
+  f.resize( 2*com.nbas(), 2*com.nbas()) ;
+  g.resize( 2*com.nbas(), 2*com.nbas()) ;
+  mos.resize( 2*com.nbas(), 2*com.nbas()) ;
+  pvu.setZero() ;
+  f.setZero() ;
+  a.get_mos( mos) ;
+
+  ovl = tranden ( com, a, b, pvu) ;
+  std::cout << pvu << std::endl ;
+  /* Write the transition density to file */
+  write_eigen_bin( pvu, traden) ;
+
+  ctr2eg( intarr, pvu, g, com.nbas()) ;
+
+  f =  h + g ;
+  std::cout << f << std::endl ;
+  /* Write the fock matrix to file */
+  write_eigen_bin( f, fockmat) ;
+
   g = h + f ;
   omega = g*pvu ;
   aob = pt5*omega.trace() ;

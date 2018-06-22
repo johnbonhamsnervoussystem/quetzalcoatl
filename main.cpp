@@ -7,6 +7,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include <fstream>
+#include "binio.h"
 #include "common.h"
 #include "evalm.h"
 #include "hfwfn.h"
@@ -61,15 +62,21 @@ int main() {
   int junk ;
   int job=0  ; 
   float fjunk ;
-  cf cjunk ;
+  cf ejunk ;
   cf ojunk ;
   hfwfn det1 ;
+  hfwfn det2 ;
   std::vector<hfwfn> tst_vec ;
+  std::vector<std::string> wfn_vec ;
+  std::string trden="tden.rwf" ;
+  std::string fokmat="fmat.rwf" ;
   Eigen::MatrixXf h ;
   Eigen::MatrixXf s ;
   Eigen::MatrixXcf h_full ;
   Eigen::MatrixXf s_full ;
   Eigen::MatrixXcf mos ;
+  std::ifstream tden ;
+  std::ifstream fmat ;
 /*Eigen::MatrixXf mosf ;
   Eigen::MatrixXf tmp ; */
 
@@ -106,27 +113,35 @@ int main() {
     }
   }
 
-  readcx( com.nbas()) ;
-/*  getmel( "f00.fi1s", "f00.fi2s", intarr, com) ;
-  det1.init( com, intarr, "cghf") ;
-
+  getmel( "./test_fil/f00.fi1s", "./test_fil/f00.fi2s", intarr, com) ;
   s.resize( com.nbas(), com.nbas()) ;
   s = com.getS() ;
 
   h.resize( com.nbas(), com.nbas()) ;
   h = com.getH() ;
-
-  oao( com.nbas(), det1, s) ;
   oao( com.nbas(), h, s) ;
-  oao( com.nbas(), intarr, tmparr, s) ;
-
   h_full.resize( 2*com.nbas(), 2*com.nbas()) ;
   h_full.setZero() ;
+
+  det1.fil_mos( com.nbas(), h_full, 6) ;
+  det2.fil_mos( com.nbas(), h_full, 6) ;
+
   h_full.block( 0, 0, com.nbas(), com.nbas()).real() = h ;
   h_full.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()).real() = h ;
 
-  tst_vec.push_back(det1) ;
-  trci( com, tst_vec, h_full, tmparr) ; */
+  wfn_vec.push_back("./test_fil/wfn1.det") ;
+  wfn_vec.push_back("./test_fil/wfn2.det") ;
+
+  tst_vec.push_back( det1) ;
+  tst_vec.push_back( det2) ;
+
+  rdsdet( com.nbas(), wfn_vec, tst_vec) ;
+
+  oao( com.nbas(), tst_vec[0], s) ;
+  oao( com.nbas(), tst_vec[1], s) ;
+  oao( com.nbas(), intarr, tmparr, s) ;
+
+  trci( com, tst_vec, h_full, tmparr, trden, fokmat) ;
 
   return 0 ;
 

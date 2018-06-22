@@ -1,5 +1,7 @@
-#include<vector>
-#include<Eigen/Dense>
+#include "constants.h"
+#include <Eigen/Dense>
+#include <fstream>
+#include <vector>
 #include "common.h"
 #include "hfwfn.h"
 #include "tei.h"
@@ -39,14 +41,16 @@
 
   float tranden ( common& c, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> d) ;
 
-  std::complex<float> tranden ( common& c, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> d) ;
+  cf tranden ( common& c, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> d) ;
 
   float obop ( common& c, Eigen::Ref<Eigen::MatrixXf> o, hfwfn& a, hfwfn& b) ;
 
-  std::complex<float> obop ( common& c, Eigen::Ref<Eigen::MatrixXcf> o, hfwfn& a, hfwfn& b) ;
+  cf obop ( common& c, Eigen::Ref<Eigen::MatrixXcf> o, hfwfn& a, hfwfn& b) ;
 
   float fockop ( common& c, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, float& O) ;
 
-  std::complex<float> fockop ( common& c, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, std::complex<float>& O) ;
+  cf fockop ( common& c, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, cf& O) ;
+
+  cf fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, cf& ovl, std::ofstream& tfile, std::ofstream& ffile) ;
 
 #endif
