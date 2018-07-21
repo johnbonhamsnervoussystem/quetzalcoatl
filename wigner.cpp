@@ -8,7 +8,7 @@
 #include "common.h"
 #include "util.h"
 
-float d_cof ( int j, int m, int k, int n) {
+double d_cof ( int j, int m, int k, int n) {
 /*
  * Calculate the denominator for the prefactor since the numerator has no 'n' 
  * dependence.
@@ -18,8 +18,8 @@ float d_cof ( int j, int m, int k, int n) {
  * 1/[(j +k -n)!(j -m -n)!n!( n +m -k)!]
  *
  */
-  float val=1.0 ;
-  float cof_d=1.0 ;
+  double val=1.0 ;
+  double cof_d=1.0 ;
 
 // Do the denominator
 
@@ -34,7 +34,7 @@ float d_cof ( int j, int m, int k, int n) {
 
 } ;
 
-float d_cof ( float j, float m, float k, int n) {
+double d_cof ( double j, double m, double k, int n) {
 /*
  * Calculate the denominator for the prefactor since the numerator has no 'n' 
  * dependence.
@@ -44,8 +44,8 @@ float d_cof ( float j, float m, float k, int n) {
  * 1/[(j +k -n)!(j -m -n)!n!( n +m -k)!]
  *
  */
-  float val=1.0 ;
-  float cof_d=1.0 ;
+  double val=1.0 ;
+  double cof_d=1.0 ;
 
 // Do the denominator
 
@@ -60,7 +60,7 @@ float d_cof ( float j, float m, float k, int n) {
 
 } ;
 
-float small_wd ( int j, int m, int k, float beta) {
+double small_wd ( int j, int m, int k, double beta) {
 /*
  * Calculate 
  * d^{j}_{mk}(Theta) = sum_{n_min}^[n_max}(-1)^{n}W_{n}^{jmk}
@@ -70,11 +70,11 @@ float small_wd ( int j, int m, int k, float beta) {
   int sinexp ;
   int n_min ;
   int n_max ;
-  float cos_b ;
-  float sin_b ;
-  float cof_n = 1.0 ;
-  float d_jmk = d0 ;
-  float w_n ;
+  double cos_b ;
+  double sin_b ;
+  double cof_n = 1.0 ;
+  double d_jmk = d0 ;
+  double w_n ;
  
   n_min = std::max( 0, k - m) ;
   n_max = std::min( j - m, j + k) ;
@@ -106,7 +106,7 @@ float small_wd ( int j, int m, int k, float beta) {
 
 } ;
 
-float small_wd ( float j, float m, float k, float beta) {
+double small_wd ( double j, double m, double k, double beta) {
 /*
  * Calculate 
  * d^{j}_{mk}(Theta) = sum_{n_min}^[n_max}(-1)^{n}W_{n}^{jmk}
@@ -116,11 +116,11 @@ float small_wd ( float j, float m, float k, float beta) {
   int sinexp ;
   int n_min ;
   int n_max ;
-  float cos_b ;
-  float sin_b ;
-  float cof_n = 1.0 ;
-  float d_jmk = d0 ;
-  float w_n ;
+  double cos_b ;
+  double sin_b ;
+  double cof_n = 1.0 ;
+  double d_jmk = d0 ;
+  double w_n ;
  
   n_min = std::max( 0, static_cast<int>(k - m)) ;
   n_max = std::min( static_cast<int>(j - m), static_cast<int>(j + k)) ;
@@ -128,7 +128,7 @@ float small_wd ( float j, float m, float k, float beta) {
 /* 
  * Overloaded version of small_wd to handle half integer values.  
  * I'd be very surprised to find out there is not a better method of
- * converting these floats to integers but I'll chalk it up to
+ * converting these doubles to integers but I'll chalk it up to
  * my c++ skills for now.
  * */
 
@@ -153,55 +153,55 @@ float small_wd ( float j, float m, float k, float beta) {
 
 } ;
 
-std::complex<float> wigner_D ( int j, int m, int k, float alpha, float beta, float gamma) {
+std::complex<double> wigner_D ( int j, int m, int k, double alpha, double beta, double gamma) {
 /*
   D^(j)_{m',m}( alpha, beta, gamma) = Exp[-im' alpha]*d^(j)_{m',m}( beta)*Exp[-im gamma]
  */
-  float d_jmk ;
-  cf w_D ;
-  cf exp_m ;
-  cf exp_k ;
-  cf m_arg ;
-  cf k_arg ;
-  const cf di(0.0, 1.0) ;
+  double d_jmk ;
+  cd w_D ;
+  cd exp_m ;
+  cd exp_k ;
+  cd m_arg ;
+  cd k_arg ;
+  const cd di(0.0, 1.0) ;
   
   d_jmk = small_wd ( j, m, k, beta) ;
-  m_arg = -di*cf( m, d0)*cf( alpha, d0) ;
-  k_arg = -di*cf( k, d0)*cf( gamma, d0) ;
+  m_arg = -di*cd( m, d0)*cd( alpha, d0) ;
+  k_arg = -di*cd( k, d0)*cd( gamma, d0) ;
   exp_m = std::exp( m_arg) ;
   exp_k = std::exp( k_arg) ;
-  w_D = exp_m*cf( d_jmk, d0)*exp_k ;
+  w_D = exp_m*cd( d_jmk, d0)*exp_k ;
 
   return w_D ;
 
 } ;
 
-std::complex<float> wigner_D ( float j, float m, float k, float alpha, float beta, float gamma) {
+std::complex<double> wigner_D ( double j, double m, double k, double alpha, double beta, double gamma) {
 
 /*
  * D^(j)_{m,k}( alpha, beta, gamma) = Exp[-im alpha]*d^(j)_{m ,k}( beta)*Exp[-ik gamma]
  */
 
-  float d_jmk ;
-  cf w_D ;
-  cf exp_m ;
-  cf exp_k ;
-  cf m_arg ;
-  cf k_arg ;
-  const cf di(0.0, 1.0) ;
+  double d_jmk ;
+  cd w_D ;
+  cd exp_m ;
+  cd exp_k ;
+  cd m_arg ;
+  cd k_arg ;
+  const cd di(0.0, 1.0) ;
   
   d_jmk = small_wd ( j, m, k, beta) ;
-  m_arg = di*cf( m, d0)*cf( alpha, d0) ;
-  k_arg = di*cf( k, d0)*cf( gamma, d0) ;
+  m_arg = di*cd( m, d0)*cd( alpha, d0) ;
+  k_arg = di*cd( k, d0)*cd( gamma, d0) ;
   exp_m = std::exp( m_arg) ;
   exp_k = std::exp( k_arg) ;
-  w_D = exp_m*cf( d_jmk, d0)*exp_k ;
+  w_D = exp_m*cd( d_jmk, d0)*exp_k ;
 
   return w_D ;
 
 } ;
 
-void R_s ( common& c, hfwfn& a, hfwfn& b, float alpha, float beta, float gamma) {
+void R_s ( common& c, hfwfn& a, hfwfn& b, double alpha, double beta, double gamma) {
 
 /* This routine does a spin rotation on a determinant using Euler angles
  * alpha, beta and gamma 
@@ -217,13 +217,13 @@ void R_s ( common& c, hfwfn& a, hfwfn& b, float alpha, float beta, float gamma) 
  * */
 
   int nbas ;
-  cf Cga ;
-  cf zega ;
-  cf b_cos ;
-  cf b_sin ;
-  const cf di(0.0, 1.0) ;
-  Eigen::MatrixXcf moa ;
-  Eigen::MatrixXcf mob ;
+  cd Cga ;
+  cd zega ;
+  cd b_cos ;
+  cd b_sin ;
+  const cd di(0.0, 1.0) ;
+  Eigen::MatrixXcd moa ;
+  Eigen::MatrixXcd mob ;
 
   nbas = c.nbas() ;
 
@@ -233,30 +233,30 @@ void R_s ( common& c, hfwfn& a, hfwfn& b, float alpha, float beta, float gamma) 
 
   a.get_mos( moa) ;
   /* Gamma rotation of the alpha block */
-  zega = -cf( d0, gamma/2.0) ;
+  zega = -cd( d0, gamma/2.0) ;
   Cga = std::exp( zega) ;
   moa.block( 0, 0, nbas, 2*nbas) = Cga*moa.block( 0, 0, nbas, 2*nbas) ;
  
   /* Gamma rotation of the beta block */
-  zega = cf( d0, gamma/2.0) ;
+  zega = cd( d0, gamma/2.0) ;
   Cga = std::exp( zega) ;
   moa.block( nbas, 0, nbas, 2*nbas) = Cga*moa.block( nbas, 0, nbas, 2*nbas) ;
 
   /* beta rotation mixing */
-  b_cos = cf( cos(beta/2.0), d0) ;
-  b_sin = cf( sin(beta/2.0), d0) ;
+  b_cos = cd( cos(beta/2.0), d0) ;
+  b_sin = cd( sin(beta/2.0), d0) ;
   // Alpha Block
   mob.block( 0, 0, nbas, 2*nbas) = b_cos*moa.block( 0, 0, nbas, 2*nbas) - b_sin*moa.block( nbas, 0, nbas, 2*nbas) ;
  // Beta Block
   mob.block( nbas, 0, nbas, 2*nbas) = b_cos*moa.block( nbas, 0, nbas, 2*nbas) + b_sin*moa.block( 0, 0, nbas, 2*nbas) ;
 
   /* Alpha rotation of the alpha block */
-  zega = -cf( d0, alpha/2.0) ;
+  zega = -cd( d0, alpha/2.0) ;
   Cga = std::exp( zega) ;
   mob.block( 0, 0, nbas, 2*nbas) = Cga*mob.block( 0, 0, nbas, 2*nbas) ;
 
   /* Alpha rotation of the beta block */
-  zega = cf( d0, alpha/2.0) ;
+  zega = cd( d0, alpha/2.0) ;
   Cga = std::exp( zega) ;
   mob.block( nbas, 0, nbas, 2*nbas) = Cga*mob.block( nbas, 0, nbas, 2*nbas) ;
 
@@ -268,7 +268,7 @@ void R_s ( common& c, hfwfn& a, hfwfn& b, float alpha, float beta, float gamma) 
 
 } ;
 
-void R_s ( int nbas, hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mob, float alpha, float beta, float gamma) {
+void R_s ( int nbas, hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mob, double alpha, double beta, double gamma) {
 
 /* This routine does a spin rotation on a determinant using Euler angles
  * alpha, beta and gamma 
@@ -283,42 +283,42 @@ void R_s ( int nbas, hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mob, float alpha, fl
  *
  * */
 
-  cf Cga ;
-  cf zega ;
-  cf b_cos ;
-  cf b_sin ;
-  const cf di(0.0, 1.0) ;
-  Eigen::MatrixXcf moa ;
+  cd Cga ;
+  cd zega ;
+  cd b_cos ;
+  cd b_sin ;
+  const cd di(0.0, 1.0) ;
+  Eigen::MatrixXcd moa ;
 
   moa.resize( 2*nbas, 2*nbas) ;
   mob.setZero() ;
 
   a.get_mos( moa) ;
   /* Gamma rotation of the alpha block */
-  zega = -cf( d0, gamma/2.0) ;
+  zega = -cd( d0, gamma/2.0) ;
   Cga = std::exp( zega) ;
   moa.block( 0, 0, nbas, 2*nbas) = Cga*moa.block( 0, 0, nbas, 2*nbas) ;
  
   /* Gamma rotation of the beta block */
-  zega = cf( d0, gamma/2.0) ;
+  zega = cd( d0, gamma/2.0) ;
   Cga = std::exp( zega) ;
   moa.block( nbas, 0, nbas, 2*nbas) = Cga*moa.block( nbas, 0, nbas, 2*nbas) ;
 
   /* beta rotation mixing */
-  b_cos = cf( cos(beta/2.0), d0) ;
-  b_sin = cf( sin(beta/2.0), d0) ;
+  b_cos = cd( cos(beta/2.0), d0) ;
+  b_sin = cd( sin(beta/2.0), d0) ;
   // Alpha Block
   mob.block( 0, 0, nbas, 2*nbas) = b_cos*moa.block( 0, 0, nbas, 2*nbas) - b_sin*moa.block( nbas, 0, nbas, 2*nbas) ;
  // Beta Block
   mob.block( nbas, 0, nbas, 2*nbas) = b_cos*moa.block( nbas, 0, nbas, 2*nbas) + b_sin*moa.block( 0, 0, nbas, 2*nbas) ;
 
   /* Alpha rotation of the alpha block */
-  zega = -cf( d0, alpha/2.0) ;
+  zega = -cd( d0, alpha/2.0) ;
   Cga = std::exp( zega) ;
   mob.block( 0, 0, nbas, 2*nbas) = Cga*mob.block( 0, 0, nbas, 2*nbas) ;
 
   /* Alpha rotation of the beta block */
-  zega = cf( d0, alpha/2.0) ;
+  zega = cd( d0, alpha/2.0) ;
   Cga = std::exp( zega) ;
   mob.block( nbas, 0, nbas, 2*nbas) = Cga*mob.block( nbas, 0, nbas, 2*nbas) ;
 
@@ -328,7 +328,7 @@ void R_s ( int nbas, hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mob, float alpha, fl
 
 } ;
 
-void R_s ( int nbas, Eigen::Ref<Eigen::MatrixXcf> moa, Eigen::Ref<Eigen::MatrixXcf> mob, float alpha, float beta, float gamma) {
+void R_s ( int nbas, Eigen::Ref<Eigen::MatrixXcd> moa, Eigen::Ref<Eigen::MatrixXcd> mob, double alpha, double beta, double gamma) {
 
 /* This routine does a spin rotation on a determinant using Euler angles
  * alpha, beta and gamma 
@@ -343,39 +343,39 @@ void R_s ( int nbas, Eigen::Ref<Eigen::MatrixXcf> moa, Eigen::Ref<Eigen::MatrixX
  *
  * */
 
-  cf Cga ;
-  cf zega ;
-  cf b_cos ;
-  cf b_sin ;
-  const cf di(0.0, 1.0) ;
+  cd Cga ;
+  cd zega ;
+  cd b_cos ;
+  cd b_sin ;
+  const cd di(0.0, 1.0) ;
 
   mob.setZero() ;
 
   /* Gamma rotation of the alpha block */
-  zega = -cf( d0, gamma/2.0) ;
+  zega = -cd( d0, gamma/2.0) ;
   Cga = std::exp( zega) ;
   moa.block( 0, 0, nbas, 2*nbas) = Cga*moa.block( 0, 0, nbas, 2*nbas) ;
  
   /* Gamma rotation of the beta block */
-  zega = cf( d0, gamma/2.0) ;
+  zega = cd( d0, gamma/2.0) ;
   Cga = std::exp( zega) ;
   moa.block( nbas, 0, nbas, 2*nbas) = Cga*moa.block( nbas, 0, nbas, 2*nbas) ;
 
   /* beta rotation mixing */
-  b_cos = cf( cos(beta/2.0), d0) ;
-  b_sin = cf( sin(beta/2.0), d0) ;
+  b_cos = cd( cos(beta/2.0), d0) ;
+  b_sin = cd( sin(beta/2.0), d0) ;
   // Alpha Block
   mob.block( 0, 0, nbas, 2*nbas) = b_cos*moa.block( 0, 0, nbas, 2*nbas) - b_sin*moa.block( nbas, 0, nbas, 2*nbas) ;
  // Beta Block
   mob.block( nbas, 0, nbas, 2*nbas) = b_cos*moa.block( nbas, 0, nbas, 2*nbas) + b_sin*moa.block( 0, 0, nbas, 2*nbas) ;
 
   /* Alpha rotation of the alpha block */
-  zega = -cf( d0, alpha/2.0) ;
+  zega = -cd( d0, alpha/2.0) ;
   Cga = std::exp( zega) ;
   mob.block( 0, 0, nbas, 2*nbas) = Cga*mob.block( 0, 0, nbas, 2*nbas) ;
 
   /* Alpha rotation of the beta block */
-  zega = cf( d0, alpha/2.0) ;
+  zega = cd( d0, alpha/2.0) ;
   Cga = std::exp( zega) ;
   mob.block( nbas, 0, nbas, 2*nbas) = Cga*mob.block( nbas, 0, nbas, 2*nbas) ;
 

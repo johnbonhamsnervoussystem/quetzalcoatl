@@ -13,14 +13,14 @@
 
     int nb ;
     int nele ;
-    float e_energy ;
-    Eigen::MatrixXf hr ;
-    Eigen::MatrixXf sr ;
-    Eigen::MatrixXf mor ;
-    Eigen::MatrixXcf hc ;
-    Eigen::MatrixXcf sc ;
-    Eigen::MatrixXcf moc ;
-    Eigen::VectorXf eig ;
+    double e_energy ;
+    Eigen::MatrixXd hr ;
+    Eigen::MatrixXd sr ;
+    Eigen::MatrixXd mor ;
+    Eigen::MatrixXcd hc ;
+    Eigen::MatrixXcd sc ;
+    Eigen::MatrixXcd moc ;
+    Eigen::VectorXd eig ;
 
     if ( wfn == "rrhf" ) {
 
@@ -195,7 +195,7 @@
 
 } ;
 
-void hfwfn::fil_mos ( int nbasis, Eigen::Ref<Eigen::MatrixXf> mo, int wfn){
+void hfwfn::fil_mos ( int nbasis, Eigen::Ref<Eigen::MatrixXd> mo, int wfn){
 
 /* Real :: Use the hf class as a container */
   if ( wfn == 1 ) {
@@ -224,7 +224,7 @@ void hfwfn::fil_mos ( int nbasis, Eigen::Ref<Eigen::MatrixXf> mo, int wfn){
 
 } 
 
-void hfwfn::fil_mos ( int nbasis, Eigen::Ref<Eigen::MatrixXcf> mo, int wfn){
+void hfwfn::fil_mos ( int nbasis, Eigen::Ref<Eigen::MatrixXcd> mo, int wfn){
 
 /* Complex :: Use the hf class as a container */
   if ( wfn == 2 ) {
@@ -254,23 +254,23 @@ void hfwfn::fil_mos ( int nbasis, Eigen::Ref<Eigen::MatrixXcf> mo, int wfn){
 } 
 
 /* setter routines */
-void hfwfn::set_mos ( Eigen::Ref<Eigen::MatrixXf> mo){
+void hfwfn::set_mos ( Eigen::Ref<Eigen::MatrixXd> mo){
   mo_rcof = mo ;
   return ;
 }
 
-void hfwfn::set_mos ( Eigen::Ref<Eigen::MatrixXcf> mo){
+void hfwfn::set_mos ( Eigen::Ref<Eigen::MatrixXcd> mo){
   mo_ccof = mo ;
   return ;
 }
 
 /* getter routines */
-void hfwfn::get_mos ( Eigen::Ref<Eigen::MatrixXf> mo){
+void hfwfn::get_mos ( Eigen::Ref<Eigen::MatrixXd> mo){
   mo = mo_rcof ;
   return ;
 }
 
-void hfwfn::get_mos ( Eigen::Ref<Eigen::MatrixXcf> mo){
+void hfwfn::get_mos ( Eigen::Ref<Eigen::MatrixXcd> mo){
   mo = mo_ccof ;
   return ;
 }
@@ -291,10 +291,10 @@ void hfwfn::prt_mos( void) {
 
 void hfwfn::prt_eig( void) { std::cout << eig_v << std::endl ; return ; }
 
-void hfwfn::prt_ene( float nn){ std::cout << energy + nn << std::endl ; return ; }
+void hfwfn::prt_ene( double nn){ std::cout << energy + nn << std::endl ; return ; }
 
 /* Excitation operators */
-void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXf> mo, int i, int a){
+void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXd> mo, int i, int a){
   /* Return the mo coefficients with orbital i replaced by orbital a */
   mo = mo_rcof ;
   mo.col(i) = mo_rcof.col(a) ;
@@ -302,7 +302,7 @@ void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXf> mo, int i, int a){
   return ;
 }
 
-void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXcf> mo, int i, int a){
+void hfwfn::ia ( Eigen::Ref<Eigen::MatrixXcd> mo, int i, int a){
   mo = mo_ccof ;
   mo.col(i) = mo_ccof.col(a) ;
   mo.col(a) = mo_ccof.col(i) ;

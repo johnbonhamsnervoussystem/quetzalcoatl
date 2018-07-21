@@ -11,11 +11,11 @@
  * zi = complex( 0.0, 1.0)
  * */
 
-  typedef std::complex<float> cf ;
-  extern const float pi ;
-  extern const float d0 ;
-  extern const cf z0 ;
-  extern const cf z1 ;
-  extern const cf zi ;
+  typedef std::complex<double> cd ;
+  extern const double pi ;
+  extern const double d0 ;
+  extern const cd z0 ;
+  extern const cd z1 ;
+  extern const cd zi ;
 
 #endif

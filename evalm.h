@@ -9,48 +9,48 @@
 #ifndef EVALM_H
 #define EVALM_H
 
-  int ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXf> p, 
-    Eigen::Ref<Eigen::MatrixXf> G, const int nb) ;
+  int ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> G, const int nb) ;
 
-  int ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcf> p, 
-    Eigen::Ref<Eigen::MatrixXcf> G, const int nb) ;
+  int ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> G, const int nb) ;
 
-  int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXf> pt, 
-     Eigen::Ref<Eigen::MatrixXf> p, Eigen::Ref<Eigen::MatrixXf> g, const int nb) ;
+  int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> pt, 
+     Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> g, const int nb) ;
 
-  int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcf> pt, 
-     Eigen::Ref<Eigen::MatrixXcf> p, Eigen::Ref<Eigen::MatrixXcf> g, const int nb) ;
+  int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> pt, 
+     Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> g, const int nb) ;
 
-  int ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXf> p, 
-    Eigen::Ref<Eigen::MatrixXf> G, const int nb) ;
+  int ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> G, const int nb) ;
 
-  int ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcf> p, 
-    Eigen::Ref<Eigen::MatrixXcf> G, const int nb) ;
+  int ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> G, const int nb) ;
 
-  int coulblk( std::vector<tei>& i, const Eigen::Ref<Eigen::MatrixXf> p, 
-    Eigen::Ref<Eigen::MatrixXf> G, const int n) ;
+  int coulblk( std::vector<tei>& i, const Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> G, const int n) ;
 
-  int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXf> p, 
-    Eigen::Ref<Eigen::MatrixXf> G, const int nbasis) ;
+  int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> G, const int nbasis) ;
 
-  int coulblk( std::vector<tei>& i, const Eigen::Ref<Eigen::MatrixXcf> p, 
-    Eigen::Ref<Eigen::MatrixXcf> G, const int n) ;
+  int coulblk( std::vector<tei>& i, const Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> G, const int n) ;
 
-  int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcf> p, 
-    Eigen::Ref<Eigen::MatrixXcf> G, const int nbasis) ;
+  int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> G, const int nbasis) ;
 
-  float tranden ( common& c, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> d) ;
+  double tranden ( common& c, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXd> d) ;
 
-  cf tranden ( common& c, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> d) ;
+  cd tranden ( common& c, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcd> d) ;
 
-  float obop ( common& c, Eigen::Ref<Eigen::MatrixXf> o, hfwfn& a, hfwfn& b) ;
+  double obop ( common& c, Eigen::Ref<Eigen::MatrixXd> o, hfwfn& a, hfwfn& b) ;
 
-  cf obop ( common& c, Eigen::Ref<Eigen::MatrixXcf> o, hfwfn& a, hfwfn& b) ;
+  cd obop ( common& c, Eigen::Ref<Eigen::MatrixXcd> o, hfwfn& a, hfwfn& b) ;
 
-  float fockop ( common& c, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, float& O) ;
+  double fockop ( common& c, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, double& O) ;
 
-  cf fockop ( common& c, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, cf& O) ;
+  cd fockop ( common& c, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, cd& O) ;
 
-  cf fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, cf& ovl, std::ofstream& tfile, std::ofstream& ffile) ;
+  cd fockop ( common& com, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, cd& ovl, std::ofstream& tfile, std::ofstream& ffile) ;
 
 #endif

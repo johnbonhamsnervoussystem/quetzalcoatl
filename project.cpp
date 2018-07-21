@@ -37,7 +37,7 @@
  *
  * */
 
-void e_phf( common& com, hfwfn& refd, Eigen::Ref<Eigen::MatrixXcf> H, std::vector<tei>& intarr) {
+void e_phf( common& com, hfwfn& refd, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr) {
 
 /* 
  * Return the PHF energy given a determinant
@@ -56,13 +56,13 @@ void e_phf( common& com, hfwfn& refd, Eigen::Ref<Eigen::MatrixXcf> H, std::vecto
  // Variables
 
   int nbasis ;
-  float Intg = 0.0 ;
-  cf w_val ;
-  cf energy ;
-  cf ovl ;
-  cf n_k = cf( 0.0, 0.0) ;
-  cf h_k = cf( 0.0, 0.0) ;
-  Eigen::MatrixXcf tmp ;
+  double Intg = 0.0 ;
+  cd w_val ;
+  cd energy ;
+  cd ovl ;
+  cd n_k = cd( 0.0, 0.0) ;
+  cd h_k = cd( 0.0, 0.0) ;
+  Eigen::MatrixXcd tmp ;
 
  // One reference determinant. One for storage space.
 
@@ -70,12 +70,12 @@ void e_phf( common& com, hfwfn& refd, Eigen::Ref<Eigen::MatrixXcf> H, std::vecto
  
  // integration grid.
 
-  std::vector<float> w_a ;
-  std::vector<float> w_b ;
-  std::vector<float> w_g ;
-  std::vector<float> x_a ;
-  std::vector<float> x_b ;
-  std::vector<float> x_g ;
+  std::vector<double> w_a ;
+  std::vector<double> w_b ;
+  std::vector<double> w_g ;
+  std::vector<double> x_a ;
+  std::vector<double> x_b ;
+  std::vector<double> x_g ;
 
   nbasis = com.nbas() ;
   tmp.resize( 2*nbasis, 2*nbasis) ;

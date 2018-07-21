@@ -14,14 +14,14 @@
 
 /* Utilities that don't belong elsewhere. */
 
-float fact ( int n) {
+double fact ( int n) {
   /* Return the factorial of n */
-  float f=1.0 ;
+  double f=1.0 ;
 
   if ( n < 1 ) { return 1.0 ;}
 
   while ( n > 1 ) {
-    f = f*float(n) ;
+    f = f*double(n) ;
     n+= -1 ;
   }
 
@@ -29,25 +29,25 @@ float fact ( int n) {
 
 } ;
 
-void oao( int nbasis, hfwfn& a, Eigen::MatrixXf s) {
+void oao( int nbasis, hfwfn& a, Eigen::MatrixXd s) {
 
   /* Given an overlap and a Slater determinant, check if the determinant is
    * already in the orthogonal atomic orbital basis.  If not, put it into the 
    * oao basis. */
 
   int iwfnt ;
-  float detr ;
-  float detru ;
-  float d1 = 1e0 ;
-  float thresh = 1e-7 ;
-  std::complex<float> detc ;
-  std::complex<float> detcu ;
-  Eigen::MatrixXf mor ; 
-  Eigen::MatrixXf tmpr ; 
-  Eigen::MatrixXf shf_r ; 
-  Eigen::MatrixXcf moc ; 
-  Eigen::MatrixXcf tmpc ; 
-  Eigen::MatrixXcf shf_c ; 
+  double detr ;
+  double detru ;
+  double d1 = 1e0 ;
+  double thresh = 1e-7 ;
+  std::complex<double> detc ;
+  std::complex<double> detcu ;
+  Eigen::MatrixXd mor ; 
+  Eigen::MatrixXd tmpr ; 
+  Eigen::MatrixXd shf_r ; 
+  Eigen::MatrixXcd moc ; 
+  Eigen::MatrixXcd tmpc ; 
+  Eigen::MatrixXcd shf_c ; 
   
   iwfnt = a.get_wti() ;
   if ( iwfnt % 2 == 1 ){
@@ -248,16 +248,16 @@ void oao( int nbasis, hfwfn& a, Eigen::MatrixXf s) {
 
   }  ;
 
-void oao( int nbasis, Eigen::Ref<Eigen::MatrixXf> ouv, Eigen::MatrixXf s) {
+void oao( int nbasis, Eigen::Ref<Eigen::MatrixXd> ouv, Eigen::MatrixXd s) {
 
   /* Given an overlap and matrix elements, put the matrix elements into
   *  the orthogonal ao basis.  Since our basis will alwyas be real, the
   *  routine will only accept the nbasis*nbasis real matrix.  Any conversion
   *  to complex or ghf must occur in the calling routines.*/
 
-  Eigen::MatrixXf tmpr ;
-  Eigen::MatrixXf shf_r ;
-  Eigen::MatrixXcf shf_c ;
+  Eigen::MatrixXd tmpr ;
+  Eigen::MatrixXd shf_r ;
+  Eigen::MatrixXcd shf_c ;
 
   shf_r.resize( nbasis, nbasis) ;
   shf_c.resize( nbasis, nbasis) ;
@@ -277,15 +277,15 @@ void oao( int nbasis, Eigen::Ref<Eigen::MatrixXf> ouv, Eigen::MatrixXf s) {
 
   } ;
 
-void oao( int nbasis, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::MatrixXf s) {
+void oao( int nbasis, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::MatrixXd s) {
 
   /* 
    * Given an overlap and two electron integrals.  Convert them to an
    * orthogonal basis.
    */
 
-  Eigen::MatrixXf shf_r ;
-  Eigen::MatrixXcf shf_c ;
+  Eigen::MatrixXd shf_r ;
+  Eigen::MatrixXcd shf_c ;
   int l_lim ;
   int bra ;
   int ket ;
@@ -297,9 +297,9 @@ void oao( int nbasis, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::Ma
   int ol ;
   int t ;
   tei tmp_tei ;
-  float val ;
-  float shfprd ;
-  float oao_tei ;
+  double val ;
+  double shfprd ;
+  double oao_tei ;
 
   shf_r.resize( nbasis, nbasis) ;
   shf_c.resize( nbasis, nbasis) ;
@@ -377,9 +377,9 @@ void oao( int nbasis, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::Ma
 
   } ;
 
-void eulrgrd ( int n_psi, int n_thet, int n_phi, std::vector<float>& w_psi, std::vector<float>& w_thet, 
-     std::vector<float>& w_phi, std::vector<float>& x_psi, std::vector<float>& x_thet, 
-     std::vector<float>& x_phi, int SG){
+void eulrgrd ( int n_psi, int n_thet, int n_phi, std::vector<double>& w_psi, std::vector<double>& w_thet, 
+     std::vector<double>& w_phi, std::vector<double>& x_psi, std::vector<double>& x_thet, 
+     std::vector<double>& x_phi, int SG){
 
 /* Set up a grid to integrate over the Euler angles.  The grid and weights are set up to satisfy this equation
  *
@@ -396,9 +396,9 @@ void eulrgrd ( int n_psi, int n_thet, int n_phi, std::vector<float>& w_psi, std:
  *
  * */
 
-  const float tpi=2.0*pi ;
-  float phi_lim ;
-  float fjunk ;
+  const double tpi=2.0*pi ;
+  double phi_lim ;
+  double fjunk ;
 
   for ( int i=0; i< n_psi; i++ ){
     w_psi.push_back(d0) ;
@@ -445,7 +445,7 @@ void eulrgrd ( int n_psi, int n_thet, int n_phi, std::vector<float>& w_psi, std:
 
 } ;
 
-void K_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
+void K_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mo, int nb ){
 /* 
  * Apply the complex conjugation operator to the molecular orbitals. 
  * Return the determinant to be used in the calling routine.
@@ -453,7 +453,7 @@ void K_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
  * It is assumed mo has been dimensioned correctly already.
  * */
 
-  Eigen::MatrixXcf tmp ;
+  Eigen::MatrixXcd tmp ;
 
   tmp.resize( 2*nb, 2*nb) ;
 
@@ -467,7 +467,7 @@ void K_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
 
 } ;
 
-void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
+void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mo, int nb ){
 /* 
  * Apply the complex conjugation operator to the molecular orbitals. 
  * Return the determinant to be used in the calling routine.
@@ -475,7 +475,7 @@ void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
  * It is assumed mo has been dimensioned correctly already.
  * */
 
-  float Nnty ;
+  double Nnty ;
 
   Nnty = pi/2.0e0 ;
 
@@ -485,7 +485,7 @@ void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
 
 } ;
 
-void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
+void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mo, int nb ){
 /* 
  * Apply the complex conjugation operator to the molecular orbitals. 
  * Return the determinant to be used in the calling routine.
@@ -493,8 +493,8 @@ void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> mo, int nb ){
  * It is assumed mo has been dimensioned correctly already.
  * */
 
-  Eigen::MatrixXcf tmp ;
-  float Nnty ;
+  Eigen::MatrixXcd tmp ;
+  double Nnty ;
 
   tmp.resize( 2*nb, 2*nb) ;
   Nnty = pi/2.0e0 ;

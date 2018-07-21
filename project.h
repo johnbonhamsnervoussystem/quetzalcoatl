@@ -6,7 +6,7 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
-void e_phf( common& com, hfwfn& refd, Eigen::Ref<Eigen::MatrixXcf> H, std::vector<tei>& intarr) ;
+void e_phf( common& com, hfwfn& refd, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr) ;
 
 #endif
 

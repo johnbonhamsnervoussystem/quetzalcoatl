@@ -1,4 +1,6 @@
-#include<Eigen/Dense>
+#include <Eigen/Dense>
+#include <vector>
+#include <string>
 
 #ifndef COMMON_H
 #define COMMON_H
@@ -20,6 +22,7 @@ class common {
 
  * Stored Matrices
  *
+   coord - coordinates matrix
    s - overlap matrix
    h - core hamiltonian
 
@@ -27,49 +30,54 @@ class common {
 
 private :
   int nbasis ;
-  int nbsuse ;
   int n2ei   ;
   int natoms ;
   int nel    ;
   int nal    ;
   int nbe    ;
-  float nn   ;
+  double nn   ;
+  std::string basis_name ;
 
-  Eigen::MatrixXf s_c ;
-  Eigen::MatrixXf h_c ;
+  Eigen::MatrixXd s_c ;
+  Eigen::MatrixXd h_c ;
+  Eigen::VectorXi a_c ;
+  Eigen::MatrixXd coord ;
 
 public :
 /* Set the data */
   void nbas( int n) ;
-  void nbsu( int n) ;
   void ntei( int n) ;
   void natm( int n) ;
   void nele( int n) ;
   void nalp( int n) ;
   void nbet( int n) ;
-  void nrep( float f) ;
+  void nrep( double f) ;
+  void bnam( std::string n) ;
+
+/* Coordinates */
+  void setcoord( std::vector<std::vector<double>> c) ;
 
 /* Set matrix elements */
-  void setS( Eigen::MatrixXf s_in, int nb) ;
-  void setH( Eigen::MatrixXf h_in, int nb) ;
+  void setS( Eigen::MatrixXd s) ;
+  void setH( Eigen::MatrixXd h) ;
+  void setA( std::vector<int> a) ;
+  void setC( std::vector<std::vector<double>> c) ;
 
 /* Retrieve the data */
   int nbas( void) ;
-  int nbsu( void) ;
   int ntei( void) ;
   int natm( void) ;
   int nele( void) ;
   int nalp( void) ;
   int nbet( void) ;
-  float nrep( void) ;
-
-/* Access matrix elements */
-  float s( int i, int j) ;
-  float h( int i, int j) ;
+  double nrep( void) ;
+  std::string bnam( void) ;
 
 /* Retrieve a matrix */
-  Eigen::MatrixXf getS( void) ;
-  Eigen::MatrixXf getH( void) ;
+  Eigen::MatrixXd getS( void) ;
+  Eigen::MatrixXd getH( void) ;
+  Eigen::VectorXi getA( void) ;
+  Eigen::MatrixXd getC( void) ;
 
 } ;
 #endif

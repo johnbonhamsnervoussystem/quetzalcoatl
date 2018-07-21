@@ -24,17 +24,17 @@
  *
  * */
 
-void canort( Eigen::Ref<Eigen::MatrixXf> const s, Eigen::Ref<Eigen::MatrixXcf> xs , int& dim) {
+void canort( Eigen::Ref<Eigen::MatrixXd> const s, Eigen::Ref<Eigen::MatrixXcd> xs , int& dim) {
   /*  
  *    Find an orthogonal transformation using canonical orthogonalization for a real matrix
  *    */
 
   int indx=-1 ;
-  float thresh = 1e-7 ;
-  std::complex<float> eig ;
-  Eigen::EigenSolver<Eigen::MatrixXf> s_diag( s, true) ;
-  Eigen::MatrixXcf s_U ;
-  Eigen::VectorXcf s_eig ;
+  double thresh = 1e-7 ;
+  std::complex<double> eig ;
+  Eigen::EigenSolver<Eigen::MatrixXd> s_diag( s, true) ;
+  Eigen::MatrixXcd s_U ;
+  Eigen::VectorXcd s_eig ;
 
   /* Allocate some space to build our transformation matrix. */
 
@@ -74,17 +74,17 @@ void canort( Eigen::Ref<Eigen::MatrixXf> const s, Eigen::Ref<Eigen::MatrixXcf> x
 
 } ;
 
-void canort( Eigen::Ref<Eigen::MatrixXcf> const s, Eigen::Ref<Eigen::MatrixXcf> xs , int& dim) {
+void canort( Eigen::Ref<Eigen::MatrixXcd> const s, Eigen::Ref<Eigen::MatrixXcd> xs , int& dim) {
   /*  
  *    Find an orthogonal transformation using canonical orthogonalization for a complex matrix
  *    */
 
   int indx=-1 ;
-  float thresh = 1e-7 ;
-  std::complex<float> eig ;
-  Eigen::ComplexEigenSolver<Eigen::MatrixXcf> s_diag( s, true) ;
-  Eigen::MatrixXcf s_U ;
-  Eigen::VectorXcf s_eig ;
+  double thresh = 1e-7 ;
+  std::complex<double> eig ;
+  Eigen::ComplexEigenSolver<Eigen::MatrixXcd> s_diag( s, true) ;
+  Eigen::MatrixXcd s_U ;
+  Eigen::VectorXcd s_eig ;
 
   /* Allocate some space to build our transformation matrix. */
 
@@ -124,7 +124,7 @@ void canort( Eigen::Ref<Eigen::MatrixXcf> const s, Eigen::Ref<Eigen::MatrixXcf> 
 
 } ;
 
-void ahm_exp( Eigen::Ref<Eigen::MatrixXcf> x, Eigen::Ref<Eigen::MatrixXcf> u, int dim,  int opt) {
+void ahm_exp( Eigen::Ref<Eigen::MatrixXcd> x, Eigen::Ref<Eigen::MatrixXcd> u, int dim,  int opt) {
 /*
  *  Anti-Hermetian Matrix EXPonential
  *
@@ -147,10 +147,10 @@ void ahm_exp( Eigen::Ref<Eigen::MatrixXcf> x, Eigen::Ref<Eigen::MatrixXcf> u, in
  *
  * */ 
   int n = 0 ;
-  float denom=1.0 ;
-  Eigen::ComplexEigenSolver<Eigen::MatrixXcf> xs ;
-  Eigen::MatrixXcf d ;
-  Eigen::MatrixXcf tmp ;
+  double denom=1.0 ;
+  Eigen::ComplexEigenSolver<Eigen::MatrixXcd> xs ;
+  Eigen::MatrixXcd d ;
+  Eigen::MatrixXcd tmp ;
 
   tmp.resize( dim, dim) ;
   d.resize( dim, dim) ;
@@ -178,7 +178,7 @@ void ahm_exp( Eigen::Ref<Eigen::MatrixXcf> x, Eigen::Ref<Eigen::MatrixXcf> u, in
         u += d ;
         n ++ ;
         tmp = d*x ;
-        denom = 1.0/static_cast<float>(n) ;
+        denom = 1.0/static_cast<double>(n) ;
         d = denom*tmp ;
       }
 
@@ -194,7 +194,7 @@ void ahm_exp( Eigen::Ref<Eigen::MatrixXcf> x, Eigen::Ref<Eigen::MatrixXcf> u, in
 
 } ;
 
-void trci( common& com, std::vector<hfwfn>& det, Eigen::Ref<Eigen::MatrixXcf> H, std::vector<tei>& intarr) {
+void trci( common& com, std::vector<hfwfn>& det, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr) {
 
 /*
  * This routine accepts N determinants into the vector. These determinants
@@ -203,10 +203,10 @@ void trci( common& com, std::vector<hfwfn>& det, Eigen::Ref<Eigen::MatrixXcf> H,
  * determinants.
  * */
 
-  Eigen::MatrixXcf CI_s ;
-  Eigen::MatrixXcf CI_h ;
-  Eigen::MatrixXcf tmo ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcf> ci ;
+  Eigen::MatrixXcd CI_s ;
+  Eigen::MatrixXcd CI_h ;
+  Eigen::MatrixXcd tmo ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ci ;
   hfwfn bra ;
   hfwfn ket ;
   int CI_d ;
@@ -298,16 +298,16 @@ void trci( common& com, std::vector<hfwfn>& det, Eigen::Ref<Eigen::MatrixXcf> H,
 
 } ;
 
-void trci( common& com, std::vector<hfwfn>& det, Eigen::Ref<Eigen::MatrixXcf> H, std::vector<tei>& intarr, std::string& trd, std::string& fop) {
+void trci( common& com, std::vector<hfwfn>& det, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr, std::string& trd, std::string& fop) {
 
 /*
  * The last two arguments given are files for writing intermediate quantities in the derivatives.
  * */
 
-  Eigen::MatrixXcf CI_s ;
-  Eigen::MatrixXcf CI_h ;
-  Eigen::MatrixXcf tmo ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcf> ci ;
+  Eigen::MatrixXcd CI_s ;
+  Eigen::MatrixXcd CI_h ;
+  Eigen::MatrixXcd tmo ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> ci ;
   hfwfn bra ;
   hfwfn ket ;
   int CI_d ;

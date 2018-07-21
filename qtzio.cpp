@@ -1,4 +1,5 @@
 /* Routines for Quetz I/O */
+#include "common.h"
 #include "constants.h"
 #include <iostream>
 #include <complex>
@@ -9,10 +10,67 @@
 #include <sys/stat.h>
 #include "qtzio.h"
 #include "tei.h"
-#include "common.h"
 using namespace Eigen ;
 using namespace std ;
 
+void read_input( common& com, const std::string& inpfile){
+ /* Read the input file and save the information into common. */
+  int i_junk ;
+  int at_count = 0 ;
+  std::vector<double> tmp(3) ;
+  double d_junk ;
+  size_t pos = 0 ;
+  std::string line ;
+  std::string s_junk ;
+  std::string delim = "," ;
+  std::ifstream jobfile ;
+  std::vector<int> atnum ;
+  std::vector<std::vector<double>> t_c ;
+
+  jobfile.open( inpfile, std::ifstream::in ) ;
+
+  while( getline( jobfile, line)){
+    if ( line.substr(0,7) == "jobtyp " ){
+      i_junk = stoi(line.substr(9)) ;
+    }  else if ( line.substr(0,7) == "basis " ){
+      com.bnam( line.substr(9)) ;
+    }  else if ( line.substr(0,7) == "geom   " ) {
+      getline( jobfile, line) ;
+      while( line.substr(0,5) != " end" ){
+        at_count++ ;
+        pos = line.find(delim) ;
+        i_junk = stoi(line.substr( 0, pos)) ;
+        atnum.push_back( i_junk) ;
+        line.erase( 0, pos + delim.length()) ;
+        pos = line.find(delim) ;
+        tmp[0] = stod(line.substr( 0, pos)) ;
+        line.erase( 0, pos + delim.length()) ;
+        pos = line.find(delim) ;
+        tmp[1] = stod(line.substr( 0, pos)) ;
+        line.erase( 0, pos + delim.length()) ;
+        pos = line.find(delim) ;
+        tmp[2] = stod(line.substr( 0, pos)) ;
+        line.erase( 0, pos + delim.length()) ;
+        getline( jobfile, line) ;
+        t_c.push_back( tmp) ;
+        }
+      com.natm( at_count) ;
+      com.setA( atnum) ;
+      com.setC( t_c) ;
+    }  else if ( line.substr(0,7) == "nalpha " ) {
+      i_junk = stoi(line.substr(9)) ;
+      com.nalp(i_junk) ;
+    }  else if ( line.substr(0,7) == "nbeta  " ) {
+      i_junk = stoi(line.substr(9)) ;
+      com.nbet(i_junk) ;
+    }
+  }
+
+  com.nele(com.nalp() + com.nbet()) ;
+
+  return ;
+
+} 
 
 void getmel( string file1, string file2, vector<tei>& intarr, common& com) {
 /* 
@@ -20,16 +78,15 @@ void getmel( string file1, string file2, vector<tei>& intarr, common& com) {
  *
  * */
   int nbasis=0 ;
-  int nbsuse=0 ;
   int i ;
   int j ;
   int i_v ;
   int j_v ;
   int k_v ;
   int l_v ;
-  float int_v ;
-  MatrixXf ovl ;
-  MatrixXf ham ;
+  double int_v ;
+  MatrixXd ovl ;
+  MatrixXd ham ;
   ifstream input_file ;
   string line ;
   tei tmp_tei ;
@@ -37,8 +94,6 @@ void getmel( string file1, string file2, vector<tei>& intarr, common& com) {
   /* This reads in data formatted from a matrix element file 
    to a second file and finally to here. */
   nbasis = com.nbas() ;
-  nbsuse = com.nbsu() ;
-
 
   ham.resize( nbasis, nbasis) ;
   ovl.resize( nbasis, nbasis) ;
@@ -76,9 +131,9 @@ void getmel( string file1, string file2, vector<tei>& intarr, common& com) {
       }
   
     input_file.close() ;
-    com.setS( ovl, nbasis) ;
+    com.setS( ovl) ;
     ovl.resize(0,0) ;
-    com.setH( ham, nbasis) ;
+    com.setH( ham) ;
     ham.resize(0,0) ;
 
     }
@@ -120,9 +175,9 @@ void rdsdet ( int nbasis, vector<string>& matel, vector<hfwfn>& det) {
   string line ;
   string rc_str ;
   string ic_str ;
-  float rc_fl ;
-  float ic_fl ;
-  Eigen::MatrixXcf moc;
+  double rc_fl ;
+  double ic_fl ;
+  Eigen::MatrixXcd moc;
 
   c_len = nbasis*nbasis*4 ;
   moc.resize( 2*nbasis, 2*nbasis) ;
@@ -143,7 +198,7 @@ void rdsdet ( int nbasis, vector<string>& matel, vector<hfwfn>& det) {
         ic_str = line.substr(16,30) ;
         rc_fl = stof(rc_str) ;
         ic_fl = stof(ic_str) ;
-        moc( jrow, jcol) = cf (rc_fl, ic_fl) ;
+        moc( jrow, jcol) = cd (rc_fl, ic_fl) ;
       }
 
     }

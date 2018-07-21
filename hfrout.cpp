@@ -22,19 +22,19 @@
  *
  * */
 
-float rrhfdia( Eigen::Ref<Eigen::MatrixXf> h, Eigen::Ref<Eigen::MatrixXf> s, std::vector<tei>& intarr, int nbasis, int nele, Eigen::Ref<Eigen::MatrixXf> c, Eigen::Ref<Eigen::VectorXf> eig){
+double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, int nbasis, int nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig){
 
   /* Real restricted Hartree-Fock solved by repeated diagonalization. */
-  Eigen::MatrixXf f ;
-  Eigen::MatrixXf g ;
-  Eigen::MatrixXf p ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXf> f_diag ;
+  Eigen::MatrixXd f ;
+  Eigen::MatrixXd g ;
+  Eigen::MatrixXd p ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> f_diag ;
   int iter=0 ;
   int occ ;
-  float thresh=1e-8 ;
-  float energy ;
-  float ene_p=d0 ;
-  float e_dif=1e0 ;
+  double thresh=1e-8 ;
+  double energy ;
+  double ene_p=d0 ;
+  double e_dif=1e0 ;
 
   occ = nele/2 ;
   f.resize( nbasis, nbasis) ;
@@ -79,21 +79,21 @@ float rrhfdia( Eigen::Ref<Eigen::MatrixXf> h, Eigen::Ref<Eigen::MatrixXf> s, std
 
 } ;
 
-float crhfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcf> c, Eigen::Ref<Eigen::VectorXf> eig){
+double crhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig){
 
   /* Compelx restricted Hartree-Fock solved by repeated diagonalization. */
-  typedef std::complex<float> cf ;
-  Eigen::MatrixXcf f ;
-  Eigen::MatrixXcf g ;
-  Eigen::MatrixXcf p ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcf> f_diag ;
+  typedef std::complex<double> cf ;
+  Eigen::MatrixXcd f ;
+  Eigen::MatrixXcd g ;
+  Eigen::MatrixXcd p ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> f_diag ;
   int iter=0 ;
   int occ ;
-  float thresh=1e-8 ;
-  float energy=d0 ;
-  std::complex<float> t_f ;
-  float ene_p=d0 ;
-  float e_dif=1e0 ;
+  double thresh=1e-8 ;
+  double energy=d0 ;
+  std::complex<double> t_f ;
+  double ene_p=d0 ;
+  double e_dif=1e0 ;
 
   occ = nele/2 ;
   f.resize( nbasis, nbasis) ;
@@ -133,24 +133,24 @@ float crhfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf
 
 } ;
 
-float ruhfdia( Eigen::Ref<Eigen::MatrixXf> const h, Eigen::Ref<Eigen::MatrixXf> s, std::vector<tei>& intarr, const int& nbasis, const int& nalp, const int& nbet, Eigen::Ref<Eigen::MatrixXf> c_a, Eigen::Ref<Eigen::MatrixXf> c_b, Eigen::Ref<Eigen::VectorXf> eig){
+double ruhfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, const int& nbasis, const int& nalp, const int& nbet, Eigen::Ref<Eigen::MatrixXd> c_a, Eigen::Ref<Eigen::MatrixXd> c_b, Eigen::Ref<Eigen::VectorXd> eig){
 
   /* Real unrestricted Hartree-Fock solved by repeated diagonalization. */
-  Eigen::MatrixXf f_a ;
-  Eigen::MatrixXf f_b ;
-  Eigen::MatrixXf g ;
-  Eigen::MatrixXf p_a ;
-  Eigen::MatrixXf p_b ;
-  Eigen::MatrixXf p_t ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXf> f_diag ;
+  Eigen::MatrixXd f_a ;
+  Eigen::MatrixXd f_b ;
+  Eigen::MatrixXd g ;
+  Eigen::MatrixXd p_a ;
+  Eigen::MatrixXd p_b ;
+  Eigen::MatrixXd p_t ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> f_diag ;
 
   int iter=0 ;
   int nbas ;
-  float thresh=1e-8 ;
-  float energy=d0 ;
-  float t_f=d0 ;
-  float ene_p=d0 ;
-  float e_dif=1e0 ;
+  double thresh=1e-8 ;
+  double energy=d0 ;
+  double t_f=d0 ;
+  double ene_p=d0 ;
+  double e_dif=1e0 ;
 
   nbas = 2*nbasis ;
   f_a.resize( nbasis, nbasis) ;
@@ -215,25 +215,25 @@ float ruhfdia( Eigen::Ref<Eigen::MatrixXf> const h, Eigen::Ref<Eigen::MatrixXf> 
 
 } ;
 
-float cuhfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf> s, std::vector<tei>& intarr, const int& nbasis, const int& nalp, const int& nbet, Eigen::Ref<Eigen::MatrixXcf> c_a, Eigen::Ref<Eigen::MatrixXcf> c_b, Eigen::Ref<Eigen::VectorXf> eig){
+double cuhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nalp, const int& nbet, Eigen::Ref<Eigen::MatrixXcd> c_a, Eigen::Ref<Eigen::MatrixXcd> c_b, Eigen::Ref<Eigen::VectorXd> eig){
 
   /* Complex unrestricted Hartree-Fock solved by repeated diagonalization. */
-  typedef std::complex<float> cf ;
-  Eigen::MatrixXcf f_a ;
-  Eigen::MatrixXcf f_b ;
-  Eigen::MatrixXcf g ;
-  Eigen::MatrixXcf p_a ;
-  Eigen::MatrixXcf p_b ;
-  Eigen::MatrixXcf p_t ;
-  Eigen::MatrixXcf temp ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcf> f_diag ;
+  typedef std::complex<double> cf ;
+  Eigen::MatrixXcd f_a ;
+  Eigen::MatrixXcd f_b ;
+  Eigen::MatrixXcd g ;
+  Eigen::MatrixXcd p_a ;
+  Eigen::MatrixXcd p_b ;
+  Eigen::MatrixXcd p_t ;
+  Eigen::MatrixXcd temp ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> f_diag ;
   int iter=0 ;
   int nbas ;
-  float thresh=1e-8 ;
-  float energy=d0 ;
-  std::complex<float> t_f ;
-  float ene_p=d0 ;
-  float e_dif=1e0 ;
+  double thresh=1e-8 ;
+  double energy=d0 ;
+  std::complex<double> t_f ;
+  double ene_p=d0 ;
+  double e_dif=1e0 ;
 
   nbas = 2*nbasis ;
   f_a.resize( nbasis, nbasis) ;
@@ -301,21 +301,21 @@ float cuhfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf
 
 } ;
 
-float rghfdia( Eigen::Ref<Eigen::MatrixXf> const h, Eigen::Ref<Eigen::MatrixXf> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXf> c, Eigen::Ref<Eigen::VectorXf> eig){
+double rghfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig){
 
   /* Real generalized Hartree-Fock solved by repeated diagonalization. */
-  Eigen::MatrixXf f ;
-  Eigen::MatrixXf g ;
-  Eigen::MatrixXf p ;
-  Eigen::MatrixXf h_f ;
-  Eigen::MatrixXf s_f ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXf> f_diag ;
+  Eigen::MatrixXd f ;
+  Eigen::MatrixXd g ;
+  Eigen::MatrixXd p ;
+  Eigen::MatrixXd h_f ;
+  Eigen::MatrixXd s_f ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> f_diag ;
   int iter=0 ;
   int nbas ;
-  float thresh=1e-8 ;
-  float energy=d0 ;
-  float ene_p=d0 ;
-  float e_dif=1e0 ;
+  double thresh=1e-8 ;
+  double energy=d0 ;
+  double ene_p=d0 ;
+  double e_dif=1e0 ;
 
   nbas = nbasis*2 ;
   f.resize( nbas, nbas) ;
@@ -366,23 +366,23 @@ float rghfdia( Eigen::Ref<Eigen::MatrixXf> const h, Eigen::Ref<Eigen::MatrixXf> 
 
 } ;
 
-float cghfdia( Eigen::Ref<Eigen::MatrixXcf> const h, Eigen::Ref<Eigen::MatrixXcf> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcf> c, Eigen::Ref<Eigen::VectorXf> eig){
+double cghfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig){
 
   /* Compelx restricted Hartree-Fock solved by repeated diagonalization. */
-  typedef std::complex<float> cf ;
-  Eigen::MatrixXcf f ;
-  Eigen::MatrixXcf g ;
-  Eigen::MatrixXcf p ;
-  Eigen::MatrixXcf h_f ;
-  Eigen::MatrixXcf s_f ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcf> f_diag ;
+  typedef std::complex<double> cf ;
+  Eigen::MatrixXcd f ;
+  Eigen::MatrixXcd g ;
+  Eigen::MatrixXcd p ;
+  Eigen::MatrixXcd h_f ;
+  Eigen::MatrixXcd s_f ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> f_diag ;
   int iter=0 ;
   int nbas ;
-  float thresh=1e-8 ;
-  float energy=d0 ;
-  std::complex<float> t_f ;
-  float ene_p=d0 ;
-  float e_dif=1e0 ;
+  double thresh=1e-8 ;
+  double energy=d0 ;
+  std::complex<double> t_f ;
+  double ene_p=d0 ;
+  double e_dif=1e0 ;
 
   nbas = nbasis*2 ;
   f.resize( nbas, nbas) ;

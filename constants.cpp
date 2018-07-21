@@ -2,9 +2,9 @@
 #include <cmath>
 #include <complex>
 
-  const float pi = 4.0e0*std::atan(1.0e0) ;
-  const float d0 = 0.0e0 ;
-  const cf z0 = cf( 0.0, 0.0) ;
-  const cf z1 = cf( 1.0, 0.0) ;
-  const cf zi = cf( 0.0, 1.0) ;
+  const double pi = 4.0e0*std::atan(1.0e0) ;
+  const double d0 = 0.0e0 ;
+  const cd z0 = cd( 0.0e0, 0.0e0) ;
+  const cd z1 = cd( 1.0e0, 0.0e0) ;
+  const cd zi = cd( 0.0e0, 1.0e0) ;
 

@@ -1,26 +1,27 @@
-#include "hfwfn.h"
+#include "constants.h"
 #include "common.h"
 #include <Eigen/Dense>
+#include "hfwfn.h"
 
 #ifndef WIGNER_H
 #define WIGNER_H
 
-float d_cof ( int j, int m, int k, int n) ;
+double d_cof ( int j, int m, int k, int n) ;
 
-float d_cof ( float j, float m, float k, int n) ;
+double d_cof ( double j, double m, double k, int n) ;
 
-float small_wd ( int j, int m, int k, float beta) ;
+double small_wd ( int j, int m, int k, double beta) ;
 
-float small_wd ( float j, float m, float k, float beta) ;
+double small_wd ( double j, double m, double k, double beta) ;
 
-std::complex<float> wigner_D( int j, int m, int k, float alpha, float beta, float gamma) ;
+std::complex<double> wigner_D( int j, int m, int k, double alpha, double beta, double gamma) ;
  
-std::complex<float> wigner_D( float j, float m, float k, float alpha, float beta, float gamma) ;
+std::complex<double> wigner_D( double j, double m, double k, double alpha, double beta, double gamma) ;
 
-void R_s ( common& c, hfwfn& a, hfwfn& b, float al, float be, float ga) ;
+void R_s ( common& c, hfwfn& a, hfwfn& b, double al, double be, double ga) ;
 
-void R_s ( int n, hfwfn& a, Eigen::Ref<Eigen::MatrixXcf> m, float al, float be, float ga) ;
+void R_s ( int n, hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, double al, double be, double ga) ;
 
-void R_s ( int n, Eigen::Ref<Eigen::MatrixXcf> moa, Eigen::Ref<Eigen::MatrixXcf> mob, float al, float be, float ga) ;
+void R_s ( int n, Eigen::Ref<Eigen::MatrixXcd> moa, Eigen::Ref<Eigen::MatrixXcd> mob, double al, double be, double ga) ;
 
 #endif

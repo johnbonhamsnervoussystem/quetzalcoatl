@@ -1,12 +1,16 @@
 /* Primary routine for Quetzalcoatl */
 #include "constants.h"
-#include <iostream>
 #include <complex>
-#include <string>
+#include <math.h>
 #include <fstream>
+#include <iostream>
+#include <string>
 #include <vector>
 #include <Eigen/Dense>
+#include <sstream>
 #include <fstream>
+#include <ctime>
+#include <libint2.h>
 #include "binio.h"
 #include "common.h"
 #include "evalm.h"
@@ -19,16 +23,14 @@
 #include "util.h"
 #include "wigner.h"
 
-int main() {
+int main(int argc, char *argv[]) {
 /*
  * This is my own implementation of various electronic stucture methods.  
  * There is lots of work to do and improvements to be made and the purpose
- * is supposed to be minaly pedagoical as well as producing results.  More 
- * accurate and faster implementations will always be possible.  This is 
- * more like a sandbox to try new things.
+ * is supposed to be minamly pedagoical as well as producing results. 
  *
  * To Do :: 
- *  
+ *   - Parse options and set route through program.
  *   -implement stability 
  *   -matrix elements between determinants
  *   -Eventually, I will need to write a routine which grabs a chunk of memory,
@@ -50,99 +52,110 @@ int main() {
   ham - matrix containing the core hamiltonian
   xmat - matrix containing the transformation to an orthogonal ao basis.
   */
-   
-  std::ifstream job_file ;
-  std::string readfile ;
-  std::string line ;
   common com ;
   std::vector<tei> intarr ;
   std::vector<tei> tmparr ;
 
-  typedef std::complex<float> cf ;
-  int junk ;
-  int job=0  ; 
-  float fjunk ;
-  cf ejunk ;
-  cf ojunk ;
+  int job=0  ;
+  double cx = 0.0e0 ;
+  double cy = 0.0e0 ;
+  double cz = 0.0e0 ;
+  double r = 0.0e0 ;
+  double r2 = 0.0e0 ;
+  double n_rep = 0.0e0 ;
+  cd ejunk ;
+  cd ojunk ;
   hfwfn det1 ;
   hfwfn det2 ;
   std::vector<hfwfn> tst_vec ;
   std::vector<std::string> wfn_vec ;
   std::string trden="tden.rwf" ;
   std::string fokmat="fmat.rwf" ;
-  Eigen::MatrixXf h ;
-  Eigen::MatrixXf s ;
-  Eigen::MatrixXcf h_full ;
-  Eigen::MatrixXf s_full ;
-  Eigen::MatrixXcf mos ;
-  std::ifstream tden ;
-  std::ifstream fmat ;
-/*Eigen::MatrixXf mosf ;
-  Eigen::MatrixXf tmp ; */
+  Eigen::MatrixXd c ;
+  Eigen::VectorXi a ;
+  /* File reading and header variables. */
+  std::stringstream ss ;
+  std::string inpfile ;
+  std::time_t t = std::time(0) ;
+  std::tm* now = std::localtime(&t) ;
+/*Eigen::MatrixXd mosf ;
+  Eigen::MatrixXd tmp ; */
 
 /* Open and read the input file */
 
 /*   Let's just us a test file for now.
  *   std::cin >> readfile ; */
-  readfile = "test_file.qtz" ;
-  job_file.open(readfile) ;
-  while( getline( job_file, line)){
-    if ( line.substr(0,7) == "jobtyp " ){
-      job = stoi(line.substr(9)) ;
-    }  else if ( line.substr(0,7) == "nbasis " ){
-      junk = stoi(line.substr(9)) ;
-      com.nbas(junk) ;
-    }  else if ( line.substr(0,7) == "nn rep " ) {
-      fjunk = stof(line.substr(9)) ;
-      com.nrep( fjunk) ;
-    }  else if ( line.substr(0,7) == "n2ei   " ) {
-      junk = stoi(line.substr(9)) ;
-      com.ntei(junk) ;
-    }  else if ( line.substr(0,7) == "natoms " ) {
-      junk = stoi(line.substr(9)) ;
-      com.natm(junk) ;
-    }  else if ( line.substr(0,7) == "nelec  " ) {
-      junk = stoi(line.substr(9)) ;
-      com.nele(junk) ;
-    }  else if ( line.substr(0,7) == "nalpha " ) {
-      junk = stoi(line.substr(9)) ;
-      com.nalp(junk) ;
-    }  else if ( line.substr(0,7) == "nbeta  " ) {
-      junk = stoi(line.substr(9)) ;
-      com.nbet(junk) ;
+  ss << argv[1] ;
+  ss >> inpfile ;
+  std::cout << " ---   ---   ---   --- " << std::endl << "|" << std::endl 
+    << "|  Quetzalcoatl v1.0  " << std::endl ;
+  std::cout << "| " << std::endl ;
+  std::cout << " ---   ---   ---   --- " << std::endl << "|" << std::endl ;
+  std::cout << "|  Started at  " << std::endl << "| " << now->tm_hour  << " : " 
+    << now->tm_min + 1 << " : " << now->tm_sec << std::endl ;
+  std::cout << "|  on  " << std::endl << "| " << now->tm_year + 1900 << " - " 
+    << now->tm_mon + 1 << " - " << now->tm_mday << std::endl ;
+  std::cout << "| " << std::endl ;
+  std::cout << " ---   ---   ---   --- " << std::endl << "|" << std::endl ;
+  std::cout << "|  Reading from input : " << inpfile << std::endl ;
+  std::cout << "|  Basis Set : " << std::cout << com.bnam()  << std::endl ;
+  std::cout << "| " << std::endl ;
+
+  read_input( com, inpfile) ;
+  std::cout << "| " << std::endl ;
+  std::cout << " ---   ---   ---   --- " << std::endl ;
+
+  c.resize( com.natm(), 3) ;
+  a.resize( com.natm()) ;
+  c = com.getC() ;
+  a = com.getA() ;
+  
+
+  for ( int i = 0; i < com.natm(); i++) {
+    for ( int j = i+1; j < com.natm(); j++) {
+      cx = c( i, 0) - c( j, 0) ;
+      cy = c( i, 1) - c( j, 1) ;
+      cz = c( i, 2) - c( j, 2) ;
+      r2 = cx*cx + cy*cy + cz*cz ;
+      r = sqrt(r2) ;
+      n_rep += static_cast<double>(a(i))*static_cast<double>(a(j))/r ;
+      }
     }
-  }
 
-  getmel( "./test_fil/f00.fi1s", "./test_fil/f00.fi2s", intarr, com) ;
-  s.resize( com.nbas(), com.nbas()) ;
-  s = com.getS() ;
+  com.nrep( n_rep ) ;
 
-  h.resize( com.nbas(), com.nbas()) ;
-  h = com.getH() ;
-  oao( com.nbas(), h, s) ;
-  h_full.resize( 2*com.nbas(), 2*com.nbas()) ;
-  h_full.setZero() ;
-
-  det1.fil_mos( com.nbas(), h_full, 6) ;
-  det2.fil_mos( com.nbas(), h_full, 6) ;
-
-  h_full.block( 0, 0, com.nbas(), com.nbas()).real() = h ;
-  h_full.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()).real() = h ;
-
-  wfn_vec.push_back("./test_fil/wfn1.det") ;
-  wfn_vec.push_back("./test_fil/wfn2.det") ;
-
-  tst_vec.push_back( det1) ;
-  tst_vec.push_back( det2) ;
-
-  rdsdet( com.nbas(), wfn_vec, tst_vec) ;
-
-  oao( com.nbas(), tst_vec[0], s) ;
-  oao( com.nbas(), tst_vec[1], s) ;
-  oao( com.nbas(), intarr, tmparr, s) ;
-
-  trci( com, tst_vec, h_full, tmparr, trden, fokmat) ;
-
+  LIBINT2_PREFIXED_NAME(libint2_static_init)() ;
+  LIBINT2_PREFIXED_NAME(libint2_static_cleanup)() ;
+//  getmel( "./test_fil/f00.fi1s", "./test_fil/f00.fi2s", intarr, com) ;
+//  s.resize( com.nbas(), com.nbas()) ;
+//  s = com.getS() ;
+//
+//  h.resize( com.nbas(), com.nbas()) ;
+//  h = com.getH() ;
+//  oao( com.nbas(), h, s) ;
+//  h_full.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  h_full.setZero() ;
+//
+//  det1.fil_mos( com.nbas(), h_full, 6) ;
+//  det2.fil_mos( com.nbas(), h_full, 6) ;
+//
+//  h_full.block( 0, 0, com.nbas(), com.nbas()).real() = h ;
+//  h_full.block( com.nbas(), com.nbas(), com.nbas(), com.nbas()).real() = h ;
+//
+//  wfn_vec.push_back("./test_fil/wfn1.det") ;
+//  wfn_vec.push_back("./test_fil/wfn2.det") ;
+//
+//  tst_vec.push_back( det1) ;
+//  tst_vec.push_back( det2) ;
+//
+//  rdsdet( com.nbas(), wfn_vec, tst_vec) ;
+//
+//  oao( com.nbas(), tst_vec[0], s) ;
+//  oao( com.nbas(), tst_vec[1], s) ;
+//  oao( com.nbas(), intarr, tmparr, s) ;
+//
+//  trci( com, tst_vec, h_full, tmparr, trden, fokmat) ;
+//
   return 0 ;
 
 } /* End Quetzacoatl */

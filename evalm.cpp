@@ -12,8 +12,8 @@
 /* Given a vector of two electron integrals contract it with a density
  * and return the matrix. */
 
-  int ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXf> p, 
-    Eigen::Ref<Eigen::MatrixXf> g, const int nb) {
+  int ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> g, const int nb) {
 
  /* G is split into four quadrants.  
   *
@@ -32,7 +32,7 @@
   *
   */
 
-    Eigen::MatrixXf t_p ;
+    Eigen::MatrixXd t_p ;
 
     g.setZero() ;
     t_p.resize( nb, nb) ;
@@ -50,15 +50,15 @@
     return 0 ;
 } ;
 
-  int ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcf> p, 
-    Eigen::Ref<Eigen::MatrixXcf> g, const int nb) {
+  int ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> g, const int nb) {
 
  /*  
   * This is an overloaded function with complex matrices for complex
   * restricted Hartree-Fock.
   */
 
-    Eigen::MatrixXcf t_p ;
+    Eigen::MatrixXcd t_p ;
 
     g.setZero() ;
     t_p.resize( nb, nb) ;
@@ -76,8 +76,8 @@
     return 0 ;
 } ;
 
-  int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXf> pt, 
-     Eigen::Ref<Eigen::MatrixXf> p, Eigen::Ref<Eigen::MatrixXf> g, const int nb) {
+  int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> pt, 
+     Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> g, const int nb) {
 
  /* G is split into four quadrants.
   *
@@ -108,8 +108,8 @@
     return 0 ;
 } ;
 
-  int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcf> pt, 
-     Eigen::Ref<Eigen::MatrixXcf> p, Eigen::Ref<Eigen::MatrixXcf> g, const int nb) {
+  int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> pt, 
+     Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> g, const int nb) {
 
  /*  
   * This is an overloaded function with complex matrices for complex
@@ -126,8 +126,8 @@
     return 0 ;
 } ;
 
-  int ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXf> p, 
-    Eigen::Ref<Eigen::MatrixXf> g, const int nb) {
+  int ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> g, const int nb) {
 
  /* G is split into four quadrants.  
   *
@@ -153,7 +153,7 @@
   *
   */
 
-    Eigen::MatrixXf t_p ;
+    Eigen::MatrixXd t_p ;
 
     g.setZero() ;
     t_p.resize( nb, nb) ;
@@ -183,13 +183,13 @@
     return 0 ;
 } ;
 
-  int ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcf> p, 
-    Eigen::Ref<Eigen::MatrixXcf> g, const int nb) {
+  int ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> g, const int nb) {
 
  /*   
   * This is the complex overloaded version of ctr2eg
   */
-    Eigen::MatrixXcf t_p ;
+    Eigen::MatrixXcd t_p ;
 
     g.setZero() ;
     t_p.resize( nb, nb) ;
@@ -219,8 +219,8 @@
     return 0 ;
 } ;
 
-  int coulblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcf> p, 
-    Eigen::Ref<Eigen::MatrixXcf> G, const int nbasis) {
+  int coulblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> G, const int nbasis) {
     /* Given a spin density block contract the coulomb terms into G 
      Contract coulomb integrals for complex matrices */
     int ntt ;
@@ -229,7 +229,7 @@
     int j ;
     int k ;
     int l ;
-    float val ;
+    double val ;
     bool ieqk ;
     bool jeql ;
     bool ieqj ;
@@ -346,8 +346,8 @@
 
   } ;
 
-  int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcf> p, 
-    Eigen::Ref<Eigen::MatrixXcf> G, const int nbasis) {
+  int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> G, const int nbasis) {
 
     /* Contract exchange integrals for complex matrices
     Given a spin density block contract the exchange terms into G */
@@ -358,7 +358,7 @@
     int j ;
     int k ;
     int l ;
-    float val ;
+    double val ;
     bool ieqk ;
     bool jeql ;
     bool ieqj ;
@@ -492,8 +492,8 @@
 
   } ;
 
-  int coulblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXf> p, 
-    Eigen::Ref<Eigen::MatrixXf> G, const int nbasis) {
+  int coulblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> G, const int nbasis) {
 
     /* Given a spin density block contract the coulomb terms into G 
      Contract coulomb integrals for real matrices */
@@ -504,7 +504,7 @@
     int j ;
     int k ;
     int l ;
-    float val ;
+    double val ;
     bool ieqk ;
     bool jeql ;
     bool ieqj ;
@@ -621,8 +621,8 @@
 
   } ;
 
-  int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXf> p, 
-    Eigen::Ref<Eigen::MatrixXf> G, const int nbasis) {
+  int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> G, const int nbasis) {
 
     /* Given a spin density block contract the exchange terms into G 
      Contract exchange integrals for real matrices */
@@ -633,7 +633,7 @@
     int j ;
     int k ;
     int l ;
-    float val ;
+    double val ;
     bool ieqk ;
     bool jeql ;
     bool ieqj ;
@@ -769,7 +769,7 @@
 
 /* Evaluate elements between Slater Determinants */
 
-float tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dabmat){
+double tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXd> dabmat){
 
 /*
  * Given two Slater Determinants, return the transition density in dabmat and return
@@ -808,11 +808,11 @@ float tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dab
   int nbet ;
   int nbasis ;
   int lstrt ;
-  float ovl ;
-  Eigen::MatrixXf moa ;
-  Eigen::MatrixXf mob ;
-  Eigen::MatrixXf dkl ;
-  Eigen::MatrixXf tmp ;
+  double ovl ;
+  Eigen::MatrixXd moa ;
+  Eigen::MatrixXd mob ;
+  Eigen::MatrixXd dkl ;
+  Eigen::MatrixXd tmp ;
   wfn_a = a.get_wti() ;
   wfn_b = b.get_wti() ;
   nocc = com.nele() ;
@@ -888,7 +888,7 @@ float tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dab
 
 } ;
 
- cf tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcf> dabmat) {
+ cd tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcd> dabmat) {
 
 /* 
  *  This is an overloaded complex version of nointm
@@ -901,11 +901,11 @@ float tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dab
   int nbet ;
   int nbasis ;
   int lstrt ;
-  cf ovl ;
-  Eigen::MatrixXcf moa ;
-  Eigen::MatrixXcf mob ;
-  Eigen::MatrixXcf dkl ;
-  Eigen::MatrixXcf tmp ;
+  cd ovl ;
+  Eigen::MatrixXcd moa ;
+  Eigen::MatrixXcd mob ;
+  Eigen::MatrixXcd dkl ;
+  Eigen::MatrixXcd tmp ;
   wfn_a = a.get_wti() ;
   wfn_b = b.get_wti() ;
   nocc = com.nele() ;
@@ -981,16 +981,16 @@ float tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXf> dab
 
 } ;
 
-float obop ( common& com, Eigen::Ref<Eigen::MatrixXf> ouv, hfwfn& a, hfwfn& b) {
+double obop ( common& com, Eigen::Ref<Eigen::MatrixXd> ouv, hfwfn& a, hfwfn& b) {
 
 /*
  * One body operator.  Return <A|O|B> = sum_{ l k}<k|O|l> = sum{ u v} <u|O|v>C_{vl}D(k|l)C_{ku}^{*}
  * Passed two Slater determinants and matrix elements in an orthogonal basis, return the evaluated operator. */
 
   int nocc ;
-  float aob ;
-  Eigen::MatrixXf pvu ;
-  Eigen::MatrixXf omega ;
+  double aob ;
+  Eigen::MatrixXd pvu ;
+  Eigen::MatrixXd omega ;
 
   /* Build pvu */
  
@@ -1010,7 +1010,7 @@ float obop ( common& com, Eigen::Ref<Eigen::MatrixXf> ouv, hfwfn& a, hfwfn& b) {
 
 } ;
 
- cf obop ( common& com, Eigen::Ref<Eigen::MatrixXcf> ouv, hfwfn& a, hfwfn& b) {
+ cd obop ( common& com, Eigen::Ref<Eigen::MatrixXcd> ouv, hfwfn& a, hfwfn& b) {
 
 /*
  * Overloaded for complex functions.
@@ -1018,9 +1018,9 @@ float obop ( common& com, Eigen::Ref<Eigen::MatrixXf> ouv, hfwfn& a, hfwfn& b) {
 
   int nbas ;
 
-  cf aob ;
-  Eigen::MatrixXcf pvu ;
-  Eigen::MatrixXcf omega ;
+  cd aob ;
+  Eigen::MatrixXcd pvu ;
+  Eigen::MatrixXcd omega ;
 
   /* Build pvu */
 
@@ -1037,8 +1037,8 @@ float obop ( common& com, Eigen::Ref<Eigen::MatrixXf> ouv, hfwfn& a, hfwfn& b) {
 
 } ;
 
-float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& intarr, hfwfn& a,
-               hfwfn& b, float& ovl) { 
+double fockop ( common& com, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& intarr, hfwfn& a,
+               hfwfn& b, double& ovl) { 
 
 /*
  * While the fock operator is one body, it requires that we contract the two electron
@@ -1050,11 +1050,11 @@ float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& int
  * */
 
   int nocc ;
-  float aob ;
-  Eigen::MatrixXf pvu ;
-  Eigen::MatrixXf omega ;
-  Eigen::MatrixXf f ;
-  Eigen::MatrixXf g ;
+  double aob ;
+  Eigen::MatrixXd pvu ;
+  Eigen::MatrixXd omega ;
+  Eigen::MatrixXd f ;
+  Eigen::MatrixXd g ;
 
   /* Build pvu */
 
@@ -1083,8 +1083,8 @@ float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& int
 
 } ;
 
- cf fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, 
-                             hfwfn& b, cf& ovl) {
+ cd fockop ( common& com, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, 
+                             hfwfn& b, cd& ovl) {
 
 /*
  * While the fock operator is one body, it requires that we contract the two electron
@@ -1096,13 +1096,13 @@ float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& int
  * */
 
   int nocc ;
-  cf aob ;
-  cf pt5 = cf (0.5,0.0) ;
-  Eigen::MatrixXcf pvu ;
-  Eigen::MatrixXcf omega ;
-  Eigen::MatrixXcf f ;
-  Eigen::MatrixXcf g ;
-  Eigen::MatrixXcf mos ;
+  cd aob ;
+  cd pt5 = cd (0.5,0.0) ;
+  Eigen::MatrixXcd pvu ;
+  Eigen::MatrixXcd omega ;
+  Eigen::MatrixXcd f ;
+  Eigen::MatrixXcd g ;
+  Eigen::MatrixXcd mos ;
 
   /* Build pvu */
 
@@ -1133,8 +1133,8 @@ float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& int
 
 } ;
 
- cf fockop ( common& com, Eigen::Ref<Eigen::MatrixXcf> h, std::vector<tei>& intarr, hfwfn& a, 
-                             hfwfn& b, cf& ovl, std::ofstream& traden, std::ofstream& fockmat) {
+ cd fockop ( common& com, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, 
+                             hfwfn& b, cd& ovl, std::ofstream& traden, std::ofstream& fockmat) {
 
 /*
  * If passed file names, fockop will write the transition density and fock operator to files for 
@@ -1142,13 +1142,13 @@ float fockop ( common& com, Eigen::Ref<Eigen::MatrixXf> h, std::vector<tei>& int
  * */
 
   int nocc ;
-  cf aob ;
-  cf pt5 = cf (0.5,0.0) ;
-  Eigen::MatrixXcf pvu ;
-  Eigen::MatrixXcf omega ;
-  Eigen::MatrixXcf f ;
-  Eigen::MatrixXcf g ;
-  Eigen::MatrixXcf mos ;
+  cd aob ;
+  cd pt5 = cd (0.5,0.0) ;
+  Eigen::MatrixXcd pvu ;
+  Eigen::MatrixXcd omega ;
+  Eigen::MatrixXcd f ;
+  Eigen::MatrixXcd g ;
+  Eigen::MatrixXcd mos ;
 
   /* Build pvu */
 
