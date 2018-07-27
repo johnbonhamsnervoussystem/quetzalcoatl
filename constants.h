@@ -14,6 +14,8 @@
   typedef std::complex<double> cd ;
   extern const double pi ;
   extern const double d0 ;
+  extern const double d1 ;
+  extern const double d2 ;
   extern const cd z0 ;
   extern const cd z1 ;
   extern const cd zi ;

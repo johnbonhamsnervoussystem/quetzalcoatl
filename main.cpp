@@ -10,7 +10,6 @@
 #include <sstream>
 #include <fstream>
 #include <ctime>
-#include <libint2.h>
 #include "binio.h"
 #include "common.h"
 #include "evalm.h"
@@ -124,8 +123,6 @@ int main(int argc, char *argv[]) {
 
   com.nrep( n_rep ) ;
 
-  LIBINT2_PREFIXED_NAME(libint2_static_init)() ;
-  LIBINT2_PREFIXED_NAME(libint2_static_cleanup)() ;
 //  getmel( "./test_fil/f00.fi1s", "./test_fil/f00.fi2s", intarr, com) ;
 //  s.resize( com.nbas(), com.nbas()) ;
 //  s = com.getS() ;
