@@ -32,8 +32,9 @@ void read_input( common& com, const std::string& inpfile){
   while( getline( jobfile, line)){
     if ( line.substr(0,7) == "jobtyp " ){
       i_junk = stoi(line.substr(9)) ;
-    }  else if ( line.substr(0,7) == "basis " ){
-      com.bnam( line.substr(9)) ;
+    }  else if ( line.substr(0,7) == "basis  " ){
+      s_junk = line.substr(9) ;
+      com.bnam( s_junk) ;
     }  else if ( line.substr(0,7) == "geom   " ) {
       getline( jobfile, line) ;
       while( line.substr(0,5) != " end" ){

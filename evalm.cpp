@@ -981,6 +981,34 @@ double tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXd> da
 
 } ;
 
+double td_singleblock( int& occ, int& nbas, Eigen::Ref<Eigen::MatrixXd> sd1, Eigen::Ref<Eigen::MatrixXd> sd2, Eigen::Ref<Eigen::MatrixXd> td) {
+
+/*
+ * Given two Slater Determinants wavefunctions, return the transition density in td
+ *  and return the overlap as a scalar for a single spin block.  
+ *
+ * The Slater determinants should be in the orthogonal ao basis.
+ */
+
+    double ovl = d0 ;
+    Eigen::MatrixXd dkl ;
+    Eigen::MatrixXcd tmp ;
+
+    dkl.resize( occ, occ) ;
+
+    dkl = sd1.block( 0, 0, nbas, occ).adjoint()*sd2.block( 0, 0, nbas, occ) ;
+    ovl = dkl.determinant() ;
+
+    /* Build the adjugate */
+    td = dkl.inverse() ;
+
+    dkl = td*ovl ;
+    td = sd2.block( 0, 0, nbas, occ)*dkl*sd2.block( 0, 0, nbas, occ).adjoint() ;
+
+    return ovl ;
+
+} ;
+
 double obop ( common& com, Eigen::Ref<Eigen::MatrixXd> ouv, hfwfn& a, hfwfn& b) {
 
 /*

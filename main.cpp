@@ -1,4 +1,5 @@
 /* Primary routine for Quetzalcoatl */
+#include "basis.h"
 #include "constants.h"
 #include <complex>
 #include <math.h>
@@ -15,6 +16,7 @@
 #include "evalm.h"
 #include "hfwfn.h"
 #include "integr.h"
+#include "obarasaika.h"
 #include "project.h"
 #include "qtzio.h"
 #include "solver.h"
@@ -72,11 +74,14 @@ int main(int argc, char *argv[]) {
   std::string fokmat="fmat.rwf" ;
   Eigen::MatrixXd c ;
   Eigen::VectorXi a ;
+  basis_set b ;
+
   /* File reading and header variables. */
   std::stringstream ss ;
   std::string inpfile ;
   std::time_t t = std::time(0) ;
   std::tm* now = std::localtime(&t) ;
+
 /*Eigen::MatrixXd mosf ;
   Eigen::MatrixXd tmp ; */
 
@@ -86,6 +91,7 @@ int main(int argc, char *argv[]) {
  *   std::cin >> readfile ; */
   ss << argv[1] ;
   ss >> inpfile ;
+  read_input( com, inpfile) ;
   std::cout << " ---   ---   ---   --- " << std::endl << "|" << std::endl 
     << "|  Quetzalcoatl v1.0  " << std::endl ;
   std::cout << "| " << std::endl ;
@@ -97,10 +103,9 @@ int main(int argc, char *argv[]) {
   std::cout << "| " << std::endl ;
   std::cout << " ---   ---   ---   --- " << std::endl << "|" << std::endl ;
   std::cout << "|  Reading from input : " << inpfile << std::endl ;
-  std::cout << "|  Basis Set : " << std::cout << com.bnam()  << std::endl ;
+  std::cout << "|  Basis Set : " << com.bnam() << std::endl ;
   std::cout << "| " << std::endl ;
 
-  read_input( com, inpfile) ;
   std::cout << "| " << std::endl ;
   std::cout << " ---   ---   ---   --- " << std::endl ;
 
@@ -108,7 +113,7 @@ int main(int argc, char *argv[]) {
   a.resize( com.natm()) ;
   c = com.getC() ;
   a = com.getA() ;
-  
+ 
 
   for ( int i = 0; i < com.natm(); i++) {
     for ( int j = i+1; j < com.natm(); j++) {
@@ -123,6 +128,11 @@ int main(int argc, char *argv[]) {
 
   com.nrep( n_rep ) ;
 
+  b = build_basis( com.bnam(), a, c) ;
+  print_basis( b) ;
+  n_rep = overlap_sto( b.b[0].s[0], b.b[0].c, b.b[1].s[0], b.b[1].c) ;
+  std::cout << "s " << n_rep << std::endl ;
+ 
 //  getmel( "./test_fil/f00.fi1s", "./test_fil/f00.fi2s", intarr, com) ;
 //  s.resize( com.nbas(), com.nbas()) ;
 //  s = com.getS() ;

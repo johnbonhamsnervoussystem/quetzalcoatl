@@ -43,6 +43,8 @@
 
   cd tranden ( common& c, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcd> d) ;
 
+  double td_singleblock( int& o, int& n, Eigen::Ref<Eigen::MatrixXd> s1, Eigen::Ref<Eigen::MatrixXd> s2, Eigen::Ref<Eigen::MatrixXd> d) ;
+
   double obop ( common& c, Eigen::Ref<Eigen::MatrixXd> o, hfwfn& a, hfwfn& b) ;
 
   cd obop ( common& c, Eigen::Ref<Eigen::MatrixXcd> o, hfwfn& a, hfwfn& b) ;

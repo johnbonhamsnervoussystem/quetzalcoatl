@@ -1,11 +1,50 @@
 #include <Eigen/Dense>
-#include <libint2.h>
+#include <vector>
+#include <string>
 
 #ifndef BASIS_H
 #define BASIS_H
 
- std::vector<libint2::Shell> build_basis ( std::string & bas_name, Eigen::VectorXi AtN, Eigen::MatrixXd coord) ;
+  struct gau_prm {
+    /* Gaussian primitive data
+      x - Exponent
+      c - coefficient
+    */
+    double x ;
+    double c ;
+    } ;
 
- std::vector<libint2::Shell> load_sto3g ( Eigen::VectorXi AtN, Eigen::MatrixXd c) ;
+  struct sto {
+    /* Slater Type Orbital
+       l - angular momentum of x,y,z
+       nprm - number of primitives
+       g - vector of primitives
+    */
+    Eigen::Vector3i l ;
+    int nprm ;
+    std::vector<gau_prm> g ;
+    } ;
+
+  struct basis_fc {
+    /* Basis function
+       nshl - number of shells( number of Stos)
+       c - coordinates
+       s - vector of sto*/
+    int nshl ;
+    Eigen::Vector3d c ;
+    std::vector<sto> s ;
+    } ;
+
+  struct basis_set {
+    /* Container for all the basis functions */
+    int nbas ;
+    std::vector<basis_fc> b ;
+    } ;
+
+  basis_set load_sto3g ( Eigen::VectorXi A, Eigen::MatrixXd c) ;
+
+  basis_set build_basis ( std::string n, Eigen::Ref<Eigen::VectorXi> A, Eigen::Ref<Eigen::MatrixXd> c) ;
+
+  void print_basis( basis_set& b) ;
 
 #endif
