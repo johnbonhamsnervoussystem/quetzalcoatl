@@ -22,6 +22,7 @@
     */
     Eigen::Vector3i l ;
     int nprm ;
+    double norm ;
     std::vector<gau_prm> g ;
     } ;
 
@@ -44,6 +45,8 @@
   basis_set load_sto3g ( Eigen::VectorXi A, Eigen::MatrixXd c) ;
 
   basis_set build_basis ( std::string n, Eigen::Ref<Eigen::VectorXi> A, Eigen::Ref<Eigen::MatrixXd> c) ;
+
+  void norm_basis (  basis_set& b) ;
 
   void print_basis( basis_set& b) ;
 

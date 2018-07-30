@@ -31,19 +31,13 @@
     nb   = lb.maxCoeff() ; 
 
  /*  Now, we initialize the <s|s> integral */   
-    std::cout << " pi = " << pi << std::endl ;
-    std::cout << " d1_5 = " << d1_5 << std::endl ;
-    std::cout << " rab2 = " << rab2 << std::endl ;
-    std::cout << " xi = " << xi << std::endl ;
-    std::cout << " zeta = " << zeta << std::endl ;
-    std::cout << " pow(pi/zeta, d1_5) = " << pow(pi/zeta, d1_5) << std::endl ;
-    std::cout << " exp(-xi*rab2) = " << exp(-xi*rab2) << std::endl ;
     o = pow(pi/zeta, d1_5) * exp(-xi*rab2) ;
 
     if(o < thresh) {
       return d0 ;
     } else if ( na == 0 && nb == 0 ) {
-      return o ;
+      s = o*ca*cb ;
+      return s ;
     }
 
       otmp.resize(na+1,nb+1) ;
@@ -90,6 +84,38 @@
       }
 
     return s ;
+
+    } ;
+
+  void ao_overlap( basis_set& b) {
+    /* Given two Slater-type Orbitals, return the overlap. */
+    int nbas = b.nbas ;
+    int nst1, nst2, jstrt ;
+    double s ;
+    Eigen::MatrixXd ovl ;
+ 
+    ovl.resize( nbas, nbas) ;
+    ovl.setZero() ;
+    for ( int i = 0; i < nbas; i++) {
+      nst1 = b.b[i].nshl ;
+      for ( int j = 0; j < nst1; j++) {
+        for ( int k = i; k < nbas; k++) {
+          nst2 = b.b[k].nshl ;
+          if ( k == i ) {
+            jstrt = j ;
+          } else {
+            jstrt = 0 ;
+          }
+          for ( int l = jstrt; l < nst2; l++) {
+            s = overlap_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c) ;
+            ovl(k, i) =  s*(b.b[i].s[j].norm)*(b.b[k].s[l].norm) ;
+            ovl(i, k) = ovl(k, i) ;
+            }
+          }
+        }
+      }
+
+    std::cout << ovl << std::endl ;
 
     } ;
 
