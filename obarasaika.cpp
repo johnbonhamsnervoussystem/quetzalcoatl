@@ -78,8 +78,8 @@
     double s = 0.0 ;
 
     for ( int i = 0; i < npa; i++) {
-      for ( int j = 0; j < npa; j++) {
-        s += gauprm_ovl( a.g[i].x, a.g[i].c, ca, a.l, b.g[i].x, b.g[i].c, cb, b.l) ;
+      for ( int j = 0; j < npb; j++) {
+        s += gauprm_ovl( a.g[i].x, a.g[i].c, ca, a.l, b.g[j].x, b.g[j].c, cb, b.l) ;
         }
       }
 
@@ -88,7 +88,7 @@
     } ;
 
   void ao_overlap( basis_set& b) {
-    /* Given two Slater-type Orbitals, return the overlap. */
+    /* Given a Slater-type Orbital basis, return the overlap. */
     int nbas = b.nbas ;
     int nst1, nst2, jstrt ;
     double s ;
