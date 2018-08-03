@@ -46,8 +46,10 @@
 
   basis_set build_basis ( std::string n, Eigen::Ref<Eigen::VectorXi> A, Eigen::Ref<Eigen::MatrixXd> c) ;
 
-  void norm_basis (  basis_set& b) ;
+  void norm_basis ( int n, basis_set& b) ;
 
-  void print_basis( basis_set& b) ;
+  double norm_gprm ( double a, Eigen::Vector3i L) ;
+
+  void print_basis( int n, basis_set& b) ;
 
 #endif

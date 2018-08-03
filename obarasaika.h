@@ -10,6 +10,6 @@
 
   double overlap_sto( sto& a, Eigen::Ref<Eigen::Vector3d> ca, sto& b, Eigen::Ref<Eigen::Vector3d> cb) ;
 
-  void ao_overlap( basis_set& b) ;
+  void ao_overlap( int n, basis_set& b) ;
 
 #endif

@@ -4,6 +4,7 @@
 #include <iostream>
 #include "obarasaika.h"
 #include <string>
+#include "util.h"
 #include <vector>
 
   basis_set load_sto1g ( Eigen::VectorXi AtN, Eigen::MatrixXd c) {
@@ -21,18 +22,19 @@
 
     for( int a=0; a<AtN.size(); ++a) {
 
+      bf.s.clear() ;
       switch (AtN(a)) {
         case 1: // Z=1: hydrogen
           /* One s orbital */
           g.x = 0.270950 ;
-          n = (2*g.x)/pi ;
-          g.c = d1*pow( n, t3_f4) ;
-          s.g.push_back(g) ;
+          g.c = norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           s.l.setZero() ;
 
           s.nprm = 1 ;
           bf.s.push_back(s) ;
+
+          basis.nbas ++ ;
 
           bf.c( 0) = c( a, 0) ;
           bf.c( 1) = c( a, 1) ;
@@ -40,7 +42,31 @@
           bf.nshl = 1 ;
  
           basis.b.push_back(bf) ;
-          basis.nbas ++ ;
+          break ;
+
+        case 6: // Z=6: Carbon
+          /* 2px orbital */
+          s.g.clear() ;
+          s.l << 1,0,0 ;
+          g.x = 2.9412494 ;
+          g.c = norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 1 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          bf.c( 0) = c( a, 0) ;
+          bf.c( 1) = c( a, 1) ;
+          bf.c( 2) = c( a, 2) ;
+          bf.nshl = 1 ;
+          basis.b.push_back(bf) ;
+          break ;
+
+        default :
+          std::cout << "Atomic number " << AtN(a) ; 
+          std::cout << " not currently supported."  << std::endl ;
+          break ;
 
         }
       }
@@ -63,26 +89,24 @@
     basis.nbas = 0 ;
 
 
-    for( int a=0; a<AtN.size(); ++a) {
+    for( int a=0; a<AtN.size(); a++) {
 
       switch (AtN(a)) {
         case 1: // Z=1: hydrogen
           /* One s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
           g.x = 3.425250914 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.1543289673*pow( n, t3_f4) ;
+          g.c = 0.1543289673*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           g.x = 0.6239137298 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.5353281423*pow( n, t3_f4) ;
+          g.c = 0.5353281423*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           g.x = 0.1688554040 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.4446345422*pow( n, t3_f4) ;
+          g.c = 0.4446345422*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
-          s.l.setZero() ;
-
           s.nprm = 3 ;
+
           bf.s.push_back(s) ;
 
           bf.c( 0) = c( a, 0) ;
@@ -92,25 +116,26 @@
  
           basis.b.push_back(bf) ;
           basis.nbas++ ;
+          break ;
 
         case 2: // Z=2: Helium
           /* One s orbital */
+          s.g.clear() ;
           g.x = 6.36242139 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.15432897*pow( n, t3_f4) ;
+          g.c = 0.15432897*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           g.x = 1.15892300 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.53532814*pow( n, t3_f4) ;
+          g.c = 0.53532814*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           g.x = 0.31364979 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.44463454*pow( n, t3_f4) ;
+          g.c = 0.44463454*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           s.l.setZero() ;
-
           s.nprm = 3 ;
+
           bf.s.push_back(s) ;
+
+          basis.nbas++ ;
 
           bf.c( 0) = c( a, 0) ;
           bf.c( 1) = c( a, 1) ;
@@ -118,74 +143,90 @@
           bf.nshl = 1 ;
  
           basis.b.push_back(bf) ;
-          basis.nbas++ ;
+          break ;
 
         case 6: // Z=6: Carbon
           /* 1s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
           g.x = 71.6168370 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.15432897*pow( n, t3_f4) ;
+          g.c = 0.15432897*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           g.x = 13.0450960 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.53532814*pow( n, t3_f4) ;
+          g.c = 0.53532814*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           g.x = 3.5305122 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.44463454*pow( n, t3_f4) ;
+          g.c = 0.44463454*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
-          s.l.setZero() ;
           s.nprm = 3 ;
           bf.s.push_back(s) ;
 
           basis.nbas++ ;
 
           /* 2s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
           g.x = 2.9412494 ;
-          n = (2*g.x)/pi ;
-          g.c = -0.09996723*pow( n, t3_f4) ;
+          g.c = -0.09996723*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           g.x = 0.6834831 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.39951283*pow( n, t3_f4) ;
+          g.c = 0.39951283*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           g.x = 0.2222899 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.70011547*pow( n, t3_f4) ;
+          g.c = 0.70011547*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
-          s.l.setZero() ;
           s.nprm = 3 ;
           bf.s.push_back(s) ;
  
           basis.nbas++ ;
 
           /* 2px orbital */
+          s.g.clear() ;
+          s.l << 1,0,0 ;
           g.x = 2.9412494 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.15591627*pow( n, t3_f4) ;
+          g.c = 0.15591627*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           g.x = 0.6834831 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.60768372*pow( n, t3_f4) ;
+          g.c = 0.60768372*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           g.x = 0.2222899 ;
-          n = (2*g.x)/pi ;
-          g.c = 0.39195739*pow( n, t3_f4) ;
+          g.c = 0.39195739*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           s.nprm = 3 ;
-          s.l << 1,0,0 ;
           bf.s.push_back(s) ;
  
           basis.nbas++ ;
 
           /* 2py orbital */
+          s.g.clear() ;
           s.l << 0,1,0 ;
+          g.x = 2.9412494 ;
+          g.c = 0.15591627*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.6834831 ;
+          g.c = 0.60768372*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.2222899 ;
+          g.c = 0.39195739*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
           bf.s.push_back(s) ;
  
           basis.nbas++ ;
 
           /* 2pz orbital */
+          s.g.clear() ;
           s.l << 0,0,1 ;
+          g.x = 2.9412494 ;
+          g.c = 0.15591627*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.6834831 ;
+          g.c = 0.60768372*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.2222899 ;
+          g.c = 0.39195739*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
           bf.s.push_back(s) ;
  
           basis.nbas++ ;
@@ -195,6 +236,105 @@
           bf.c( 2) = c( a, 2) ;
           bf.nshl = 5 ;
           basis.b.push_back(bf) ;
+          break ;
+
+        case 8: // Z=8: Oxygen
+          /* 1s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          g.x = 130.7093200 ;
+          g.c = 0.15432897*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 23.8088610 ;
+          g.c = 0.53532814*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 6.4436083 ;
+          g.c = 0.44463454*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+
+          basis.nbas++ ;
+
+          /* 2s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          g.x = 5.0331513 ;
+          g.c = -0.09996723*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 1.1695961 ;
+          g.c = 0.39951283*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.3803890 ;
+          g.c = 0.70011547*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          /* 2px orbital */
+          s.g.clear() ;
+          s.l << 1,0,0 ;
+          g.x = 5.0331513 ;
+          g.c = 0.15591627*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 1.1695961 ;
+          g.c = 0.60768372*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.3803890 ;
+          g.c = 0.39195739*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          /* 2py orbital */
+          s.g.clear() ;
+          s.l << 0,1,0 ;
+          g.x = 5.0331513 ;
+          g.c = 0.15591627*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 1.1695961 ;
+          g.c = 0.60768372*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.3803890 ;
+          g.c = 0.39195739*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          /* 2pz orbital */
+          s.g.clear() ;
+          s.l << 0,0,1 ;
+          g.x = 5.0331513 ;
+          g.c = 0.15591627*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 1.1695961 ;
+          g.c = 0.60768372*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.3803890 ;
+          g.c = 0.39195739*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          bf.c( 0) = c( a, 0) ;
+          bf.c( 1) = c( a, 1) ;
+          bf.c( 2) = c( a, 2) ;
+          bf.nshl = 5 ;
+          basis.b.push_back(bf) ;
+          break ;
+
+        default :
+          std::cout << "Atomic number " << AtN(a) ; 
+          std::cout << " not currently supported."<< std::endl ;
+          break ;
 
         }
       }
@@ -215,19 +355,18 @@
     basis = load_sto1g( AtN, coord) ;
     }
 
-   norm_basis ( basis) ;
+  norm_basis ( AtN.size(), basis) ;
 
-   return basis ;
+  return basis ;
 
-   } ;
+    } ;
 
-  void norm_basis ( basis_set& b) {
+  void norm_basis ( int natm, basis_set& b) {
   /* Normalize the basis */
     int nsto ;
-    int nbas = b.nbas ;
     double s = 0.0 ;
 
-    for( int i = 0; i < nbas; i++ ){
+    for( int i = 0; i < natm; i++ ){
       nsto = b.b[i].nshl ;
       for( int j = 0; j < nsto; j++){
         s = overlap_sto( b.b[i].s[j], b.b[i].c, b.b[i].s[j], b.b[i].c) ;
@@ -237,15 +376,34 @@
 
     } ;
 
-  void print_basis( basis_set& basis){
+  double norm_gprm ( double a, Eigen::Vector3i L) {
+  /* Normalize a gaussian primitive */
+    double o = d0 ;
+    double alpexp = d0 ;
+    double s = d1 ;
+    double t1_f2 = d1/d2 ;
+    double t3_f4 = 3.0e0/4.0e0 ;
+ 
+    for (int i=0; i < 3; i++) {
+      s = s*factfact(2*L(i)-1) ;
+      alpexp += static_cast<double>(L(i)) ;
+      }
+
+    o = d1/sqrt(s) ;
+    s = o*pow( 4*a, alpexp/d2) ;
+    o = s*pow( (d2*a)/pi, t3_f4) ;
+
+    return o ;
+
+    } ;
+
+  void print_basis( int natm, basis_set& basis){
     /* Dump basis information for debugging */
     int nprm ;
     int nsto ;
-    int nbas = basis.nbas ;
 
-    std::cout << "basis = " << nbas << std::endl ;
-    for( int i = 0; i < nbas; i++ ){
-      std::cout << "basis = " << i << std::endl ;
+    for( int i = 0; i < natm; i++ ){
+      std::cout << "Atom number " << i << std::endl ;
       nsto = basis.b[i].nshl ;
       for( int j = 0; j < nsto; j++){
         nprm = basis.b[i].s[j].nprm ;
