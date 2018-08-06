@@ -26,8 +26,8 @@
     std::vector<gau_prm> g ;
     } ;
 
-  struct basis_fc {
-    /* Basis function
+  struct atm_basis {
+    /* Basis functions on each atom
        nshl - number of shells( number of Stos)
        c - coordinates
        s - vector of sto*/
@@ -39,7 +39,7 @@
   struct basis_set {
     /* Container for all the basis functions */
     int nbas ;
-    std::vector<basis_fc> b ;
+    std::vector<atm_basis> b ;
     } ;
 
   basis_set load_sto3g ( Eigen::VectorXi A, Eigen::MatrixXd c) ;

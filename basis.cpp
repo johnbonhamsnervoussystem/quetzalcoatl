@@ -16,7 +16,7 @@
     sto s ;
     double n ;
     double t3_f4 = 3.0e0/4.0e0 ;
-    basis_fc bf ;
+    atm_basis bf ;
     basis_set basis ;
     basis.nbas = 0 ;
 
@@ -25,16 +25,14 @@
       bf.s.clear() ;
       switch (AtN(a)) {
         case 1: // Z=1: hydrogen
-          /* One s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
           g.x = 0.270950 ;
           g.c = norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
-          s.l.setZero() ;
-
           s.nprm = 1 ;
-          bf.s.push_back(s) ;
 
-          basis.nbas ++ ;
+          bf.s.push_back(s) ;
 
           bf.c( 0) = c( a, 0) ;
           bf.c( 1) = c( a, 1) ;
@@ -42,6 +40,9 @@
           bf.nshl = 1 ;
  
           basis.b.push_back(bf) ;
+
+          basis.nbas++ ;
+
           break ;
 
         case 6: // Z=6: Carbon
@@ -54,6 +55,31 @@
           s.nprm = 1 ;
           bf.s.push_back(s) ;
  
+          basis.nbas++ ;
+
+          bf.c( 0) = c( a, 0) ;
+          bf.c( 1) = c( a, 1) ;
+          bf.c( 2) = c( a, 2) ;
+          bf.nshl = 1 ;
+          basis.b.push_back(bf) ;
+          break ;
+
+        case 8: // Z=8: Oxygen
+          /* 1s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          g.x = 130.7093200 ;
+          g.c = 0.15432897*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 23.8088610 ;
+          g.c = 0.53532814*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 6.4436083 ;
+          g.c = 0.44463454*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+
           basis.nbas++ ;
 
           bf.c( 0) = c( a, 0) ;
@@ -84,7 +110,7 @@
     sto s ;
     double n ;
     double t3_f4 = 3.0e0/4.0e0 ;
-    basis_fc bf ;
+    atm_basis bf ;
     basis_set basis ;
     basis.nbas = 0 ;
 
@@ -94,8 +120,10 @@
       switch (AtN(a)) {
         case 1: // Z=1: hydrogen
           /* One s orbital */
+          std::cout << "Loading an H basis" << std::endl ;
           s.g.clear() ;
           s.l.setZero() ;
+          bf.s.clear() ;
           g.x = 3.425250914 ;
           g.c = 0.1543289673*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
@@ -106,21 +134,21 @@
           g.c = 0.4446345422*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
           s.nprm = 3 ;
-
           bf.s.push_back(s) ;
 
           bf.c( 0) = c( a, 0) ;
           bf.c( 1) = c( a, 1) ;
           bf.c( 2) = c( a, 2) ;
           bf.nshl = 1 ;
- 
           basis.b.push_back(bf) ;
           basis.nbas++ ;
           break ;
 
         case 2: // Z=2: Helium
           /* One s orbital */
+          s.l.setZero() ;
           s.g.clear() ;
+          bf.s.clear() ;
           g.x = 6.36242139 ;
           g.c = 0.15432897*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
@@ -130,7 +158,6 @@
           g.x = 0.31364979 ;
           g.c = 0.44463454*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
-          s.l.setZero() ;
           s.nprm = 3 ;
 
           bf.s.push_back(s) ;
@@ -149,6 +176,7 @@
           /* 1s orbital */
           s.g.clear() ;
           s.l.setZero() ;
+          bf.s.clear() ;
           g.x = 71.6168370 ;
           g.c = 0.15432897*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
@@ -240,8 +268,10 @@
 
         case 8: // Z=8: Oxygen
           /* 1s orbital */
+          std::cout << "Loading an O basis" << std::endl ;
           s.g.clear() ;
           s.l.setZero() ;
+          bf.s.clear() ;
           g.x = 130.7093200 ;
           g.c = 0.15432897*norm_gprm( g.x, s.l) ;
           s.g.push_back(g) ;
@@ -366,9 +396,12 @@
     int nsto ;
     double s = 0.0 ;
 
+    std::cout << "Norm the basis" << std::endl ;
     for( int i = 0; i < natm; i++ ){
       nsto = b.b[i].nshl ;
+      std::cout << "nsto = " << nsto << std::endl ;
       for( int j = 0; j < nsto; j++){
+        std::cout << "b.b[i].s[j].g[0].x = " << b.b[i].s[j].g[0].x << std::endl ;
         s = overlap_sto( b.b[i].s[j], b.b[i].c, b.b[i].s[j], b.b[i].c) ;
         b.b[i].s[j].norm = d1/sqrt(s) ;
 	}

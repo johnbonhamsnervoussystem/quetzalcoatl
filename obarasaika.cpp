@@ -5,7 +5,7 @@
 #include "obarasaika.h"
 #include <vector>
 
-  double gauprm_ovl( const double& za, const double& ca, Eigen::Ref<Eigen::Vector3d> a, Eigen::Ref<Eigen::Vector3i> la, const double& zb, const double& cb, Eigen::Ref<Eigen::Vector3d> b, Eigen::Ref<Eigen::Vector3i> lb) {
+  double gauprm_ovl( double za, double ca, Eigen::Ref<Eigen::Vector3d> a, Eigen::Ref<Eigen::Vector3i> la, double zb, double cb, Eigen::Ref<Eigen::Vector3d> b, Eigen::Ref<Eigen::Vector3i> lb) {
 /*  Two-center overlap integrals evaluated using the Obara-Saika recursion scheme 
     za, zb - Exponents 
     ca, cb - Normalization constants            
@@ -112,8 +112,8 @@
           for ( int l = jstrt; l < nst2; l++) {
             jnd ++ ;
             s = overlap_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c) ;
-            ovl(ind, jnd) =  s*(b.b[i].s[j].norm)*(b.b[k].s[l].norm) ;
-            ovl(jnd, ind) = ovl( ind, jnd) ;
+            ovl( ind, jnd) =  s*(b.b[i].s[j].norm)*(b.b[k].s[l].norm) ;
+            ovl( jnd, ind) = ovl( ind, jnd) ;
             }
           }
         }
