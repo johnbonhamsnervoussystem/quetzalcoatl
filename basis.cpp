@@ -120,7 +120,6 @@
       switch (AtN(a)) {
         case 1: // Z=1: hydrogen
           /* One s orbital */
-          std::cout << "Loading an H basis" << std::endl ;
           s.g.clear() ;
           s.l.setZero() ;
           bf.s.clear() ;
@@ -268,7 +267,6 @@
 
         case 8: // Z=8: Oxygen
           /* 1s orbital */
-          std::cout << "Loading an O basis" << std::endl ;
           s.g.clear() ;
           s.l.setZero() ;
           bf.s.clear() ;
@@ -396,12 +394,9 @@
     int nsto ;
     double s = 0.0 ;
 
-    std::cout << "Norm the basis" << std::endl ;
     for( int i = 0; i < natm; i++ ){
       nsto = b.b[i].nshl ;
-      std::cout << "nsto = " << nsto << std::endl ;
       for( int j = 0; j < nsto; j++){
-        std::cout << "b.b[i].s[j].g[0].x = " << b.b[i].s[j].g[0].x << std::endl ;
         s = overlap_sto( b.b[i].s[j], b.b[i].c, b.b[i].s[j], b.b[i].c) ;
         b.b[i].s[j].norm = d1/sqrt(s) ;
 	}
