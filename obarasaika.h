@@ -27,10 +27,6 @@
 
   void ao_eN_V( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> n_c, Eigen::Ref<Eigen::VectorXd> q ) ; 
 
-  double fboys( int m, double t) ;
-
-  void gser( double& gammp, double a, double t) ;
-
-  void gcf( double& gammp, double a, double t) ;
+  void ao_tei( int natm, basis_set& b ) ;
 
 #endif

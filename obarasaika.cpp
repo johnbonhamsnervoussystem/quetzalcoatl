@@ -191,9 +191,6 @@
     u = zeta*( abd.dot( abd)) ;
     for ( int m = 0; m <= ltot; m++ ) {
       vmp(m) = d2*sqrt( zeta/pi)*o*fboys( m, u) ;
-      std::cout << " m " << m << std::endl ;
-      std::cout << " u " << u << std::endl ;
-      std::cout << "fboys( m, u) = " << fboys( m, u) << std::endl ;
       }
 
     if ( vmp.cwiseAbs().maxCoeff() < thresh) {
@@ -240,17 +237,24 @@
   } ;
 
   double gauprm_r12( double za, double ca, Eigen::Ref<Eigen::Vector3d> a, Eigen::Ref<Eigen::Vector3i> la, double zb, double cb, Eigen::Ref<Eigen::Vector3d> b, Eigen::Ref<Eigen::Vector3i> lb, double zc, double cc, Eigen::Ref<Eigen::Vector3d> c, Eigen::Ref<Eigen::Vector3i> lc, double zd, double cd, Eigen::Ref<Eigen::Vector3d> d, Eigen::Ref<Eigen::Vector3i> ld )  {
-      Real (Kind=pr)              :: ERInt
-! Local variables
-      Real (Kind=pr), Allocatable :: ETmp(:,:,:,:,:), E(:)
-      Real (Kind=pr) :: Zeta, Eta, Rho, DNrm, Oab, Ocd
-      Eigen::Vector3d p, q, w ;
+/*  Two electron integrals evaluated using the Obara-Saika recursion scheme 
+    za, zb, zc, zd - Exponents 
+    ca, cb, cc, cd - Normalization constants            
+    la, lb, lc, ld - Angular momentum information       
+    a, b, c, d - Centers                            
+  */
+    int na, nb, nc, nd, ltot ;
+    int ia, ib, ic, id, m, i, xx ;
+    double thresh = 1.0e-13 ;
+    double d1_5 = 3.0e0/2.0e0 ;
+    double rab2, rcd2, rpq2, t, er12 ;
+    double zeta, eta, rho, oab, ocd ;
+    Eigen::Vector3i lt ;
+    Eigen::Vector3d p, q, w, abd ;
+    Eigen::VectorXd e ;
+    Eigen::Tensor< double, 5> etmp( 1, 1, 1, 1, 1) ;
 
-/*      Real (Kind=pr) :: P(3), Q(3), W(3)
-      Real (Kind=pr) :: Rab2, Rcd2, Rpq2, T
-      Integer :: NA, NB, NC, ND, LTot
-      Integer :: IA, IB, IC, ID, M, I */
-   
+/*   
 !====================================================!
 !  Electron repulsion integrals evaluated using the  !
 !  Obara-Saika recursion scheme.                     !    
@@ -265,24 +269,27 @@
 !    ERI(A,B,C,D) = (A B | 1/r12 | C D)              !
 !                 = <A C | 1/r12 | B D>.             !
 !====================================================!
-
-      zeta = za + zb 
-      eta  = zc + zd
-      rho  = eta*zeta/(eta+zeta)
-      P    = (ZA*A + ZB*B)/Zeta
-      Q    = (ZC*C + ZD*D)/Eta
-      W    = (Zeta*P + Eta*Q)/(Zeta+Eta)
-      Rab2 = Dot_Product(A-B,A-B)
-      Rcd2 = Dot_Product(C-D,C-D)
-      Rpq2 = Dot_Product(P-Q,P-Q)
-      T    = Rho*Rpq2
-      LTot = Sum(LA+LB+LC+LD)
-      NA   = MaxVal(LA)
-      NB   = MaxVal(LB)
-      NC   = MaxVal(LC)
-      ND   = MaxVal(LD)
-
-
+*/
+    zeta = za + zb ;
+    eta  = zc + zd ;
+    rho  = eta*zeta/(eta+zeta) ;
+    p    = (za*a + zb*b)/zeta ;
+    q    = (zc*c + zd*d)/eta ;
+    w    = (zeta*p + eta*q)/(zeta+eta) ;
+    abd = a - b ;
+    rab2 = abd.dot(abd) ;
+    abd = c - d ;
+    rcd2 = abd.dot(abd) ;
+    abd = p - q ;
+    rpq2 = abd.dot(abd) ;
+    t = rho*rpq2 ;
+    lt = la + lb + lc + ld ;
+    ltot = lt.sum() ;
+    na = la.maxCoeff() ;
+    nb = lb.maxCoeff() ; 
+    nc = lc.maxCoeff() ;
+    nd = ld.maxCoeff() ; 
+/*
 !=====================================================!
 !  After initializing the <s|s> integrals, we start   !
 !  incrementing the Cartesian components of each      !
@@ -290,88 +297,95 @@
 !  momentum requires auxiliary integrals indexed by   !
 !  m, we have to loop over m as well.                 !
 !=====================================================!
+*/
+    oab = pow( pi/zeta, d1_5)*exp( -za*zb*rab2/zeta) ;
+    ocd = pow( pi/eta, d1_5)*exp( -zc*zd*rcd2/eta) ;
 
-      Oab = (Pi/Zeta)**F32 * Exp(-ZA*ZB*Rab2/Zeta)
-      Ocd = (Pi/ Eta)**F32 * Exp(-ZC*ZD*Rcd2/Eta)
-      Allocate(E(0:LTot), ETmp(-1:NA,-1:NB,-1:NC,-1:ND,0:LTot))
+    e.resize( ltot+1) ;
+    etmp = Eigen::Tensor <double, 5>( na+2, na+2, na+2, na+2, ltot+1) ;
 
-      Do M = 0,LTot
-       E(M) = Two*Sqrt(Rho/Pi)*Oab*Ocd*FBoys(M,T)
-      End Do
-! TMH: New!
-      If(MaxVal(Abs(E(0:LTot))) < Thresh) Then
-        ERInt = Zero
-        Deallocate(E, ETmp)
-        Return
-      End If
-! TMH: Done!
+    for( m = 0; m <= ltot; m++) {
+      e(m) = d2*sqrt( rho/pi)*oab*ocd*fboys( m, t) ;
+      }
 
-      Do I = 1,3
-       ETmp = Zero
-       ETmp(0,0,0,0,:) = E
+    if ( e.cwiseAbs().maxCoeff() < thresh) {
+      e.resize( 0) ;
+      etmp = Eigen::Tensor <double, 5>( 0, 0, 0, 0, 0) ;
+      return d0 ;
+      }
 
-       Do ID = 0,LD(I)-1
-        Do M = 0,LTot-1
-         ETmp(0,0,0,ID+1,M) = (Q(I) - D(I))*ETmp(0,0,0,ID,M)             &
-                            + (W(I) - Q(I))*ETmp(0,0,0,ID,M+1)           &
-               + Real(ID)/(Two*Eta)*(ETmp(0,0,0,ID-1,M)                  &
-                                   - ETmp(0,0,0,ID-1,M+1)*Rho/Eta)
-        End Do
-       End Do
+    for( i = 1; i < 4; i++) {
+      etmp.setZero() ;
 
-       Do ID = 0,LD(I)
-        Do IC = 0,LC(I)-1
-         Do M = 0,LTot-1
-          ETmp(0,0,IC+1,ID,M) = (Q(I) - C(I))*ETmp(0,0,IC,ID,M)          &
-                              + (W(I) - Q(I))*ETmp(0,0,IC,ID,M+1)        &
-               + Real(ID)/(Two*Eta)*(ETmp(0,0,IC,ID-1,M)                 &
-                                   - ETmp(0,0,IC,ID-1,M+1)*Rho/Eta)      &
-               + Real(IC)/(Two*Eta)*(ETmp(0,0,IC-1,ID,M)                 &
-                                   - ETmp(0,0,IC-1,ID,M+1)*Rho/Eta)
-         End Do
-        End Do
-       End Do
+      for( xx=0; xx <= ltot; xx++) {
+        etmp( 1, 1, 1, 1, xx) = e( xx) ;
+        }
 
-       Do ID = 0,LD(I)
-        Do IC = 0,LC(I)
-         Do IB = 0,LB(I)-1
-          Do M = 0,LTot-1
-           ETmp(0,IB+1,IC,ID,M) = (P(I) - B(I))*ETmp(0,IB,IC,ID,M)       &
-                                + (W(I) - P(I))*ETmp(0,IB,IC,ID,M+1)     &
-               + Real(ID)/(Two*Eta+Two*Zeta)*ETmp(0,IB,IC,ID-1,M+1)      &
-               + Real(IC)/(Two*Eta+Two*Zeta)*ETmp(0,IB,IC-1,ID,M+1)      &
-               + Real(IB)/(Two*Zeta)*(ETmp(0,IB-1,IC,ID,M)               &
-                                    - ETmp(0,IB-1,IC,ID,M+1)*Rho/Zeta)
-          End Do
-         End Do
-        End Do
-       End Do
+       for( id = 0; id < ld( i-1); id++) {
+         for( m = 0; m < ltot; m++) {
+           etmp( 1, 1, 1, id+2, m) = (q(i-1) - d(i-1))*etmp( 1, 1, 1, id+1, m) 
+           + (w(i-1) - q(i-1))*etmp( 1, 1, 1, id+1, m+1)
+           + static_cast<double>(id)/(d2*eta)*(etmp( 1, 1, 1, id, m) 
+           - etmp( 1, 1, 1, id, m+1)*rho/eta) ;
+           }
+         }
 
-       Do ID = 0,LD(I)
-        Do IC = 0,LC(I)
-         Do IB = 0,LB(I)
-          Do IA = 0,LA(I)-1
-           Do M = 0,LTot-1
-            ETmp(IA+1,IB,IC,ID,M) = (P(I) - A(I))*ETmp(IA,IB,IC,ID,M)    &
-                                  + (W(I) - P(I))*ETmp(IA,IB,IC,ID,M+1)  &
-               + Real(ID)/(Two*Eta+Two*Zeta)*ETmp(IA,IB,IC,ID-1,M+1)     &
-               + Real(IC)/(Two*Eta+Two*Zeta)*ETmp(IA,IB,IC-1,ID,M+1)     &
-               + Real(IB)/(Two*Zeta)*(ETmp(IA,IB-1,IC,ID,M)              &
-                                    - ETmp(IA,IB-1,IC,ID,M+1)*Rho/Zeta)  &
-               + Real(IA)/(Two*Zeta)*(ETmp(IA-1,IB,IC,ID,M)              &
-                                    - ETmp(IA-1,IB,IC,ID,M+1)*Rho/Zeta)
-           End Do
-          End Do
-         End Do
-        End Do
-       End Do
-       E = ETmp(LA(I),LB(I),LC(I),LD(I),:)
-      End Do
+       for( id = 0; id <= ld( i-1); id++) {
+         for( ic = 0; ic < lc( i-1); ic++) {
+           for( m = 0; m < ltot; m++) {
+             etmp( 1, 1, ic+2, id+1, m) = (q(i-1) - c(i-1))*etmp( 1, 1, ic+1, id+1, m)
+               + (w(i-1) - q(i-1))*etmp( 1, 1, ic+1, id+1, m+1)  
+               + static_cast<double>(id)/(d2*eta)*(etmp( 1, 1, ic+1, id, m) 
+               - etmp( 1 , 1, ic+1, id, m+1)*rho/eta) + static_cast<double>(ic)/(d2*eta)*(etmp( 1, 1, ic, id+1, m)
+               - etmp( 1, 1, ic, id+1, m+1)*rho/eta) ;
+             }
+           }
+         }
 
-      ERInt = E(0)*DNrm
-      DeAllocate(E,ETmp)
+       for( id = 0; id <= ld( i-1); id++) {
+         for( ic = 0; ic <= lc( i-1); ic++) {
+           for( ib = 0; ib < lb( i-1); ib++) {
+             for( m = 0; m < ltot; m++) {
+               etmp( 1, ib+2, ic+1, id+1, m) = (p(i-1) - b(i-1))*etmp( 1, ib+1, ic+1, id+1, m)
+               + (w(i-1) - p(i-1))*etmp( 1,ib+1, ic+1, id+1, m+1) 
+               + etmp( 1, ib+1, ic+1, id, m+1)*static_cast<double>(id)/( d2*eta + d2*zeta)
+               + etmp( 1, ib+1, ic, id+1, m+1)*static_cast<double>(ic)/( d2*eta + d2*zeta)
+               + static_cast<double>(ib)/(d2*zeta)*(etmp( 1, ib, ic+1, id+1, m)
+               - etmp( 1, ib, ic+1, id+1, m+1)*rho/zeta) ;
+               }
+             }
+           }
+         }
 
-      Return
+       for( id = 0; id <= ld( i-1); id++) {
+         for( ic = 0; ic <= lc( i-1); ic++) {
+           for( ib = 0; ib <= lb( i-1); ib++) {
+             for( ia = 0; ia < la( i-1); ia++) {
+               for( m = 0; m < ltot; m++) {
+                 etmp( ia+2, ib+1, ic+1, id+1, m) = (p(i-1) - a(i-1))*etmp( ia+1, ib+1, ic+1, id+1, m)
+                 + (w(i-1) - p(i-1))*etmp( ia+1, ib+1, ic+1, id+1, m+1)
+               + etmp( ia+1, ib+1, ic+1, id, m+1)*static_cast<double>(id)/( d2*eta + d2*zeta)
+               + etmp( ia+1, ib+1, ic, id+1, m+1)*static_cast<double>(ic)/( d2*eta + d2*zeta)
+               + (etmp( ia+1, ib, ic+1, id+1, m) - etmp( ia+1, ib, ic+1, id+1, m+1)*rho/zeta)*static_cast<double>(ib)/(d2*zeta) 
+               + ( etmp( ia, ib+1, ic+1, id+1, m) - etmp( ia, ib+1, ic+1, id+1, m+1)*rho/zeta) *static_cast<double>(ia)/(d2*zeta) ;
+                 }
+               }
+             }
+           }
+         }
+
+      for( int xx=0; xx <= ltot; xx++) {
+        e( xx) = etmp( la(i-1)+1, lb(i-1)+1, lc(i-1)+1, ld(i-1)+1, xx) ;
+        }
+
+      }
+
+      er12 = e(0)*ca*cb*cc*cd ;
+      e.resize( 0) ;
+      etmp = Eigen::Tensor <double, 5>( 0, 0, 0, 0, 0) ;
+
+      return er12 ;
+
     } ;
 
   double overlap_sto( sto& a, Eigen::Ref<Eigen::Vector3d> ca, sto& b, Eigen::Ref<Eigen::Vector3d> cb) {
@@ -462,6 +476,8 @@
     std::cout << ovl << std::endl ;
     ovl.resize( 0, 0) ;
 
+    return ;
+
     } ;
 
   void ao_kinetic( int natm, basis_set& b) {
@@ -499,6 +515,8 @@
 
     std::cout << T << std::endl ;
     T.resize( 0, 0) ;
+
+    return ;
 
     } ;
 
@@ -539,17 +557,49 @@
     std::cout << V << std::endl ;
     V.resize( 0, 0) ;
 
-    } ;
-
-  double fboys( int k, double t) {
-      double f, m, n ;
-      /*  Let's not mess around.  Just compute this*/
-
-      m = static_cast<double>(k) + d1/d2 ;
-      n = static_cast<double>(k) + 3.0e0/d2 ;
-      f = gsl_sf_hyperg_1F1( m, n, -t)/( d2*static_cast<double>(k) + d1) ;
-      
-      return f ;
+    return ;
 
     } ;
+
+  void ao_tei( int natm, basis_set& b ) {
+    /* Given a Slater-type Orbital basis and the nuclear information, return
+    the two electron repulsion integrals over Muliken ao indexes */
+    int nbas = b.nbas ;
+    int ind = -1 ;
+    int jnd ;
+    int nst1, nst2, jstrt ;
+    double k ;
+    Eigen::MatrixXd V ;
+ 
+    V.resize( nbas, nbas) ;
+    V.setZero() ;
+
+    for ( int i = 0; i < natm; i++) {
+      nst1 = b.b[i].nshl ;
+      for ( int j = 0; j < nst1; j++) {
+        ind ++ ;
+        jnd = ind - 1 ;
+        for ( int k = i; k < natm; k++) {
+          nst2 = b.b[k].nshl ;
+          if ( k == i ) {
+            jstrt = j ;
+          } else {
+            jstrt = 0 ;
+          }
+          for ( int l = jstrt; l < nst2; l++) {
+            jnd ++ ;
+            V( ind, jnd) = nucelecV_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c, n_c, q) ;
+            V( jnd, ind) = V( ind, jnd) ;
+            }
+          }
+        }
+      }
+
+    std::cout << V << std::endl ;
+    V.resize( 0, 0) ;
+
+    return ;
+
+    } ;
+
 

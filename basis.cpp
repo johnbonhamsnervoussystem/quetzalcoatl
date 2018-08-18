@@ -7,7 +7,7 @@
 #include "util.h"
 #include <vector>
 
-  basis_set load_sto1g ( Eigen::VectorXi AtN, Eigen::MatrixXd c) {
+  basis_set load_sto1g ( Eigen::VectorXd AtN, Eigen::MatrixXd c) {
     /* STO-3G basis set
      cite: W. J. Hehre, R. F. Stewart, and J. A. Pople, The Journal of Chemical Physics 51, 2657 (1969)
            doi: 10.1063/1.1672392
@@ -23,7 +23,7 @@
     for( int a=0; a<AtN.size(); ++a) {
 
       bf.s.clear() ;
-      switch (AtN(a)) {
+      switch ( static_cast<int>(AtN(a)+0.5)) {
         case 1: // Z=1: hydrogen
           s.g.clear() ;
           s.l.setZero() ;
@@ -101,7 +101,7 @@
 
  } ;
 
-  basis_set load_sto3g ( Eigen::VectorXi AtN, Eigen::MatrixXd c) {
+  basis_set load_sto3g ( Eigen::VectorXd AtN, Eigen::MatrixXd c) {
     /* STO-3G basis set
      cite: W. J. Hehre, R. F. Stewart, and J. A. Pople, The Journal of Chemical Physics 51, 2657 (1969)
            doi: 10.1063/1.1672392
@@ -117,7 +117,7 @@
 
     for( int a=0; a<AtN.size(); a++) {
 
-      switch (AtN(a)) {
+      switch ( static_cast<int>(AtN(a)+0.5)) {
         case 1: // Z=1: hydrogen
           /* One s orbital */
           s.g.clear() ;
@@ -371,7 +371,7 @@
 
  } ;
 
-  basis_set build_basis ( std::string bas_name, Eigen::Ref<Eigen::VectorXi> AtN, Eigen::Ref<Eigen::MatrixXd> coord) {
+  basis_set build_basis ( std::string bas_name, Eigen::Ref<Eigen::VectorXd> AtN, Eigen::Ref<Eigen::MatrixXd> coord) {
   /* Load a basis set */
   const std::string b_sto3g = "sto-3g" ;
   const std::string b_sto1g = "sto-1g" ;

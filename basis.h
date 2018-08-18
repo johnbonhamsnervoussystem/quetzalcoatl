@@ -42,9 +42,11 @@
     std::vector<atm_basis> b ;
     } ;
 
-  basis_set load_sto3g ( Eigen::VectorXi A, Eigen::MatrixXd c) ;
+  basis_set load_sto1g ( Eigen::VectorXd A, Eigen::MatrixXd c) ;
 
-  basis_set build_basis ( std::string n, Eigen::Ref<Eigen::VectorXi> A, Eigen::Ref<Eigen::MatrixXd> c) ;
+  basis_set load_sto3g ( Eigen::VectorXd A, Eigen::MatrixXd c) ;
+
+  basis_set build_basis ( std::string n, Eigen::Ref<Eigen::VectorXd> A, Eigen::Ref<Eigen::MatrixXd> c) ;
 
   void norm_basis ( int n, basis_set& b) ;
 
