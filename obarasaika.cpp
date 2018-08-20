@@ -3,7 +3,6 @@
 #include "constants.h"
 #include <Eigen/Dense>
 #include <Eigen/CXX11/Tensor>
-#include <gsl/gsl_sf_hyperg.h>
 #include <iostream>
 #include "obarasaika.h"
 #include "util.h"
@@ -289,6 +288,7 @@
     nb = lb.maxCoeff() ; 
     nc = lc.maxCoeff() ;
     nd = ld.maxCoeff() ; 
+
 /*
 !=====================================================!
 !  After initializing the <s|s> integrals, we start   !
@@ -298,6 +298,7 @@
 !  m, we have to loop over m as well.                 !
 !=====================================================!
 */
+
     oab = pow( pi/zeta, d1_5)*exp( -za*zb*rab2/zeta) ;
     ocd = pow( pi/eta, d1_5)*exp( -zc*zd*rcd2/eta) ;
 
@@ -325,8 +326,8 @@
          for( m = 0; m < ltot; m++) {
            etmp( 1, 1, 1, id+2, m) = (q(i-1) - d(i-1))*etmp( 1, 1, 1, id+1, m) 
            + (w(i-1) - q(i-1))*etmp( 1, 1, 1, id+1, m+1)
-           + static_cast<double>(id)/(d2*eta)*(etmp( 1, 1, 1, id, m) 
-           - etmp( 1, 1, 1, id, m+1)*rho/eta) ;
+           + static_cast<double>(id)*(etmp( 1, 1, 1, id, m) 
+           - rho*etmp( 1, 1, 1, id, m+1)/eta)/(d2*eta) ;
            }
          }
 
@@ -335,9 +336,9 @@
            for( m = 0; m < ltot; m++) {
              etmp( 1, 1, ic+2, id+1, m) = (q(i-1) - c(i-1))*etmp( 1, 1, ic+1, id+1, m)
                + (w(i-1) - q(i-1))*etmp( 1, 1, ic+1, id+1, m+1)  
-               + static_cast<double>(id)/(d2*eta)*(etmp( 1, 1, ic+1, id, m) 
-               - etmp( 1 , 1, ic+1, id, m+1)*rho/eta) + static_cast<double>(ic)/(d2*eta)*(etmp( 1, 1, ic, id+1, m)
-               - etmp( 1, 1, ic, id+1, m+1)*rho/eta) ;
+               + static_cast<double>(id)*( etmp( 1, 1, ic+1, id, m) 
+               - rho*etmp( 1 , 1, ic+1, id, m+1)/eta)/(d2*eta) + static_cast<double>(ic)*(etmp( 1, 1, ic, id+1, m)
+               - rho*etmp( 1, 1, ic, id+1, m+1)/eta)/(d2*eta) ;
              }
            }
          }
@@ -437,6 +438,30 @@
       }
 
     return v ;
+
+    } ;
+
+  double r12_sto( sto& a, Eigen::Ref<Eigen::Vector3d> ca, sto& b, Eigen::Ref<Eigen::Vector3d> cb, sto& c, Eigen::Ref<Eigen::Vector3d> cc, sto& d, Eigen::Ref<Eigen::Vector3d> cd) {
+  /* Given four Slater-type Orbitals, return the electron repulsion integral */
+    int npa = a.nprm ;
+    int npb = b.nprm ;
+    int npc = c.nprm ;
+    int npd = d.nprm ;
+    double eri = 0.0 ;
+
+    for ( int i = 0; i < npa; i++) {
+      for ( int j = 0; j < npb; j++) {
+        for ( int k = 0; k < npc; k++) {
+          for ( int l = 0; l < npd; l++) {
+            eri += gauprm_r12( a.g[i].x, a.g[i].c, ca, a.l, b.g[j].x, b.g[j].c, cb, b.l, c.g[k].x, c.g[k].c, cc, c.l, d.g[l].x, d.g[l].c, cd, d.l ) ; 
+            }
+          }
+        }
+      }
+
+    std::cout << eri << std::endl ;
+
+    return eri ;
 
     } ;
 
@@ -561,45 +586,48 @@
 
     } ;
 
-  void ao_tei( int natm, basis_set& b ) {
+  void ao_tei( int natm, basis_set& b) {
     /* Given a Slater-type Orbital basis and the nuclear information, return
     the two electron repulsion integrals over Muliken ao indexes */
     int nbas = b.nbas ;
-    int ind = -1 ;
-    int jnd ;
-    int nst1, nst2, jstrt ;
-    double k ;
-    Eigen::MatrixXd V ;
- 
-    V.resize( nbas, nbas) ;
-    V.setZero() ;
+    int i, j, k, l, m, n, o, p ;
+    int ix, kx, mx, ox ;
+    int nst1, nst2, nst3, nst4 ;
+    /* Let's just start with a 4 index tensor to make sure everything works */
+    Eigen::Tensor< double, 4> eri( nbas, nbas, nbas, nbas) ;
 
+    eri.setZero() ;
+    ix = -1 ;
     for ( int i = 0; i < natm; i++) {
       nst1 = b.b[i].nshl ;
       for ( int j = 0; j < nst1; j++) {
-        ind ++ ;
-        jnd = ind - 1 ;
-        for ( int k = i; k < natm; k++) {
+	ix++ ;
+        kx = -1 ;
+        for ( int k = 0; k < natm; k++) {
           nst2 = b.b[k].nshl ;
-          if ( k == i ) {
-            jstrt = j ;
-          } else {
-            jstrt = 0 ;
-          }
-          for ( int l = jstrt; l < nst2; l++) {
-            jnd ++ ;
-            V( ind, jnd) = nucelecV_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c, n_c, q) ;
-            V( jnd, ind) = V( ind, jnd) ;
+          for ( int l = 0; l < nst2; l++) {
+	    kx++ ;
+            mx = -1 ;
+            for ( int m = 0; m < natm; m++) {
+              nst3 = b.b[m].nshl ;
+              for ( int n = 0; n < nst3; n++) {
+	        mx++ ;
+                ox = -1 ;
+                for ( int o = 0; o < natm; o++) {
+                  nst4 = b.b[o].nshl ;
+                  for ( int p = 0; p < nst4; p++) {
+	            ox++ ;
+                    eri( ix, kx, mx, ox) = r12_sto( b.b[i].s[j], b.b[i].c, b.b[k].s[l], b.b[k].c, b.b[m].s[n], b.b[m].c, b.b[o].s[p], b.b[o].c) ;
+                    }
+                  }
+                }
+              }
             }
           }
         }
-      }
-
-    std::cout << V << std::endl ;
-    V.resize( 0, 0) ;
+      } 
 
     return ;
 
     } ;
-
 
