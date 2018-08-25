@@ -21,6 +21,7 @@
 #include "qtzio.h"
 #include "solver.h"
 #include "tei.h"
+#include "time_dbg.h"
 #include "util.h"
 #include "wigner.h"
 
@@ -73,14 +74,15 @@ int main(int argc, char *argv[]) {
   std::string trden="tden.rwf" ;
   std::string fokmat="fmat.rwf" ;
   Eigen::MatrixXd c ;
-  Eigen::VectorXi a ;
-  basis_set b ;
+  Eigen::VectorXd a ;
+  basis_set b ; 
+  time_dbg quetz_time = time_dbg("Quetzalcoatl") ;
 
   /* File reading and header variables. */
   std::stringstream ss ;
   std::string inpfile ;
-  std::time_t t = std::time(0) ;
-  std::tm* now = std::localtime(&t) ;
+//  std::time_t t = std::time(0) ;
+//  std::tm* now = std::localtime(&t) ;
 
 /*Eigen::MatrixXd mosf ;
   Eigen::MatrixXd tmp ; */
@@ -89,6 +91,7 @@ int main(int argc, char *argv[]) {
 
 /*   Let's just us a test file for now.
  *   std::cin >> readfile ; */
+//  time_dbg::quetz_time("Quetzalcoatl") ;
   ss << argv[1] ;
   ss >> inpfile ;
   read_input( com, inpfile) ;
@@ -96,11 +99,11 @@ int main(int argc, char *argv[]) {
     << "|  Quetzalcoatl v1.0  " << std::endl ;
   std::cout << "| " << std::endl ;
   std::cout << " ---   ---   ---   --- " << std::endl << "|" << std::endl ;
-  std::cout << "|  Started at  " << std::endl << "| " << now->tm_hour  << " : " 
+/*  std::cout << "|  Started at  " << std::endl << "| " << now->tm_hour  << " : " 
     << now->tm_min + 1 << " : " << now->tm_sec << std::endl ;
   std::cout << "|  on  " << std::endl << "| " << now->tm_year + 1900 << " - " 
     << now->tm_mon + 1 << " - " << now->tm_mday << std::endl ;
-  std::cout << "| " << std::endl ;
+  std::cout << "| " << std::endl ; */
   std::cout << " ---   ---   ---   --- " << std::endl << "|" << std::endl ;
   std::cout << "|  Reading from input : " << inpfile << std::endl ;
   std::cout << "|  Basis Set : " << com.bnam() << std::endl ;
@@ -115,23 +118,26 @@ int main(int argc, char *argv[]) {
   a = com.getA() ;
  
 
-  for ( int i = 0; i < com.natm(); i++) {
-    for ( int j = i+1; j < com.natm(); j++) {
-      cx = c( i, 0) - c( j, 0) ;
-      cy = c( i, 1) - c( j, 1) ;
-      cz = c( i, 2) - c( j, 2) ;
-      r2 = cx*cx + cy*cy + cz*cz ;
-      r = sqrt(r2) ;
-      n_rep += static_cast<double>(a(i))*static_cast<double>(a(j))/r ;
-      }
-    }
+//  for ( int i = 0; i < com.natm(); i++) {
+//    for ( int j = i+1; j < com.natm(); j++) {
+//      cx = c( i, 0) - c( j, 0) ;
+//      cy = c( i, 1) - c( j, 1) ;
+//      cz = c( i, 2) - c( j, 2) ;
+//      r2 = cx*cx + cy*cy + cz*cz ;
+//      r = sqrt(r2) ;
+//      n_rep += static_cast<double>(a(i))*static_cast<double>(a(j))/r ;
+//      }
+//    }
 
-  com.nrep( n_rep ) ;
+//  com.nrep( n_rep ) ;
 
   b = build_basis( com.bnam(), a, c) ;
-  print_basis( b) ;
-  n_rep = overlap_sto( b.b[0].s[0], b.b[0].c, b.b[1].s[0], b.b[1].c) ;
-  std::cout << "s " << n_rep << std::endl ;
+//  std::cout << com.natm() << std::endl ;
+//  print_basis( com.natm(), b) ;
+  ao_overlap( com.natm(), b) ;
+  ao_kinetic( com.natm(), b) ;
+  ao_eN_V( com.natm(), b, c, a) ;
+  ao_tei( com.natm(), b) ;
  
 //  getmel( "./test_fil/f00.fi1s", "./test_fil/f00.fi2s", intarr, com) ;
 //  s.resize( com.nbas(), com.nbas()) ;
@@ -163,6 +169,7 @@ int main(int argc, char *argv[]) {
 //
 //  trci( com, tst_vec, h_full, tmparr, trden, fokmat) ;
 //
+  quetz_time.end() ;
   return 0 ;
 
 } /* End Quetzacoatl */
