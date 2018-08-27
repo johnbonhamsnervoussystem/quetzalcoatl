@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include "qtzio.h"
 #include "tei.h"
+#include "time_dbg.h"
 using namespace Eigen ;
 using namespace std ;
 
@@ -24,8 +25,9 @@ void read_input( common& com, const std::string& inpfile){
   std::string s_junk ;
   std::string delim = "," ;
   std::ifstream jobfile ;
-  std::vector<int> atnum ;
+  std::vector<double> atnum ;
   std::vector<std::vector<double>> t_c ;
+  time_dbg read_input_time = time_dbg("read_input") ;
 
   jobfile.open( inpfile, std::ifstream::in ) ;
 
@@ -40,8 +42,8 @@ void read_input( common& com, const std::string& inpfile){
       while( line.substr(0,5) != " end" ){
         at_count++ ;
         pos = line.find(delim) ;
-        i_junk = stoi(line.substr( 0, pos)) ;
-        atnum.push_back( i_junk) ;
+        d_junk = stod(line.substr( 0, pos)) ;
+        atnum.push_back( d_junk) ;
         line.erase( 0, pos + delim.length()) ;
         pos = line.find(delim) ;
         tmp[0] = stod(line.substr( 0, pos)) ;
@@ -68,6 +70,7 @@ void read_input( common& com, const std::string& inpfile){
   }
 
   com.nele(com.nalp() + com.nbet()) ;
+  read_input_time.end() ;
 
   return ;
 
@@ -213,8 +216,8 @@ void rdsdet ( int nbasis, vector<string>& matel, vector<hfwfn>& det) {
 
 }
 
-void w_eigen_binary( ) {
-/* Passed an eigen matrix and ofstream, write the contents. */
-
-}
+//void w_eigen_binary( ) {
+///* Passed an eigen matrix and ofstream, write the contents. */
+//
+//}
 

@@ -6,6 +6,7 @@
 #include <iostream>
 #include "obarasaika.h"
 #include "util.h"
+#include "tei.h"
 #include <vector>
 
   double gauprm_ovl( double za, double ca, Eigen::Ref<Eigen::Vector3d> a, Eigen::Ref<Eigen::Vector3i> la, double zb, double cb, Eigen::Ref<Eigen::Vector3d> b, Eigen::Ref<Eigen::Vector3i> lb) {
@@ -240,7 +241,10 @@
     za, zb, zc, zd - Exponents 
     ca, cb, cc, cd - Normalization constants            
     la, lb, lc, ld - Angular momentum information       
-    a, b, c, d - Centers                            
+    a, b, c, d - Centers
+    The integrals are produced in muliken notation
+    Muliken -> (A B | 1/r12 | C D)
+    Dirac ->  <A C | 1/r12 | B D>
   */
     int na, nb, nc, nd, ltot ;
     int ia, ib, ic, id, m, i, xx ;
@@ -253,22 +257,6 @@
     Eigen::VectorXd e ;
     Eigen::Tensor< double, 5> etmp( 1, 1, 1, 1, 1) ;
 
-/*   
-!====================================================!
-!  Electron repulsion integrals evaluated using the  !
-!  Obara-Saika recursion scheme.                     !    
-!                                                    !
-!  The functions we're integrating have:             !
-!    ZK = Exponent of function K                     !
-!    CK = Normalization constant of function K       !
-!    LK = Angular momentum for function K            !
-!    K  = Vector pointing to center K                !
-!  Note that this integral is in Mulliken notation,  !
-!  that is, with functions A, B, C, and D we have    !
-!    ERI(A,B,C,D) = (A B | 1/r12 | C D)              !
-!                 = <A C | 1/r12 | B D>.             !
-!====================================================!
-*/
     zeta = za + zb ;
     eta  = zc + zd ;
     rho  = eta*zeta/(eta+zeta) ;
@@ -459,23 +447,18 @@
         }
       }
 
-    std::cout << eri << std::endl ;
-
     return eri ;
 
     } ;
 
-  void ao_overlap( int natm, basis_set& b) {
+  void ao_overlap( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> ovl) {
     /* Given a Slater-type Orbital basis, return the overlap. */
     int nbas = b.nbas ;
     int ind = -1 ;
     int jnd ;
     int nst1, nst2, jstrt ;
     double s ;
-    Eigen::MatrixXd ovl ;
  
-    ovl.resize( nbas, nbas) ;
-    ovl.setZero() ;
     for ( int i = 0; i < natm; i++) {
       nst1 = b.b[i].nshl ;
       for ( int j = 0; j < nst1; j++) {
@@ -498,14 +481,11 @@
         }
       }
 
-    std::cout << ovl << std::endl ;
-    ovl.resize( 0, 0) ;
-
     return ;
 
     } ;
 
-  void ao_kinetic( int natm, basis_set& b) {
+  void ao_kinetic( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> T) {
     /* Given a Slater-type Orbital basis, return the kinetic
        energy. */
     int nbas = b.nbas ;
@@ -513,10 +493,7 @@
     int jnd ;
     int nst1, nst2, jstrt ;
     double k ;
-    Eigen::MatrixXd T ;
  
-    T.resize( nbas, nbas) ;
-    T.setZero() ;
     for ( int i = 0; i < natm; i++) {
       nst1 = b.b[i].nshl ;
       for ( int j = 0; j < nst1; j++) {
@@ -538,14 +515,11 @@
         }
       }
 
-    std::cout << T << std::endl ;
-    T.resize( 0, 0) ;
-
     return ;
 
     } ;
 
-  void ao_eN_V( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> n_c, Eigen::Ref<Eigen::VectorXd> q ) {
+  void ao_eN_V( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> n_c, Eigen::Ref<Eigen::VectorXd> q, Eigen::Ref<Eigen::MatrixXd> V) {
     /* Given a Slater-type Orbital basis and the nuclear information, return
     the electron nuclear potential integrals */
     int nbas = b.nbas ;
@@ -553,11 +527,7 @@
     int jnd ;
     int nst1, nst2, jstrt ;
     double k ;
-    Eigen::MatrixXd V ;
  
-    V.resize( nbas, nbas) ;
-    V.setZero() ;
-
     for ( int i = 0; i < natm; i++) {
       nst1 = b.b[i].nshl ;
       for ( int j = 0; j < nst1; j++) {
@@ -579,22 +549,19 @@
         }
       }
 
-    std::cout << V << std::endl ;
-    V.resize( 0, 0) ;
-
     return ;
 
     } ;
 
-  void ao_tei( int natm, basis_set& b) {
-    /* Given a Slater-type Orbital basis and the nuclear information, return
-    the two electron repulsion integrals over Muliken ao indexes */
-    int nbas = b.nbas ;
+/*  void tensor_ao_tei( int nbas, int natm, basis_set& b, Eigen::Ref<Eigen::Tensor< double, nbas>> eri) {
+     Given a Slater-type Orbital basis and the nuclear information, return
+    the two electron repulsion integrals over Muliken ao indexes.
+
+    This routine goes over all indexes and fills a 4 index tensor.
+    
     int i, j, k, l, m, n, o, p ;
     int ix, kx, mx, ox ;
     int nst1, nst2, nst3, nst4 ;
-    /* Let's just start with a 4 index tensor to make sure everything works */
-    Eigen::Tensor< double, 4> eri( nbas, nbas, nbas, nbas) ;
 
     eri.setZero() ;
     ix = -1 ;
@@ -625,9 +592,77 @@
             }
           }
         }
-      } 
+      }
+
+    return ;
+
+    } ; */
+
+  void list_ao_tei( int natm, basis_set& b, std::vector<tei>& intarr) {
+    /* Given a Slater-type Orbital basis and the nuclear information, return
+    the two electron repulsion integrals over Muliken ao indexes 
+
+    Get the integrals as a list of muliken integrals in the form
+    ( i j| k l) where i > j, k > l and ij > kl */
+    int i, j, k, l, m, n, o, p ;
+    int i_v, k_v, m_v, o_v ;
+    int nst1, nst2, nst3, nst4 ;
+    int lto ;
+    double int_v ;
+    tei tmp_tei ;
+
+    i_v = -1 ;
+    for ( int i = 0; i < natm; i++) {
+      nst1 = b.b[i].nshl ;
+      for ( int j = 0; j < nst1; j++) {
+	i_v++ ;
+        k_v = -1 ;
+        for ( int k = 0; k <= i; k++) {
+          if ( i != k ) {
+            nst2 = b.b[k].nshl ;
+          } else {
+            nst2 = j + 1 ;
+            }
+          for ( int l = 0; l < nst2; l++) {
+	    k_v++ ;
+            m_v = -1 ;
+ //
+            for ( int m = 0; m <= i; m++) {
+              if ( i != m ) {
+                nst3 = b.b[m].nshl ;
+              } else {
+                nst3 = j + 1 ;
+                }
+              for ( int n = 0; n < nst3; n++) {
+	        m_v++ ;
+                o_v = -1 ;
+                if ( i != m ) {
+                  lto = m ;
+                } else {
+                  lto = k ;
+                  }
+                for ( int o = 0; o <= lto; o++) {
+                  if ( i != m && o == m) {
+                    nst4 = n + 1 ;
+                  } else if ( i == m && k == o ) {
+                    nst4 = l + 1 ;
+                  } else {
+                    nst4 = b.b[o].nshl ;
+                    }
+                  for ( int p = 0; p < nst4; p++) {
+	            o_v++ ;
+                    int_v = r12_sto( b.b[i].s[j], b.b[i].c, b.b[k].s[l], b.b[k].c, b.b[m].s[n], b.b[m].c, b.b[o].s[p], b.b[o].c) ;
+                    tmp_tei.set( i_v, k_v, m_v, o_v, int_v) ;
+                    intarr.push_back(tmp_tei) ;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
 
     return ;
 
     } ;
-
