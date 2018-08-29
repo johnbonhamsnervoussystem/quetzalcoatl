@@ -14,7 +14,7 @@
 #include "binio.h"
 #include "common.h"
 #include "evalm.h"
-#include "hfwfn.h"
+#include "hfrout.h"
 #include "integr.h"
 #include "obarasaika.h"
 #include "project.h"
@@ -119,14 +119,18 @@ int main(int argc, char *argv[]) {
 
   b = build_basis( com.bnam(), a, c) ;
   nbas = b.nbas ;
+  com.nbas( nbas) ;
+  std::cout << "nbas " << nbas << std::endl ;
   S.resize( nbas, nbas) ;
   ao_overlap( com.natm(), b, S) ;
   T.resize( nbas, nbas) ;
   ao_kinetic( com.natm(), b, T) ;
   V.resize( nbas, nbas) ;
   ao_eN_V( com.natm(), b, c, a, V) ;
-  eri = Eigen::Tensor< double, 4>( nbas, nbas, nbas, nbas) ;
   list_ao_tei( com.natm(), b, intarr) ; 
+
+  int opt = 1 ;
+  scf_drv( com, T, V, S, intarr, opt) ;
 
   /* Deallocate the memory and exit. */
   intarr.clear() ;

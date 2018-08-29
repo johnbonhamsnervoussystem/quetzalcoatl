@@ -1,3 +1,4 @@
+#include "common.h"
 #include<Eigen/Dense>
 #include<vector>
 #include<string>
@@ -6,6 +7,8 @@
 
 #ifndef HFROUT_H
 #define HFROUT_H
+
+void scf_drv( common& com, Eigen::Ref<Eigen::MatrixXd> T, Eigen::Ref<Eigen::MatrixXd> V, Eigen::Ref<Eigen::MatrixXd> S, std::vector<tei>& intarr, int& o);
 
 double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, int nbasis, int nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig ) ;
 

@@ -1,26 +1,60 @@
+#include <complex>
 #include "constants.h"
-#include<iostream>
-#include<string>
-#include<vector>
-#include<complex>
-#include<Eigen/Dense>
-#include<Eigen/Eigenvalues>
-#include "tei.h"
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 #include "evalm.h"
+#include "hfrout.h"
+#include <iostream>
 #include "solver.h"
+#include <string>
+#include "tei.h"
+#include "time_dbg.h"
 #include "util.h"
+#include <vector>
 
 /* This set of routines finds a wavefunction by repeated diagonalization of the fock matrix for 
  * all the flavors of HF.  
  *
- * rrhfdia - real restricted hartree fock
- * crhfdia - complex restricted hartree fock
- * ruhfdia - real unrestricted hartree fock
- * cuhfdia - complex unrestricted hartree fock
- * rghfdia - real generalized hartree fock
- * cghfdia - complex generalized hartree fock
- *
  * */
+
+void scf_drv( common& com, Eigen::Ref<Eigen::MatrixXd> T, Eigen::Ref<Eigen::MatrixXd> V, Eigen::Ref<Eigen::MatrixXd> S, std::vector<tei>& intarr, int& opt){
+  /*Driver routine for solving self consistent wavefunctions and various things.
+   First I will handle Slater-Determinants.  Until I come up with a more cohesive
+   plan, 1,2,3,4,5,6.  
+    rrhfdia - real restricted hartree fock -> 1
+    crhfdia - complex restricted hartree fock -> 2
+    ruhfdia - real unrestricted hartree fock -> 3
+    cuhfdia - complex unrestricted hartree fock -> 4
+    rghfdia - real generalized hartree fock -> 5
+    cghfdia - complex generalized hartree fock -> 6 */
+    int nbas = com.nbas() ;
+    int nele = com.nele() ;
+    double energy ;
+    Eigen::MatrixXd h ;
+    Eigen::MatrixXd c ;
+    Eigen::VectorXd eig ;
+    time_dbg scf_drv_time = time_dbg("scf_drv") ;
+
+    if ( opt == 1) {
+      std::cout << "Number of ele = " << nele << std::endl ;
+      h.resize( nbas, nbas) ;
+      h = T + V ;
+      c.resize( nbas, nbas) ;
+      c.setZero() ;
+      eig.resize( nbas) ;
+      energy = rrhfdia( h, S, intarr, nbas, nele, c, eig) ;
+      std::cout << eig << std::endl ;
+      std::cout << energy << std::endl ;
+      eig.resize( 0) ;
+      c.resize( 0, 0) ;
+      h.resize( 0, 0) ;
+    }
+
+    scf_drv_time.end() ;
+
+    return ;
+
+  } ;
 
 double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, int nbasis, int nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig){
 
@@ -35,27 +69,34 @@ double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, st
   double energy ;
   double ene_p=d0 ;
   double e_dif=1e0 ;
+  time_dbg rrhfdia_time = time_dbg("rrhfdia_time") ;
 
   occ = nele/2 ;
   f.resize( nbasis, nbasis) ;
   g.resize( nbasis, nbasis) ;
   p.resize( nbasis, nbasis) ;
+  std::cout << "Everything is allocated " << std::endl ;
 
   /* If c has something in it use it as the initial guess. */
   if( c.isZero(0) ) {
     f = h ;
   } else {
+    std::cout << "Initial guess " << iter << std::endl ;
     p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
     ctr2er( intarr, p, g, nbasis) ;
     f = h + g ;
   } 
 
   while ( iter < 31 ) {
+    std::cout << "iteration is = " << iter << std::endl ;
     iter += 1 ;
     f_diag.compute( f, s) ;
+    std::cout << " Eigenvalues computed! " << std::endl ;
     c = f_diag.eigenvectors().real() ;
     p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
+    std::cout << " Density formed " << std::endl ;
     ctr2er( intarr, p, g, nbasis) ;
+    std::cout << " Integrals contracted " << std::endl ;
     f = g ;
     oao ( nbasis, f, s) ;
     f = h + g ;
@@ -74,6 +115,8 @@ double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, st
   p.resize( 0, 0) ;
   g.resize( 0, 0) ;
   f.resize( 0, 0) ;
+
+  rrhfdia_time.end() ;
 
   return energy ;
 
