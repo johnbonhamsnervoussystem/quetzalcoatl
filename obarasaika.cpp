@@ -7,6 +7,7 @@
 #include "obarasaika.h"
 #include "util.h"
 #include "tei.h"
+#include "time_dbg.h"
 #include <vector>
 
   double gauprm_ovl( double za, double ca, Eigen::Ref<Eigen::Vector3d> a, Eigen::Ref<Eigen::Vector3i> la, double zb, double cb, Eigen::Ref<Eigen::Vector3d> b, Eigen::Ref<Eigen::Vector3i> lb) {
@@ -458,6 +459,7 @@
     int jnd ;
     int nst1, nst2, jstrt ;
     double s ;
+    time_dbg ao_overlap_time = time_dbg("ao_overlap") ;
  
     for ( int i = 0; i < natm; i++) {
       nst1 = b.b[i].nshl ;
@@ -481,6 +483,8 @@
         }
       }
 
+    ao_overlap_time.end() ;
+
     return ;
 
     } ;
@@ -493,6 +497,7 @@
     int jnd ;
     int nst1, nst2, jstrt ;
     double k ;
+    time_dbg ao_kinetic_time = time_dbg("ao_kinetic") ;
  
     for ( int i = 0; i < natm; i++) {
       nst1 = b.b[i].nshl ;
@@ -515,6 +520,8 @@
         }
       }
 
+    ao_kinetic_time.end() ;
+
     return ;
 
     } ;
@@ -527,6 +534,7 @@
     int jnd ;
     int nst1, nst2, jstrt ;
     double k ;
+    time_dbg ao_eN_V_time = time_dbg("ao_eN_V") ;
  
     for ( int i = 0; i < natm; i++) {
       nst1 = b.b[i].nshl ;
@@ -542,12 +550,14 @@
           }
           for ( int l = jstrt; l < nst2; l++) {
             jnd ++ ;
-            V( ind, jnd) = nucelecV_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c, n_c, q) ;
+            V( ind, jnd) = -nucelecV_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c, n_c, q) ;
             V( jnd, ind) = V( ind, jnd) ;
             }
           }
         }
       }
+
+    ao_eN_V_time.end() ;
 
     return ;
 
@@ -610,6 +620,7 @@
     int lto ;
     double int_v ;
     tei tmp_tei ;
+    time_dbg list_ao_tei_time = time_dbg("list_ao_tei_time") ;
 
     i_v = -1 ;
     for ( int i = 0; i < natm; i++) {
@@ -662,6 +673,8 @@
           }
         }
       }
+
+    list_ao_tei_time.end() ;
 
     return ;
 

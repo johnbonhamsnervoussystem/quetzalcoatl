@@ -58,7 +58,8 @@ int main(int argc, char *argv[]) {
   std::vector<tei> intarr ;
 
   int job=0  ;
-  int i, j, k, l, nbas ;
+  int i, j, k, l ;
+  int nbas, natm ;
   double cx = 0.0e0 ;
   double cy = 0.0e0 ;
   double cz = 0.0e0 ;
@@ -109,24 +110,35 @@ int main(int argc, char *argv[]) {
                   unrestricted
                   generalized  */
   
-
-  c.resize( com.natm(), 3) ;
-  a.resize( com.natm()) ;
+  natm = com.natm() ;
+  c.resize( natm, 3) ;
+  a.resize( natm) ;
   c = com.getC() ;
   a = com.getA() ;
+  for (int i=0; i < natm; i++){
+    for (int j=i+1; j < natm; j++){
+      cx = c( j, 0) - c( i, 0) ;
+      cy = c( j, 1) - c( i, 1) ;
+      cz = c( j, 2) - c( i, 2) ;
+      r2 = pow( cx, 2.0) + pow( cy, 2.0) + pow( cz, 2.0) ;
+      n_rep += a(i)*a(j)/sqrt(r2) ;
+      }
+    }
  
-//  com.nrep( n_rep ) ;
+  com.nrep( n_rep ) ;
 
   b = build_basis( com.bnam(), a, c) ;
   nbas = b.nbas ;
   com.nbas( nbas) ;
-  std::cout << "nbas " << nbas << std::endl ;
   S.resize( nbas, nbas) ;
   ao_overlap( com.natm(), b, S) ;
+  std::cout << "S " << S << std::endl ;
   T.resize( nbas, nbas) ;
   ao_kinetic( com.natm(), b, T) ;
+  std::cout << "T " << T << std::endl ;
   V.resize( nbas, nbas) ;
   ao_eN_V( com.natm(), b, c, a, V) ;
+  std::cout << "V " << V << std::endl ;
   list_ao_tei( com.natm(), b, intarr) ; 
 
   int opt = 1 ;

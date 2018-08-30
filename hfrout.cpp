@@ -36,7 +36,6 @@ void scf_drv( common& com, Eigen::Ref<Eigen::MatrixXd> T, Eigen::Ref<Eigen::Matr
     time_dbg scf_drv_time = time_dbg("scf_drv") ;
 
     if ( opt == 1) {
-      std::cout << "Number of ele = " << nele << std::endl ;
       h.resize( nbas, nbas) ;
       h = T + V ;
       c.resize( nbas, nbas) ;
@@ -44,7 +43,7 @@ void scf_drv( common& com, Eigen::Ref<Eigen::MatrixXd> T, Eigen::Ref<Eigen::Matr
       eig.resize( nbas) ;
       energy = rrhfdia( h, S, intarr, nbas, nele, c, eig) ;
       std::cout << eig << std::endl ;
-      std::cout << energy << std::endl ;
+      std::cout << energy + com.nrep() << std::endl ;
       eig.resize( 0) ;
       c.resize( 0, 0) ;
       h.resize( 0, 0) ;
@@ -75,7 +74,6 @@ double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, st
   f.resize( nbasis, nbasis) ;
   g.resize( nbasis, nbasis) ;
   p.resize( nbasis, nbasis) ;
-  std::cout << "Everything is allocated " << std::endl ;
 
   /* If c has something in it use it as the initial guess. */
   if( c.isZero(0) ) {
@@ -88,15 +86,11 @@ double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, st
   } 
 
   while ( iter < 31 ) {
-    std::cout << "iteration is = " << iter << std::endl ;
     iter += 1 ;
     f_diag.compute( f, s) ;
-    std::cout << " Eigenvalues computed! " << std::endl ;
     c = f_diag.eigenvectors().real() ;
     p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
-    std::cout << " Density formed " << std::endl ;
     ctr2er( intarr, p, g, nbasis) ;
-    std::cout << " Integrals contracted " << std::endl ;
     f = g ;
     oao ( nbasis, f, s) ;
     f = h + g ;
@@ -110,8 +104,6 @@ double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, st
   }
 
   eig = f_diag.eigenvalues() ;
-  std::cout << " Density matrix rhf" << std::endl ;
-  std::cout << p << std::endl ;
   p.resize( 0, 0) ;
   g.resize( 0, 0) ;
   f.resize( 0, 0) ;
