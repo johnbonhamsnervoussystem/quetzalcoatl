@@ -18,7 +18,7 @@ class hfwfn {
 
   public :
 
-  void init ( common& com, std::vector<tei>& intarr, std::string wfn) ;
+//  void init ( common& com, std::vector<tei>& intarr, std::string wfn) ;
   void fil_mos ( int n, Eigen::Ref<Eigen::MatrixXd> mo, int wfn) ;
   void fil_mos ( int n, Eigen::Ref<Eigen::MatrixXcd> mo, int wfn) ;
 

@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
   ham - matrix containing the core hamiltonian
   xmat - matrix containing the transformation to an orthogonal ao basis.
   */
-  common com ;
+  common com = common() ;
   std::vector<tei> intarr ;
 
   int job=0  ;
@@ -69,9 +69,6 @@ int main(int argc, char *argv[]) {
   double val = 0.0e0 ;
   cd ejunk ;
   cd ojunk ;
-  hfwfn det1 ;
-  hfwfn det2 ;
-  std::vector<hfwfn> tst_vec ;
   std::vector<std::string> wfn_vec ;
   std::string trden="tden.rwf" ;
   std::string fokmat="fmat.rwf" ;
@@ -132,17 +129,21 @@ int main(int argc, char *argv[]) {
   com.nbas( nbas) ;
   S.resize( nbas, nbas) ;
   ao_overlap( com.natm(), b, S) ;
-  std::cout << "S " << S << std::endl ;
+  com.setS( S) ;
   T.resize( nbas, nbas) ;
   ao_kinetic( com.natm(), b, T) ;
   std::cout << "T " << T << std::endl ;
   V.resize( nbas, nbas) ;
   ao_eN_V( com.natm(), b, c, a, V) ;
-  std::cout << "V " << V << std::endl ;
+  S = T + V ;
+  com.setH( S) ;
+  V.resize( 0, 0) ;
+  T.resize( 0, 0) ;
+  S.resize( 0, 0) ;
   list_ao_tei( com.natm(), b, intarr) ; 
 
   int opt = 1 ;
-  scf_drv( com, T, V, S, intarr, opt) ;
+  scf_drv( com, intarr, opt) ;
 
   /* Deallocate the memory and exit. */
   intarr.clear() ;

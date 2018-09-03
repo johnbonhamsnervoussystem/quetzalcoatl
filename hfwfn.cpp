@@ -9,191 +9,191 @@
 #include "tei.h"
 
 /* Initialization */
-  void hfwfn::init( common& com, std::vector<tei>& intarr, std::string wfn){
-
-    int nb ;
-    int nele ;
-    double e_energy ;
-    Eigen::MatrixXd hr ;
-    Eigen::MatrixXd sr ;
-    Eigen::MatrixXd mor ;
-    Eigen::MatrixXcd hc ;
-    Eigen::MatrixXcd sc ;
-    Eigen::MatrixXcd moc ;
-    Eigen::VectorXd eig ;
-
-    if ( wfn == "rrhf" ) {
-
-      /* Initialize a single block */
-      mo_rcof.resize( com.nbas(), com.nbas()) ;
-      mor.resize( com.nbas(), com.nbas()) ;
-      mor.setZero() ;
-      eig_v.resize( com.nbas()) ;
-      eig.resize( com.nbas()) ;
-      hr.resize( com.nbas(), com.nbas()) ;
-      sr.resize( com.nbas(), com.nbas()) ;
-      hr = com.getH() ;
-      sr = com.getS() ;
-      wfn_styp = wfn ;
-      wfn_ityp = 1 ;
-
-      e_energy = rrhfdia( hr, sr, intarr, com.nbas(), com.nele(), mor, eig) ;
-
-      /* Store the values. */
-      mo_rcof = mor ;
-      eig_v = eig ;
-      energy = e_energy ;
-
-      sr.resize( 0, 0) ;
-      hr.resize( 0, 0) ;
-      eig.resize( 0) ;
-      mor.resize( 0, 0) ;
-
-    } else if ( wfn == "crhf" ) {
-
-      /* Initialize a single block */
-      mo_ccof.resize( com.nbas(), com.nbas()) ;
-      moc.resize( com.nbas(), com.nbas()) ;
-      moc.setZero() ;
-      eig_v.resize( com.nbas()) ;
-      eig.resize( com.nbas()) ;
-      hc.resize( com.nbas(), com.nbas()) ;
-      sc.resize( com.nbas(), com.nbas()) ;
-      hc.real() = com.getH() ;
-      sc.real() = com.getS() ;
-      wfn_styp = wfn ;
-      wfn_ityp = 2 ;
-
-      e_energy = crhfdia( hc, sc, intarr, com.nbas(), com.nele(), moc, eig) ;
-
-      /* Store the values. */
-      mo_ccof = moc ;
-      eig_v = eig ;
-      energy = e_energy ;
-
-      sc.resize( 0, 0) ;
-      hc.resize( 0, 0) ;
-      eig.resize( 0) ;
-      mor.resize( 0, 0) ;
-
-    } else if ( wfn == "ruhf" ) {
-
-      /* Initialize a single block */
-      mo_rcof.resize( com.nbas(), 2*com.nbas()) ;
-      mor.resize( com.nbas(), 2*com.nbas()) ;
-      mor.setZero() ;
-      eig_v.resize( 2*com.nbas()) ;
-      eig.resize( 2*com.nbas()) ;
-      hr.resize( com.nbas(), com.nbas()) ;
-      sr.resize( com.nbas(), com.nbas()) ;
-      hr = com.getH() ;
-      sr = com.getS() ;
-      wfn_styp = wfn ;
-      wfn_ityp = 3 ;
-
-      e_energy = ruhfdia( hr, sr, intarr, com.nbas(), com.nalp(), com.nbet(), mor.block( 0, 0, com.nbas(), com.nbas()), mor.block( 0, com.nbas(), com.nbas(), com.nbas()), eig) ;
-
-      /* Store the values. */
-      mo_rcof = mor ;
-      eig_v = eig ;
-      energy = e_energy ;
-
-      sr.resize( 0, 0) ;
-      hr.resize( 0, 0) ;
-      eig.resize( 0) ;
-      mor.resize( 0, 0) ;
-
-    } else if ( wfn == "cuhf" ) {
-
-      /* Initialize a single block */
-      mo_ccof.resize( com.nbas(), 2*com.nbas()) ;
-      moc.resize( com.nbas(), 2*com.nbas()) ;
-      moc.setZero() ;
-      eig_v.resize( 2*com.nbas()) ;
-      eig.resize( 2*com.nbas()) ;
-      hc.resize( com.nbas(), com.nbas()) ;
-      sc.resize( com.nbas(), com.nbas()) ;
-      hc.setZero() ;
-      sc.setZero() ;
-      hc.real() = com.getH() ;
-      sc.real() = com.getS() ;
-      wfn_styp = wfn ;
-      wfn_ityp = 4 ;
-
-      std::cout << "Just before complex unrestricted " << std::endl ;
-      e_energy = cuhfdia( hc, sc, intarr, com.nbas(), com.nalp(), com.nbet(), moc.block( 0, 0, com.nbas(), com.nbas()), moc.block( 0, com.nbas(), com.nbas(), com.nbas()), eig) ;
-
-      /* Store the values. */
-      mo_ccof = moc ;
-      eig_v = eig ;
-      energy = e_energy ;
-
-      sc.resize( 0, 0) ;
-      hc.resize( 0, 0) ;
-      eig.resize( 0) ;
-      moc.resize( 0, 0) ;
-
-    } else if ( wfn == "rghf" ) {
-
-      /* Initialize a single block */
-      mo_rcof.resize( 2*com.nbas(), 2*com.nbas()) ;
-      mor.resize( 2*com.nbas(), 2*com.nbas()) ;
-      mor.setZero() ;
-      eig_v.resize( 2*com.nbas()) ;
-      eig.resize( 2*com.nbas()) ;
-      hr.resize( com.nbas(), com.nbas()) ;
-      sr.resize( com.nbas(), com.nbas()) ;
-      hr = com.getH() ;
-      sr = com.getS() ;
-      wfn_styp = wfn ;
-      wfn_ityp = 5 ;
-
-      e_energy = rghfdia( hr, sr, intarr, com.nbas(), com.nele(), mor, eig) ;
-
-      /* Store the values. */
-      mo_rcof = mor ;
-      eig_v = eig ;
-      energy = e_energy ;
-
-      sr.resize( 0, 0) ;
-      hr.resize( 0, 0) ;
-      eig.resize( 0) ;
-      mor.resize( 0, 0) ;
-
-    } else if ( wfn == "cghf" ) {
-
-      /* Initialize a single block */
-      mo_ccof.resize( 2*com.nbas(), 2*com.nbas()) ;
-      moc.resize( 2*com.nbas(), 2*com.nbas()) ;
-      moc.setZero() ;
-      eig_v.resize( 2*com.nbas()) ;
-      eig.resize( 2*com.nbas()) ;
-      hc.resize( com.nbas(), com.nbas()) ;
-      sc.resize( com.nbas(), com.nbas()) ;
-      hc.setZero() ;
-      sc.setZero() ;
-      hc.real() = com.getH() ;
-      sc.real() = com.getS() ;
-      wfn_styp = wfn ;
-      wfn_ityp = 6 ;
-
-      e_energy = cghfdia( hc, sc, intarr, com.nbas(), com.nele(), moc, eig) ;
-
-      /* Store the values. */
-      mo_ccof = moc ;
-      eig_v = eig ;
-      energy = e_energy ;
-
-      sc.resize( 0, 0) ;
-      hc.resize( 0, 0) ;
-      eig.resize( 0) ;
-      moc.resize( 0, 0) ;
-
-    }
-
-    return ;
-
-} ;
+//  void hfwfn::init( common& com, std::vector<tei>& intarr, std::string wfn){
+//
+//    int nb ;
+//    int nele ;
+//    double e_energy ;
+//    Eigen::MatrixXd hr ;
+//    Eigen::MatrixXd sr ;
+//    Eigen::MatrixXd mor ;
+//    Eigen::MatrixXcd hc ;
+//    Eigen::MatrixXcd sc ;
+//    Eigen::MatrixXcd moc ;
+//    Eigen::VectorXd eig ;
+//
+//    if ( wfn == "rrhf" ) {
+//
+//      /* Initialize a single block */
+//      mo_rcof.resize( com.nbas(), com.nbas()) ;
+//      mor.resize( com.nbas(), com.nbas()) ;
+//      mor.setZero() ;
+//      eig_v.resize( com.nbas()) ;
+//      eig.resize( com.nbas()) ;
+//      hr.resize( com.nbas(), com.nbas()) ;
+//      sr.resize( com.nbas(), com.nbas()) ;
+//      hr = com.getH() ;
+//      sr = com.getS() ;
+//      wfn_styp = wfn ;
+//      wfn_ityp = 1 ;
+//
+//      e_energy = rrhfdia( hr, sr, intarr, com.nbas(), com.nele(), mor, eig) ;
+//
+//      /* Store the values. */
+//      mo_rcof = mor ;
+//      eig_v = eig ;
+//      energy = e_energy ;
+//
+//      sr.resize( 0, 0) ;
+//      hr.resize( 0, 0) ;
+//      eig.resize( 0) ;
+//      mor.resize( 0, 0) ;
+//
+//    } else if ( wfn == "crhf" ) {
+//
+//      /* Initialize a single block */
+//      mo_ccof.resize( com.nbas(), com.nbas()) ;
+//      moc.resize( com.nbas(), com.nbas()) ;
+//      moc.setZero() ;
+//      eig_v.resize( com.nbas()) ;
+//      eig.resize( com.nbas()) ;
+//      hc.resize( com.nbas(), com.nbas()) ;
+//      sc.resize( com.nbas(), com.nbas()) ;
+//      hc.real() = com.getH() ;
+//      sc.real() = com.getS() ;
+//      wfn_styp = wfn ;
+//      wfn_ityp = 2 ;
+//
+//      e_energy = crhfdia( hc, sc, intarr, com.nbas(), com.nele(), moc, eig) ;
+//
+//      /* Store the values. */
+//      mo_ccof = moc ;
+//      eig_v = eig ;
+//      energy = e_energy ;
+//
+//      sc.resize( 0, 0) ;
+//      hc.resize( 0, 0) ;
+//      eig.resize( 0) ;
+//      mor.resize( 0, 0) ;
+//
+//    } else if ( wfn == "ruhf" ) {
+//
+//      /* Initialize a single block */
+//      mo_rcof.resize( com.nbas(), 2*com.nbas()) ;
+//      mor.resize( com.nbas(), 2*com.nbas()) ;
+//      mor.setZero() ;
+//      eig_v.resize( 2*com.nbas()) ;
+//      eig.resize( 2*com.nbas()) ;
+//      hr.resize( com.nbas(), com.nbas()) ;
+//      sr.resize( com.nbas(), com.nbas()) ;
+//      hr = com.getH() ;
+//      sr = com.getS() ;
+//      wfn_styp = wfn ;
+//      wfn_ityp = 3 ;
+//
+//      e_energy = ruhfdia( hr, sr, intarr, com.nbas(), com.nalp(), com.nbet(), mor.block( 0, 0, com.nbas(), com.nbas()), mor.block( 0, com.nbas(), com.nbas(), com.nbas()), eig) ;
+//
+//      /* Store the values. */
+//      mo_rcof = mor ;
+//      eig_v = eig ;
+//      energy = e_energy ;
+//
+//      sr.resize( 0, 0) ;
+//      hr.resize( 0, 0) ;
+//      eig.resize( 0) ;
+//      mor.resize( 0, 0) ;
+//
+//    } else if ( wfn == "cuhf" ) {
+//
+//      /* Initialize a single block */
+//      mo_ccof.resize( com.nbas(), 2*com.nbas()) ;
+//      moc.resize( com.nbas(), 2*com.nbas()) ;
+//      moc.setZero() ;
+//      eig_v.resize( 2*com.nbas()) ;
+//      eig.resize( 2*com.nbas()) ;
+//      hc.resize( com.nbas(), com.nbas()) ;
+//      sc.resize( com.nbas(), com.nbas()) ;
+//      hc.setZero() ;
+//      sc.setZero() ;
+//      hc.real() = com.getH() ;
+//      sc.real() = com.getS() ;
+//      wfn_styp = wfn ;
+//      wfn_ityp = 4 ;
+//
+//      std::cout << "Just before complex unrestricted " << std::endl ;
+//      e_energy = cuhfdia( hc, sc, intarr, com.nbas(), com.nalp(), com.nbet(), moc.block( 0, 0, com.nbas(), com.nbas()), moc.block( 0, com.nbas(), com.nbas(), com.nbas()), eig) ;
+//
+//      /* Store the values. */
+//      mo_ccof = moc ;
+//      eig_v = eig ;
+//      energy = e_energy ;
+//
+//      sc.resize( 0, 0) ;
+//      hc.resize( 0, 0) ;
+//      eig.resize( 0) ;
+//      moc.resize( 0, 0) ;
+//
+//    } else if ( wfn == "rghf" ) {
+//
+//      /* Initialize a single block */
+//      mo_rcof.resize( 2*com.nbas(), 2*com.nbas()) ;
+//      mor.resize( 2*com.nbas(), 2*com.nbas()) ;
+//      mor.setZero() ;
+//      eig_v.resize( 2*com.nbas()) ;
+//      eig.resize( 2*com.nbas()) ;
+//      hr.resize( com.nbas(), com.nbas()) ;
+//      sr.resize( com.nbas(), com.nbas()) ;
+//      hr = com.getH() ;
+//      sr = com.getS() ;
+//      wfn_styp = wfn ;
+//      wfn_ityp = 5 ;
+//
+//      e_energy = rghfdia( hr, sr, intarr, com.nbas(), com.nele(), mor, eig) ;
+//
+//      /* Store the values. */
+//      mo_rcof = mor ;
+//      eig_v = eig ;
+//      energy = e_energy ;
+//
+//      sr.resize( 0, 0) ;
+//      hr.resize( 0, 0) ;
+//      eig.resize( 0) ;
+//      mor.resize( 0, 0) ;
+//
+//    } else if ( wfn == "cghf" ) {
+//
+//      /* Initialize a single block */
+//      mo_ccof.resize( 2*com.nbas(), 2*com.nbas()) ;
+//      moc.resize( 2*com.nbas(), 2*com.nbas()) ;
+//      moc.setZero() ;
+//      eig_v.resize( 2*com.nbas()) ;
+//      eig.resize( 2*com.nbas()) ;
+//      hc.resize( com.nbas(), com.nbas()) ;
+//      sc.resize( com.nbas(), com.nbas()) ;
+//      hc.setZero() ;
+//      sc.setZero() ;
+//      hc.real() = com.getH() ;
+//      sc.real() = com.getS() ;
+//      wfn_styp = wfn ;
+//      wfn_ityp = 6 ;
+//
+//      e_energy = cghfdia( hc, sc, intarr, com.nbas(), com.nele(), moc, eig) ;
+//
+//      /* Store the values. */
+//      mo_ccof = moc ;
+//      eig_v = eig ;
+//      energy = e_energy ;
+//
+//      sc.resize( 0, 0) ;
+//      hc.resize( 0, 0) ;
+//      eig.resize( 0) ;
+//      moc.resize( 0, 0) ;
+//
+//    }
+//
+//    return ;
+//
+//} ;
 
 void hfwfn::fil_mos ( int nbasis, Eigen::Ref<Eigen::MatrixXd> mo, int wfn){
 
