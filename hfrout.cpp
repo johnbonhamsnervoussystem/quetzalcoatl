@@ -17,18 +17,18 @@
  * all the flavors of HF.  
  *
  * */
-void scf_drv( common& com, std::vector<tei>& intarr, int& opt) {
+void scf_drv( common& com, std::vector<tei>& intarr, int opt) {
   /* Right now we just do Slater determinants. Go figure. */
-  if ( opt % 2 == 1 ){
+  if ( (opt / 10) % 2 == 0 ){
   /* Do real scf */
-    real_SlaDet( com, intarr, opt) ;
+    real_SlaDet( com, intarr, opt % 10) ;
   } else {
   /* Do complex scf */
-    cplx_scf( com, intarr, opt) ;
+    cplx_SlaDet( com, intarr, opt % 10) ;
     }
   } ;
 
-void real_SlaDet( common& com, std::vector<tei>& intarr, int& opt){
+void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
 /*  
     Do scf for real wavefunctions.  
       The dimension is done here but inside the routine it takes 
@@ -59,8 +59,11 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int& opt){
       s = com.getS() ;
       eig.resize( nbas) ;
       energy = rrhfdia( h, s, intarr, nbas, nele, ca, eig, maxit, thresh) ;
+      std::cout << "Mean Field Energy : " << energy + com.nrep() << std::endl ;
+      std::cout << "MO Eigenvalues : " << std::endl << std::endl ;
       std::cout << eig << std::endl ;
-      std::cout << energy + com.nrep() << std::endl ;
+      std::cout << "MO coefficients : " << std::endl << std::endl ;
+      std::cout << ca << std::endl ;
       eig.resize( 0) ;
       ca.resize( 0, 0) ;
       s.resize( 0, 0) ;
@@ -76,8 +79,15 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int& opt){
       s = com.getS() ;
       eig.resize( 2*nbas) ;
       energy = ruhfdia( h, s, intarr, nbas, nalp, nbet, ca, cb, eig, maxit, thresh) ;
-      std::cout << eig << std::endl ;
-      std::cout << energy + com.nrep() << std::endl ;
+      std::cout << "Mean Field Energy : " << energy + com.nrep() << std::endl ;
+      std::cout << "Alpha MO Eigenvalues : " << std::endl << std::endl ;
+      std::cout << eig.head(nbas) << std::endl ;
+      std::cout << "Beta MO Eigenvalues : " << std::endl << std::endl ;
+      std::cout << eig.tail(nbas) << std::endl ;
+      std::cout << "Alpha MO coefficients : " << std::endl << std::endl ;
+      std::cout << ca << std::endl ;
+      std::cout << "Beta MO coefficients : " << std::endl << std::endl ;
+      std::cout << cb << std::endl ;
       eig.resize( 0) ;
       cb.resize( 0, 0) ;
       ca.resize( 0, 0) ;
@@ -96,8 +106,11 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int& opt){
       s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
       eig.resize( 2*nbas) ;
       energy = rghfdia( h, s, intarr, nbas, nele, ca, eig, maxit, thresh) ;
+      std::cout << "Mean Field Energy : " << energy + com.nrep() << std::endl ;
+      std::cout << "MO Eigenvalues : " << std::endl << std::endl ;
       std::cout << eig << std::endl ;
-      std::cout << energy + com.nrep() << std::endl ;
+      std::cout << "MO coefficients : " << std::endl << std::endl ;
+      std::cout << ca << std::endl ;
       eig.resize( 0) ;
       ca.resize( 0, 0) ;
       s.resize( 0, 0) ;
@@ -110,17 +123,99 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int& opt){
 
   } ;
 
-void cplx_scf( common& com, std::vector<tei>& intarr, int& opt){
+void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
   /*Driver routine for solving self consistent wavefunctions and various things.
-   First I will handle Slater-Determinants.  Until I come up with a more cohesive
-   plan, 1,2,3,4,5,6.  
-    rrhfdia - real restricted hartree fock -> 1
-    crhfdia - complex restricted hartree fock -> 2
-    ruhfdia - real unrestricted hartree fock -> 3
-    cuhfdia - complex unrestricted hartree fock -> 4
-    rghfdia - real generalized hartree fock -> 5
-    cghfdia - complex generalized hartree fock -> 6 */
-    std::cout << "Not yet implemented" << std::endl ;
+   First I will handle Slater-Determinants.e
+    crhfdia - complex restricted hartree fock -> 1
+    cuhfdia - complex unrestricted hartree fock -> 2
+    cghfdia - complex generalized hartree fock -> 3 */
+    int nbas = com.nbas() ;
+    int nele = com.nele() ;
+    int nalp = com.nalp() ;
+    int nbet = com.nbet() ;
+    int maxit = com.mxscfit() ;
+    double thresh = com.scfthresh() ;
+    double energy ;
+    Eigen::MatrixXcd h ;
+    Eigen::MatrixXcd s ;
+    Eigen::MatrixXcd ca ;
+    Eigen::MatrixXcd cb ;
+    Eigen::VectorXd eig ;
+    time_dbg cplx_scf_time = time_dbg("cplx_scf") ;
+
+    if ( opt == 1) {
+      h.resize( nbas, nbas) ;
+      s.resize( nbas, nbas) ;
+      ca.resize( nbas, nbas) ;
+      h.setZero() ;
+      s.setZero() ;
+      ca.setZero() ;
+      h.real() = com.getH() ;
+      s.real() = com.getS() ;
+      eig.resize( nbas) ;
+      energy = crhfdia( h, s, intarr, nbas, nele, ca, eig, maxit, thresh) ;
+      std::cout << "Mean Field Energy : " << energy + com.nrep() << std::endl ;
+      std::cout << "MO Eigenvalues : " << std::endl << std::endl ;
+      std::cout << eig << std::endl ;
+      std::cout << "MO coefficients : " << std::endl << std::endl ;
+      std::cout << ca << std::endl ;
+      eig.resize( 0) ;
+      ca.resize( 0, 0) ;
+      s.resize( 0, 0) ;
+      h.resize( 0, 0) ;
+    } else if ( opt == 2) {
+      h.resize( nbas, nbas) ;
+      s.resize( nbas, nbas) ;
+      ca.resize( nbas, nbas) ;
+      cb.resize( nbas, nbas) ;
+      h.setZero() ;
+      s.setZero() ;
+      ca.setZero() ;
+      cb = ca ;
+      h.real() = com.getH() ;
+      s.real() = com.getS() ;
+      eig.resize( 2*nbas) ;
+      energy = cuhfdia( h, s, intarr, nbas, nalp, nbet, ca, cb, eig, maxit, thresh) ;
+      std::cout << "Mean Field Energy : " << energy + com.nrep() << std::endl ;
+      std::cout << "Alpha MO Eigenvalues : " << std::endl << std::endl ;
+      std::cout << eig.head(nbas) << std::endl ;
+      std::cout << "Beta MO Eigenvalues : " << std::endl << std::endl ;
+      std::cout << eig.tail(nbas) << std::endl ;
+      std::cout << "Alpha MO coefficients : " << std::endl << std::endl ;
+      std::cout << ca << std::endl ;
+      std::cout << "Beta MO coefficients : " << std::endl << std::endl ;
+      std::cout << cb << std::endl ;
+      eig.resize( 0) ;
+      cb.resize( 0, 0) ;
+      ca.resize( 0, 0) ;
+      s.resize( 0, 0) ;
+      h.resize( 0, 0) ;
+    } else if ( opt == 3) {
+      h.resize( 2*nbas, 2*nbas) ;
+      h.setZero() ;
+      s.resize( 2*nbas, 2*nbas) ;
+      s.setZero() ;
+      ca.resize( 2*nbas, 2*nbas) ;
+      ca.setZero() ;
+      h.block( 0, 0, nbas, nbas).real() = com.getH() ;
+      h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
+      s.block( 0, 0, nbas, nbas).real() = com.getS() ;
+      s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
+      eig.resize( 2*nbas) ;
+      energy = cghfdia( h, s, intarr, nbas, nele, ca, eig, maxit, thresh) ;
+      std::cout << "Mean Field Energy : " << energy + com.nrep() << std::endl ;
+      std::cout << "MO Eigenvalues : " << std::endl << std::endl ;
+      std::cout << eig << std::endl ;
+      std::cout << "MO coefficients : " << std::endl << std::endl ;
+      std::cout << ca << std::endl ;
+      eig.resize( 0) ;
+      ca.resize( 0, 0) ;
+      s.resize( 0, 0) ;
+      h.resize( 0, 0) ;
+      }
+
+    cplx_scf_time.end() ;
+
     return ;
 
   } ;
@@ -148,7 +243,6 @@ double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, st
   if( c.isZero(0) ) {
     f = h ;
   } else {
-    std::cout << "Initial guess " << iter << std::endl ;
     p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
     ctr2er( intarr, p, g, nbasis) ;
     f = h + g ;
@@ -256,7 +350,7 @@ double ruhfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
   double t_f=d0 ;
   double ene_p=d0 ;
   double e_dif=1e0 ;
-  time_dbg ruhfdia_time = time_dbg("crhfdia_time") ;
+  time_dbg ruhfdia_time = time_dbg("ruhfdia_time") ;
 
   nbas = 2*nbasis ;
   f_a.resize( nbasis, nbasis) ;
@@ -278,7 +372,7 @@ double ruhfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
     f_a = h + g ;
     ctr2eu( intarr, p_t, p_b, g, nbasis) ;
     f_b = h + g ;
-  } 
+    } 
 
   while ( iter < maxit ) {
     iter += 1 ;
@@ -304,7 +398,7 @@ double ruhfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
     e_dif = std::abs(ene_p - energy) ;
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
-  }
+    }
 
   f_diag.compute( f_a, s) ;
   eig.head(nbasis) = f_diag.eigenvalues() ;
@@ -316,6 +410,7 @@ double ruhfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
   g.resize( 0, 0) ;
   f_b.resize( 0, 0) ;
   f_a.resize( 0, 0) ;
+
   ruhfdia_time.end() ;
 
   return energy ;
@@ -340,7 +435,7 @@ double cuhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
   std::complex<double> t_f ;
   double ene_p=d0 ;
   double e_dif=1e0 ;
-  time_dbg cuhfdia_time = time_dbg("crhfdia_time") ;
+  time_dbg cuhfdia_time = time_dbg("cuhfdia_time") ;
 
   nbas = 2*nbasis ;
   f_a.resize( nbasis, nbasis) ;
@@ -363,7 +458,7 @@ double cuhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
     f_a = h + g ;
     ctr2eu( intarr, p_t, p_b, g, nbasis) ;
     f_b = h + g ;
-  } 
+    } 
 
   while ( iter < maxit ) {
     iter += 1 ;
@@ -390,7 +485,7 @@ double cuhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
     e_dif = std::abs(ene_p - energy) ;
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
-  }
+    }
 
   f_diag.compute( f_a, s) ;
   eig.head(nbasis) = f_diag.eigenvalues().real() ;
@@ -416,60 +511,49 @@ double rghfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
   Eigen::MatrixXd f ;
   Eigen::MatrixXd g ;
   Eigen::MatrixXd p ;
-  Eigen::MatrixXd h_f ;
-  Eigen::MatrixXd s_f ;
   Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> f_diag ;
   int iter=0 ;
   int nbas ;
   double energy=d0 ;
   double ene_p=d0 ;
   double e_dif=1e0 ;
-  time_dbg rghfdia_time = time_dbg("crhfdia_time") ;
+  time_dbg rghfdia_time = time_dbg("rghfdia_time") ;
 
   nbas = nbasis*2 ;
   f.resize( nbas, nbas) ;
   g.resize( nbas, nbas) ;
   p.resize( nbas, nbas) ;
-  h_f.resize( nbas, nbas) ;
-  s_f.resize( nbas, nbas) ;
-  h_f.setZero() ;
-  s_f.setZero() ;
-  h_f.block( 0, 0, nbasis, nbasis) = h ;
-  h_f.block( nbasis, nbasis, nbasis, nbasis) = h ;
-  s_f.block( 0, 0, nbasis, nbasis) = s ;
-  s_f.block( nbasis, nbasis, nbasis, nbasis) = s ;
 
   /* If something is stored in c use it for an inital guess */
   if ( c.isZero(0) ) {
-    f = h_f ;
+    f = h ;
   } else {
     c = f_diag.eigenvectors().real() ;
     p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
     ctr2eg( intarr, p, g, nbasis) ;
-    f = h_f + g ;
+    f = h + g ;
   } 
 
   while ( iter < maxit ) {
     iter += 1 ;
-    f_diag.compute( f, s_f) ;
+    f_diag.compute( f, s) ;
     c = f_diag.eigenvectors().real() ;
     p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
     ctr2eg( intarr, p, g, nbasis) ;
-    f = h_f + g ;
-    g = p*( h_f + f) ;
+    f = h + g ;
+    g = p*( h + f) ;
     energy = g.trace()/d2 ;
 
     e_dif = std::abs(ene_p - energy) ;
     ene_p = energy ;
-    if ( iter > 5 && e_dif < thresh ) { break ;}
-  }
+    if ( iter > 3 && e_dif < thresh ) { break ;}
+    }
 
   eig = f_diag.eigenvalues() ;
-  s_f.resize( 0, 0) ;
-  h_f.resize( 0, 0) ;
   p.resize( 0, 0) ;
   g.resize( 0, 0) ;
   f.resize( 0, 0) ;
+
   rghfdia_time.end() ;
 
   return energy ;
@@ -478,62 +562,52 @@ double rghfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
 
 double cghfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh){
 
-  /* Compelx restricted Hartree-Fock solved by repeated diagonalization. */
-  typedef std::complex<double> cf ;
+  /* Compelx restricted Hartree-Fock solved by repeated diagonalization.
+     This may be eventually reduces to a single block diagonalization
+     but for now the electron contraction routines are handled by differnt
+     algorithms.  */
   Eigen::MatrixXcd f ;
   Eigen::MatrixXcd g ;
   Eigen::MatrixXcd p ;
-  Eigen::MatrixXcd h_f ;
-  Eigen::MatrixXcd s_f ;
   Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> f_diag ;
   int iter=0 ;
   int nbas ;
   double energy=d0 ;
-  std::complex<double> t_f ;
+  cd t_f ;
   double ene_p=d0 ;
   double e_dif=1e0 ;
-  time_dbg cghfdia_time = time_dbg("crhfdia_time") ;
+  time_dbg cghfdia_time = time_dbg("cghfdia_time") ;
 
   nbas = nbasis*2 ;
   f.resize( nbas, nbas) ;
   g.resize( nbas, nbas) ;
   p.resize( nbas, nbas) ;
-  h_f.resize( nbas, nbas) ;
-  s_f.resize( nbas, nbas) ;
-  h_f.setZero() ;
-  s_f.setZero() ;
-  h_f.block( 0, 0, nbasis, nbasis) = h ;
-  h_f.block( nbasis, nbasis, nbasis, nbasis) = h ;
-  s_f.block( 0, 0, nbasis, nbasis) = s ;
-  s_f.block( nbasis, nbasis, nbasis, nbasis) = s ;
 
   if ( c.isZero(0) ) {
-    f = h_f ;
+    f = h ;
   } else {
     p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
     ctr2eg( intarr, p, g, nbasis) ;
-    f = h_f + g ;
+    f = h + g ;
   } 
 
   while ( iter < maxit ) {
     iter += 1 ;
-    f_diag.compute( f, s_f) ;
+    f_diag.compute( f, s) ;
     c = f_diag.eigenvectors() ;
     p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
     ctr2eg( intarr, p, g, nbasis) ;
-    f = h_f + g ;
-    g = p*( h_f + f) ;
+    f = h + g ;
+    g = p*( h + f) ;
     t_f = g.trace() ;
     energy = t_f.real()/d2 ;
 
     e_dif = std::abs(ene_p - energy) ;
     ene_p = energy ;
-    if ( iter > 5 && e_dif < thresh ) { break ;}
-  }
+    if ( iter > 3 && e_dif < thresh ) { break ;}
+    }
 
   eig = f_diag.eigenvalues().real() ;
-  s_f.resize( 0, 0) ;
-  h_f.resize( 0, 0) ;
   p.resize( 0, 0) ;
   g.resize( 0, 0) ;
   f.resize( 0, 0) ;

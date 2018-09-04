@@ -8,11 +8,11 @@
 #ifndef HFROUT_H
 #define HFROUT_H
 
-void scf_drv( common& com, std::vector<tei>& intarr, int& o) ;
+void scf_drv( common& com, std::vector<tei>& intarr, int o) ;
 
-void real_SlaDet( common& com, std::vector<tei>& intarr, int& o) ;
+void real_SlaDet( common& com, std::vector<tei>& intarr, int o) ;
 
-void cplx_scf( common& com, std::vector<tei>& intarr, int& opt) ;
+void cplx_SlaDet( common& com, std::vector<tei>& intarr, int o) ;
 
 double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, int nbasis, int nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
 

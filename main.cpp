@@ -60,6 +60,7 @@ int main(int argc, char *argv[]) {
   int job=0  ;
   int i, j, k, l ;
   int nbas, natm ;
+  int iopt ;
   double cx = 0.0e0 ;
   double cy = 0.0e0 ;
   double cz = 0.0e0 ;
@@ -142,8 +143,25 @@ int main(int argc, char *argv[]) {
   S.resize( 0, 0) ;
   list_ao_tei( com.natm(), b, intarr) ; 
 
-  int opt = 1 ;
-  scf_drv( com, intarr, opt) ;
+  std::cout << "Testing scf routines " << std::endl; 
+  std::cout << "rrhf " << std::endl; 
+  iopt = 21 ;
+  scf_drv( com, intarr, iopt) ;
+  std::cout << "ruhf " << std::endl; 
+  iopt = 22 ;
+  scf_drv( com, intarr, iopt) ;
+  std::cout << "rghf " << std::endl; 
+  iopt = 23 ;
+  scf_drv( com, intarr, iopt) ;
+  std::cout << "crhf " << std::endl; 
+  iopt = 11 ;
+  scf_drv( com, intarr, iopt) ;
+  std::cout << "cuhf " << std::endl; 
+  iopt = 12 ;
+  scf_drv( com, intarr, iopt) ;
+  std::cout << "cghf " << std::endl; 
+  iopt = 13 ;
+  scf_drv( com, intarr, iopt) ;
 
   /* Deallocate the memory and exit. */
   intarr.clear() ;
