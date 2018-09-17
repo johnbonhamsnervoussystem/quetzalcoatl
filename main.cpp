@@ -10,7 +10,6 @@
 #include <Eigen/Dense>
 #include <Eigen/CXX11/Tensor>
 #include <sstream>
-#include <fstream>
 #include "binio.h"
 #include "common.h"
 #include "evalm.h"
@@ -79,7 +78,9 @@ int main(int argc, char *argv[]) {
   Eigen::MatrixXd T ;
   Eigen::MatrixXd V ;
   Eigen::Tensor< double, 4> eri( 0, 0, 0, 0) ;
-  basis_set b ; 
+  basis_set b ;
+  std::ofstream tstfile ; 
+  std::ifstream tstfe ; 
   time_dbg quetz_time = time_dbg("Quetzalcoatl") ;
 
   /* File reading and header variables. */
@@ -161,7 +162,7 @@ int main(int argc, char *argv[]) {
   scf_drv( com, intarr, iopt) ;
   std::cout << "cghf " << std::endl; 
   iopt = 13 ;
-  scf_drv( com, intarr, iopt) ;
+  scf_drv( com, intarr, iopt) ; 
 
   /* Deallocate the memory and exit. */
   intarr.clear() ;

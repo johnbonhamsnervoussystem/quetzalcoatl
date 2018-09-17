@@ -6,6 +6,7 @@
 #include "evalm.h"
 #include "hfrout.h"
 #include <iostream>
+#include "qtzio.h"
 #include "solver.h"
 #include <string>
 #include "tei.h"
