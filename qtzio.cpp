@@ -1,10 +1,11 @@
 /* Routines for Quetz I/O */
 #include "common.h"
+#include <complex>
 #include "constants.h"
 #include <iostream>
-#include <complex>
 #include <string>
 #include <fstream>
+#include <Eigen/Core>
 #include <Eigen/Dense>
 #include <vector>
 #include <sys/stat.h>
@@ -216,8 +217,33 @@ void rdsdet ( int nbasis, vector<string>& matel, vector<hfwfn>& det) {
 
 }
 
-//void w_eigen_binary( ) {
-///* Passed an eigen matrix and ofstream, write the contents. */
-//
-//}
+template <class matrix> 
+void write_eigen_bin (const matrix& m, std::ofstream& F_OUT) {
+  typename matrix::Index rows=m.rows(), cols=m.cols();
+
+  F_OUT.write( (char*) m.data(), rows*cols*sizeof(typename matrix::Scalar)) ;
+
+  return ;
+
+}
+
+template void write_eigen_bin(const Eigen::MatrixXf&, std::ofstream&) ;
+template void write_eigen_bin(const Eigen::MatrixXd&, std::ofstream&) ;
+template void write_eigen_bin(const Eigen::MatrixXcf&, std::ofstream&) ;
+template void write_eigen_bin(const Eigen::MatrixXcd&, std::ofstream&) ;
+
+template <class matrix> 
+void read_eigen_bin (const matrix& m, std::ifstream& F_IN) {
+  typename matrix::Index rows=m.rows(), cols=m.cols();
+
+  F_IN.read( (char*) m.data(), rows*cols*sizeof(typename matrix::Scalar)) ;
+
+  return ;
+
+}
+
+template void read_eigen_bin(const Eigen::MatrixXf&, std::ifstream&) ;
+template void read_eigen_bin(const Eigen::MatrixXd&, std::ifstream&) ;
+template void read_eigen_bin(const Eigen::MatrixXcf&, std::ifstream&) ;
+template void read_eigen_bin(const Eigen::MatrixXcd&, std::ifstream&) ;
 
