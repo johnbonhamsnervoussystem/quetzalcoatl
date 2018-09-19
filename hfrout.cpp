@@ -7,6 +7,7 @@
 #include "hfrout.h"
 #include <iostream>
 #include "qtzio.h"
+#include "sladet.h"
 #include "solver.h"
 #include <string>
 #include "tei.h"

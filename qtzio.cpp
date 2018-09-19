@@ -227,6 +227,10 @@ void write_eigen_bin (const matrix& m, std::ofstream& F_OUT) {
 
 }
 
+template void write_eigen_bin(const Eigen::VectorXf&, std::ofstream&) ;
+template void write_eigen_bin(const Eigen::VectorXd&, std::ofstream&) ;
+template void write_eigen_bin(const Eigen::VectorXcf&, std::ofstream&) ;
+template void write_eigen_bin(const Eigen::VectorXcd&, std::ofstream&) ;
 template void write_eigen_bin(const Eigen::MatrixXf&, std::ofstream&) ;
 template void write_eigen_bin(const Eigen::MatrixXd&, std::ofstream&) ;
 template void write_eigen_bin(const Eigen::MatrixXcf&, std::ofstream&) ;
@@ -242,6 +246,10 @@ void read_eigen_bin (const matrix& m, std::ifstream& F_IN) {
 
 }
 
+template void read_eigen_bin(const Eigen::VectorXf&, std::ofstream&) ;
+template void read_eigen_bin(const Eigen::VectorXd&, std::ofstream&) ;
+template void read_eigen_bin(const Eigen::VectorXcf&, std::ofstream&) ;
+template void read_eigen_bin(const Eigen::VectorXcd&, std::ofstream&) ;
 template void read_eigen_bin(const Eigen::MatrixXf&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::MatrixXd&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::MatrixXcf&, std::ifstream&) ;

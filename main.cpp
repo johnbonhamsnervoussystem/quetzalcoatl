@@ -18,6 +18,7 @@
 #include "obarasaika.h"
 #include "project.h"
 #include "qtzio.h"
+#include "sladet.h"
 #include "solver.h"
 #include "tei.h"
 #include "time_dbg.h"
@@ -77,8 +78,8 @@ int main(int argc, char *argv[]) {
   Eigen::MatrixXd S ;
   Eigen::MatrixXd T ;
   Eigen::MatrixXd V ;
-  Eigen::Tensor< double, 4> eri( 0, 0, 0, 0) ;
   basis_set b ;
+  sladet< cd, Eigen::Dynamic, Eigen::Dynamic> s ;
   std::ofstream tstfile ; 
   std::ifstream tstfe ; 
   time_dbg quetz_time = time_dbg("Quetzalcoatl") ;
@@ -109,6 +110,7 @@ int main(int argc, char *argv[]) {
                   unrestricted
                   generalized  */
   
+  write_to_bin(s) ;
   natm = com.natm() ;
   c.resize( natm, 3) ;
   a.resize( natm) ;
@@ -134,7 +136,6 @@ int main(int argc, char *argv[]) {
   com.setS( S) ;
   T.resize( nbas, nbas) ;
   ao_kinetic( com.natm(), b, T) ;
-  std::cout << "T " << T << std::endl ;
   V.resize( nbas, nbas) ;
   ao_eN_V( com.natm(), b, c, a, V) ;
   S = T + V ;
@@ -148,7 +149,7 @@ int main(int argc, char *argv[]) {
   std::cout << "rrhf " << std::endl; 
   iopt = 21 ;
   scf_drv( com, intarr, iopt) ;
-  std::cout << "ruhf " << std::endl; 
+/*  std::cout << "ruhf " << std::endl; 
   iopt = 22 ;
   scf_drv( com, intarr, iopt) ;
   std::cout << "rghf " << std::endl; 
@@ -162,7 +163,7 @@ int main(int argc, char *argv[]) {
   scf_drv( com, intarr, iopt) ;
   std::cout << "cghf " << std::endl; 
   iopt = 13 ;
-  scf_drv( com, intarr, iopt) ; 
+  scf_drv( com, intarr, iopt) ;  */
 
   /* Deallocate the memory and exit. */
   intarr.clear() ;
