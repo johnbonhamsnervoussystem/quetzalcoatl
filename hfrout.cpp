@@ -51,23 +51,25 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
     Eigen::MatrixXd cb ;
     Eigen::VectorXd eig ;
     time_dbg real_scf_time = time_dbg("real_scf") ;
+    sladet< double, Eigen::Dynamic, Eigen::Dynamic> w ;
 
     if ( opt == 1) {
       h.resize( nbas, nbas) ;
       s.resize( nbas, nbas) ;
-      ca.resize( nbas, nbas) ;
-      ca.setZero() ;
+      w.moc.resize( nbas, nbas) ;
+      w.moc.setZero() ;
       h = com.getH() ;
       s = com.getS() ;
-      eig.resize( nbas) ;
-      energy = rrhfdia( h, s, intarr, nbas, nele, ca, eig, maxit, thresh) ;
-      std::cout << "Mean Field Energy : " << energy + com.nrep() << std::endl ;
+      w.eig.resize( nbas) ;
+      w.e_scf = rrhfdia( h, s, intarr, nbas, nele, w.moc, w.eig, maxit, thresh) ;
+      save_slater_det( w) ;
+      std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "MO Eigenvalues : " << std::endl << std::endl ;
-      std::cout << eig << std::endl ;
+      std::cout << w.eig << std::endl ;
       std::cout << "MO coefficients : " << std::endl << std::endl ;
-      std::cout << ca << std::endl ;
-      eig.resize( 0) ;
-      ca.resize( 0, 0) ;
+      std::cout << w.moc << std::endl ;
+      w.eig.resize( 0) ;
+      w.moc.resize( 0, 0) ;
       s.resize( 0, 0) ;
       h.resize( 0, 0) ;
     } else if ( opt == 2) {

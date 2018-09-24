@@ -25,6 +25,19 @@
 #include "util.h"
 #include "wigner.h"
 
+void quetzalcoatl( void){
+/* Title Card */
+  std::cout << std::endl ;
+  std::cout << "________                 __                 .__                      __  .__   " << std::endl ;
+  std::cout << "\\_____  \\  __ __   _____/  |______________  |  |   ____  _________ _/  |_|  |  " << std::endl ;
+  std::cout << " /  / \\  \\|  |  \\_/ __ \\   __\\___   /\\__  \\ |  | _/ ___\\/  _ \\__  \\\\   __\\  |  " << std::endl ;
+  std::cout << "/   \\_/.  \\  |  /\\  ___/|  |  /    /  / __ \\|  |_\\  \\__(  <_> ) __ \\|  | |  |__" << std::endl ;
+  std::cout << "\\_____\\ \\_/____/  \\___  >__| /_____ \\(____  /____/\\___  >____(____  /__| |____/" << std::endl ;
+  std::cout << "       \\__>           \\/           \\/     \\/          \\/          \\/           " << std::endl ;
+  std::cout << std::endl ;
+  return ;
+}
+
 int main(int argc, char *argv[]) {
 /*
  * This is my own implementation of various electronic stucture methods.  
@@ -79,7 +92,7 @@ int main(int argc, char *argv[]) {
   Eigen::MatrixXd T ;
   Eigen::MatrixXd V ;
   basis_set b ;
-  sladet< cd, Eigen::Dynamic, Eigen::Dynamic> s ;
+  sladet< double, Eigen::Dynamic, Eigen::Dynamic> w ;
   std::ofstream tstfile ; 
   std::ifstream tstfe ; 
   time_dbg quetz_time = time_dbg("Quetzalcoatl") ;
@@ -87,6 +100,8 @@ int main(int argc, char *argv[]) {
   /* File reading and header variables. */
   std::stringstream ss ;
   std::string inpfile ;
+
+  quetzalcoatl() ;
 
   ss << argv[1] ;
   ss >> inpfile ;
@@ -110,7 +125,6 @@ int main(int argc, char *argv[]) {
                   unrestricted
                   generalized  */
   
-  write_to_bin(s) ;
   natm = com.natm() ;
   c.resize( natm, 3) ;
   a.resize( natm) ;
