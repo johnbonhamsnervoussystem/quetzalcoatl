@@ -39,11 +39,25 @@
   int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
     Eigen::Ref<Eigen::MatrixXcd> G, const int nbasis) ;
 
-  double tranden ( common& c, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXd> d) ;
+  int pairing_field( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> D, const int nbasis) ;
 
-  cd tranden ( common& c, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcd> d) ;
+  int pairing_field( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> D, const int nbasis) ;
 
-  double td_singleblock( int& o, int& n, Eigen::Ref<Eigen::MatrixXd> s1, Eigen::Ref<Eigen::MatrixXd> s2, Eigen::Ref<Eigen::MatrixXd> d) ;
+  int twin_field( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> D, const int nbasis) ;
+
+  int twin_field( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> D, const int nbasis) ;
+
+  double tranden1 ( int& ne, int& nb, Eigen::Ref<Eigen::MatrixXd> wa, Eigen::Ref<Eigen::MatrixXd> wb, Eigen::Ref<Eigen::MatrixXd> dmat, Eigen::Ref<Eigen::MatrixXd> s) ;
+
+  cd tranden1 ( int& ne, int& nb, Eigen::Ref<Eigen::MatrixXcd> wa, Eigen::Ref<Eigen::MatrixXcd> wb, Eigen::Ref<Eigen::MatrixXcd> dmat, Eigen::Ref<Eigen::MatrixXcd> s) ;
+
+double tranden2 ( int& ne1, int& ne2, int& nbasis, Eigen::Ref<Eigen::MatrixXd> wfna, Eigen::Ref<Eigen::MatrixXd> wfnb, Eigen::Ref<Eigen::MatrixXd> dabmat, Eigen::Ref<Eigen::MatrixXd> scr1) ;
+
+cd tranden2 ( int& nele, int& nbasis, Eigen::Ref<Eigen::MatrixXcd> wfna, Eigen::Ref<Eigen::MatrixXcd> wfnb, Eigen::Ref<Eigen::MatrixXcd> dabmat, Eigen::Ref<Eigen::MatrixXcd> scr) ;
 
   double obop ( common& c, Eigen::Ref<Eigen::MatrixXd> o, hfwfn& a, hfwfn& b) ;
 

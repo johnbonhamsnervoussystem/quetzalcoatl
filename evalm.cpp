@@ -37,7 +37,7 @@
     g.setZero() ;
     t_p.resize( nb, nb) ;
 
-    t_p = 2.0*p ;
+    t_p = d2*p ;
 
     /* Do the coulomb terms for the alpha alpha block  */
     coulblk( intarr, t_p, g, nb) ;
@@ -63,7 +63,7 @@
     g.setZero() ;
     t_p.resize( nb, nb) ;
 
-    t_p = 2.0*p ;
+    t_p = d2*p ;
 
     /* Do the coulomb terms for the alpha alpha block  */
     coulblk( intarr, t_p, g, nb) ;
@@ -241,10 +241,10 @@
     for(int t = 0; t < n2ei; t++ ) {
       /*  ( 1 1| 2 2)
        *  ( i j| k l) = val */
-      i = intarr[t].r_i() - 1 ;
-      j = intarr[t].r_j() - 1 ;
-      k = intarr[t].r_k() - 1 ;
-      l = intarr[t].r_l() - 1 ;
+      i = intarr[t].r_i() ;
+      j = intarr[t].r_j() ;
+      k = intarr[t].r_k() ;
+      l = intarr[t].r_l() ;
       val = intarr[t].r_v() ;
 //   
       ieqj = ( ( i == j) ? true : false) ;
@@ -264,11 +264,11 @@
         G( j , i) += p( j, j)*val ;
         G( j , j) += (p( j, i) + p( i, j))*val ;
 
-      } else if ( not ieqj && i == k && j == l ){
+      } else if ( not ieqj && not keql && i == k && j == l ){
 
         /* ( i j| i j) */
 
-        G( i, j) += (p( j, i) + p( i, j))*val ;
+        G( i, j) += (p( i, j) + p( j, i))*val ;
         G( j, i) += (p( i, j) + p( j, i))*val ;
 
       } else if ( ieqj && keql && i != k ){
@@ -282,9 +282,9 @@
 
         /* ( i i| i l) */
 
-        G( i, i) += (p( i, l) + p( l, i))*val ;
         G( l, i) += p( i, i)*val ;
         G( i, l) += p( i, i)*val ;
+        G( i, i) += (p( i, l) + p( l, i))*val ;
 
       } else if ( not ieqj && not keql && j == l && i != k){
 
@@ -303,14 +303,6 @@
         G( j, i) += p( k, k)*val ;
         G( k, k) += (p( j, i) + p( i, j))*val ;
 
-      } else if ( ieqj && not keql && i != k && i != l) {
-
-        /* ( i i| k l) */
-
-        G( i, i) += (p( k, l) + p( l, k))*val ;
-        G( k, l) += p( i, i)*val ;
-        G( l, k) += p( i, i)*val ;
-
       } else if ( not ieqj && not keql && j == k && i != l ) {
 
         /* ( i j| j l) */
@@ -328,6 +320,14 @@
         G( j, i)+= (p( i, l) + p( l, i))*val ;
         G( i, l)+= (p( i, j) + p( j, i))*val ;
         G( l, i)+= (p( i, j) + p( j, i))*val ;
+
+      } else if ( ieqj && not keql && i != k && i != l) {
+
+        /* ( i i| k l) */
+
+        G( i, i) += (p( k, l) + p( l, k))*val ;
+        G( k, l) += p( i, i)*val ;
+        G( l, k) += p( i, i)*val ;
 
       } else {
 
@@ -349,8 +349,8 @@
   int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
     Eigen::Ref<Eigen::MatrixXcd> G, const int nbasis) {
 
-    /* Contract exchange integrals for complex matrices
-    Given a spin density block contract the exchange terms into G */
+    /* Given a spin density block contract the exchange terms into G 
+     Contract exchange integrals for real matrices */
 
     int ntt ;
     int n2ei ;
@@ -370,10 +370,10 @@
     for(int t = 0; t < n2ei; t++ ) {
       /*  ( 1 1| 2 2)
  *        ( i j| k l) = val */
-      i = intarr[t].r_i() - 1 ;
-      j = intarr[t].r_j() - 1 ;
-      k = intarr[t].r_k() - 1 ;
-      l = intarr[t].r_l() - 1 ;
+      i = intarr[t].r_i() ;
+      j = intarr[t].r_j() ;
+      k = intarr[t].r_k() ;
+      l = intarr[t].r_l() ;
       val = intarr[t].r_v() ;
 //   
       ieqj = ( ( i == j) ? true : false) ;
@@ -383,33 +383,34 @@
 
         /* ( i i| i i) */
 
-        G( i , i) += -p( i, i)*val ;
+        G( i, i) += -p( i, i)*val ;
 
       } else if ( not ieqj && keql && j == k ){
 
         /* ( i j| j j) */
 
-        G( i , j) += -p( j, j)*val ;
-        G( j , i) += -p( j, j)*val ;
-        G( j , j) += -(p( j, i) + p( i, j))*val ;
+        G( i, j) += -p( j, j)*val ;
+        G( j, i) += -p( j, j)*val ;
+        G( j, j) += -(p( j, i) + p( i, j))*val ;
 
-      } else if ( not ieqj && i == k && j == l ){
+      } else if ( not ieqj && not keql && i == k && j == l){
 
-        /* ( i j| i J) */
+        /* ( i j| i j) */
 
-        G( i, j) += -p( i, j)*val ;
-        G( j, i) += -p( j, i)*val ;
-        G( i, i) += -p( j, j)*val ;
+        G( i, j) += -p( j, i)*val ;
+        G( j, i) += -p( i, j)*val ;
         G( j, j) += -p( i, i)*val ;
+        G( i, i) += -p( j, j)*val ;
+
 
       } else if ( ieqj && keql && i != k ){
 
         /* ( i i| k k) */
 
-        G( i, k) += -p( k, i)*val ;
-        G( k, i) += -p( i, k)*val ;
+        G( i, k) += -p( i, k)*val ;
+        G( k, i) += -p( k, i)*val ;
 
-      } else if ( ieqj && not keql && i == k ){
+      } else if ( ieqj && not keql && i == k) {
 
         /* ( i i| i l) */
 
@@ -417,72 +418,72 @@
         G( l, i) += -p( i, i)*val ;
         G( i, l) += -p( i, i)*val ;
 
-      } else if ( not ieqj && not keql && j == l && i != k){
+      } else if ( not ieqj && not keql && i != k && j == l ) {
 
         /* ( i j| k j) */
 
-        G( i, j) += -p( k, j)*val ;
-        G( j, i) += -p( j, k)*val ;
-        G( k, j) += -p( i, j)*val ;
-        G( j, k) += -p( j, i)*val ;
-        G( i, k) += -p( j, j)*val ;
-        G( k, i) += -p( j, j)*val ;
         G( j, j) += -(p( i, k) + p( k, i))*val ;
+        G( i, j) += -p( j, k)*val ;
+        G( j, k) += -p( i, j)*val ;
+        G( i, k) += -p( j, j)*val ;
+        G( k, j) += -p( j, i)*val ;
+        G( j, i) += -p( k, j)*val ;
+        G( k, i) += -p( j, j)*val ;
 
-      } else if ( not ieqj && keql && i != k ) {
+      } else if ( not ieqj && keql && i != k && j != l ) {
 
         /* ( i j| k k) */
 
-        G( i, k) += -p( k, j)*val ;
-        G( j, k) += -p( k, i)*val ;
-        G( k, j) += -p( i, k)*val ;
-        G( k, i) += -p( j, k)*val ;
+        G( i, k) += -p( j, k)*val ;
+        G( j, k) += -p( i, k)*val ;
+        G( k, j) += -p( k, i)*val ;
+        G( k, i) += -p( k, j)*val ;
 
-      } else if ( ieqj && not keql && i != k && i != l) {
-
-        /* ( i i| k l) */
-
-        G( i, l) += -p( k, i)*val ;
-        G( i, k) += -p( l, i)*val ;
-        G( k, i) += -p( i, l)*val ;
-        G( l, i) += -p( i, k)*val ;
-
-      } else if ( not ieqj && not keql && j == k ) {
+      } else if ( not ieqj && not keql && i != l && j == k ) {
 
         /* ( i j| j l) */
 
+        G( j, j) += -(p( l, i) + p( i, l))*val ;
         G( i, l) += -p( j, j)*val ;
+        G( i, j) += -p( j, l)*val ;
+        G( j, l) += -p( i, j)*val ;
+        G( l, j) += -p( j, i)*val ;
+        G( j, i) += -p( l, j)*val ;
         G( l, i) += -p( j, j)*val ;
-        G( l, j) += -p( i, j)*val ;
-        G( j, l) += -p( j, i)*val ;
-        G( i, j) += -p( l, j)*val ;
-        G( j, i) += -p( j, l)*val ;
-        G( j, j) += -(p( i, l) + p( l, i))*val ;
 
-      } else if ( not ieqj && not keql && i == k && j != l) {
+      } else if ( not ieqj && not keql && i == k && j != l ) {
 
         /* ( i j| i l) */
 
-        G( i, l) += -p( i, j)*val ;
-        G( l, i) += -p( j, i)*val ;
-        G( l, j) += -p( i, i)*val ;
+        G( i, i) += -(p( l, j) + p( j, l))*val ;
+        G( i, l) += -p( j, i)*val ;
         G( j, l) += -p( i, i)*val ;
-        G( i, j) += -p( i, l)*val ;
-        G( j, i) += -p( l, i)*val ;
-        G( i, i) += -(p( j, l) + p( l, j))*val ;
+        G( j, i) += -p( i, l)*val ;
+        G( i, j) += -p( l, i)*val ;
+        G( l, j) += -p( i, i)*val ;
+        G( l, i) += -p( i, j)*val ;
+
+      } else if ( ieqj && not keql && i != k && i != l ) {
+
+        /* ( i i| k l) */
+
+        G( i, l) += -p( i, k)*val ;
+        G( i, k) += -p( i, l)*val ;
+        G( k, i) += -p( l, i)*val ;
+        G( l, i) += -p( k, i)*val ;
 
       } else {
 
         /* ( i j| k l) */
 
-        G( i, l)+= -p( k, j)*val ;
-        G( j, l)+= -p( k, i)*val ;
-        G( k, j)+= -p( i, l)*val ;
-        G( j, k)+= -p( l, i)*val ;
-        G( i, k)+= -p( l, j)*val ;
-        G( l, j)+= -p( i, k)*val ;
-        G( k, i)+= -p( j, l)*val ;
-        G( l, i)+= -p( j, k)*val ;
+        G( i, l) += -p( j, k)*val ;
+        G( i, k) += -p( j, l)*val ;
+        G( j, l) += -p( i, k)*val ;
+        G( j, k) += -p( i, l)*val ;
+        G( k, j) += -p( l, i)*val ;
+        G( l, j) += -p( k, i)*val ;
+        G( k, i) += -p( l, j)*val ;
+        G( l, i) += -p( k, j)*val ;
 
       }
 
@@ -516,10 +517,10 @@
     for(int t = 0; t < n2ei; t++ ) {
       /*  ( 1 1| 2 2)
  *        ( i j| k l) = val */
-      i = intarr[t].r_i() - 1 ;
-      j = intarr[t].r_j() - 1 ;
-      k = intarr[t].r_k() - 1 ;
-      l = intarr[t].r_l() - 1 ;
+      i = intarr[t].r_i() ;
+      j = intarr[t].r_j() ;
+      k = intarr[t].r_k() ;
+      l = intarr[t].r_l() ;
       val = intarr[t].r_v() ;
 //   
       ieqj = ( ( i == j) ? true : false) ;
@@ -621,6 +622,155 @@
 
   } ;
 
+//  This is an implementation of the exchange block contraction which I know works
+//  I implemented a new version to be consistent with the other routines and I want
+//  to preserve this until I'm confident my new routine has zero bugs.  
+//  int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
+//    Eigen::Ref<Eigen::MatrixXd> G, const int nbasis) {
+//
+//    /* Given a spin density block contract the exchange terms into G 
+//     Contract exchange integrals for real matrices */
+//
+//    int ntt ;
+//    int n2ei ;
+//    int i ;
+//    int j ;
+//    int k ;
+//    int l ;
+//    double val ;
+//    bool ieqk ;
+//    bool jeql ;
+//    bool ieqj ;
+//    bool keql ;
+//
+//    ntt = nbasis*(nbasis + 1)/2 ;
+//    n2ei = ntt*(ntt+1)/2 ;
+//
+//    for(int t = 0; t < n2ei; t++ ) {
+//      /*  ( 1 1| 2 2)
+// *        ( i j| k l) = val */
+//      i = intarr[t].r_i() ;
+//      j = intarr[t].r_j() ;
+//      k = intarr[t].r_k() ;
+//      l = intarr[t].r_l() ;
+//      val = intarr[t].r_v() ;
+////   
+//      ieqj = ( ( i == j) ? true : false) ;
+//      keql = ( ( k == l) ? true : false) ;
+//      
+//      if ( ieqj && keql && i == k ){
+//
+//        /* ( i i| i i) */
+//
+//        G( i , i) += -p( i, i)*val ;
+//
+//      } else if ( not ieqj && keql && j == k){
+//
+//        /* ( i j| j j) */
+//
+//        G( i , j) += -p( j, j)*val ;
+//        G( j , i) += -p( j, j)*val ;
+//        G( j , j) += -(p( j, i) + p( i, j))*val ;
+//
+//      } else if ( not ieqj && i == k && j == l){
+//
+//        /* ( i j| i j) */
+//
+//        G( i, j) += -p( i, j)*val ;
+//        G( j, i) += -p( j, i)*val ;
+//        G( i, i) += -p( j, j)*val ;
+//        G( j, j) += -p( i, i)*val ;
+//
+//      } else if ( ieqj && keql && i != k ){
+//
+//        /* ( i i| k k) */
+//
+//        G( i, k) += -p( k, i)*val ;
+//        G( k, i) += -p( i, k)*val ;
+//
+//      } else if ( ieqj && not keql && i == k ){
+//
+//        /* ( i i| i l) */
+//
+//        G( i, i) += -(p( i, l) + p( l, i))*val ;
+//        G( l, i) += -p( i, i)*val ;
+//        G( i, l) += -p( i, i)*val ;
+//
+//      } else if ( not ieqj && not keql && j == l && i != k){
+//
+//        /* ( i j| k j) */
+//
+//        G( i, j) += -p( k, j)*val ;
+//        G( j, i) += -p( j, k)*val ;
+//        G( k, j) += -p( i, j)*val ;
+//        G( j, k) += -p( j, i)*val ;
+//        G( i, k) += -p( j, j)*val ;
+//        G( k, i) += -p( j, j)*val ;
+//        G( j, j) += -(p( i, k) + p( k, i))*val ;
+//
+//      } else if ( not ieqj && keql && i != k ) {
+//
+//        /* ( i j| k k) */
+//
+//        G( i, k) += -p( k, j)*val ;
+//        G( j, k) += -p( k, i)*val ;
+//        G( k, j) += -p( i, k)*val ;
+//        G( k, i) += -p( j, k)*val ;
+//
+//      } else if ( ieqj && not keql && i != k && i != l) {
+//
+//        /* ( i i| k l) */
+//
+//        G( i, l) += -p( k, i)*val ;
+//        G( i, k) += -p( l, i)*val ;
+//        G( k, i) += -p( i, l)*val ;
+//        G( l, i) += -p( i, k)*val ;
+//
+//      } else if ( not ieqj && not keql && j == k ) {
+//
+//        /* ( i j| j l) */
+//
+//        G( i, l) += -p( j, j)*val ;
+//        G( l, i) += -p( j, j)*val ;
+//        G( l, j) += -p( i, j)*val ;
+//        G( j, l) += -p( j, i)*val ;
+//        G( i, j) += -p( l, j)*val ;
+//        G( j, i) += -p( j, l)*val ;
+//        G( j, j) += -(p( i, l) + p( l, i))*val ;
+//
+//      } else if ( not ieqj && not keql && i == k && j != l) {
+//
+//        /* ( i j| i l) */
+//
+//        G( i, l) += -p( i, j)*val ;
+//        G( l, i) += -p( j, i)*val ;
+//        G( l, j) += -p( i, i)*val ;
+//        G( j, l) += -p( i, i)*val ;
+//        G( i, j) += -p( i, l)*val ;
+//        G( j, i) += -p( l, i)*val ;
+//        G( i, i) += -(p( j, l) + p( l, j))*val ;
+//
+//      } else {
+//
+//        /* ( i j| k l) */
+//
+//        G( i, l)+= -p( k, j)*val ;
+//        G( j, l)+= -p( k, i)*val ;
+//        G( k, j)+= -p( i, l)*val ;
+//        G( j, k)+= -p( l, i)*val ;
+//        G( i, k)+= -p( l, j)*val ;
+//        G( l, j)+= -p( i, k)*val ;
+//        G( k, i)+= -p( j, l)*val ;
+//        G( l, i)+= -p( j, k)*val ;
+//
+//      }
+//
+//      }
+//
+//    return 0 ;
+//
+//  } ; 
+
   int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
     Eigen::Ref<Eigen::MatrixXd> G, const int nbasis) {
 
@@ -645,10 +795,10 @@
     for(int t = 0; t < n2ei; t++ ) {
       /*  ( 1 1| 2 2)
  *        ( i j| k l) = val */
-      i = intarr[t].r_i() - 1 ;
-      j = intarr[t].r_j() - 1 ;
-      k = intarr[t].r_k() - 1 ;
-      l = intarr[t].r_l() - 1 ;
+      i = intarr[t].r_i() ;
+      j = intarr[t].r_j() ;
+      k = intarr[t].r_k() ;
+      l = intarr[t].r_l() ;
       val = intarr[t].r_v() ;
 //   
       ieqj = ( ( i == j) ? true : false) ;
@@ -658,33 +808,34 @@
 
         /* ( i i| i i) */
 
-        G( i , i) += -p( i, i)*val ;
+        G( i, i) += -p( i, i)*val ;
 
       } else if ( not ieqj && keql && j == k ){
 
         /* ( i j| j j) */
 
-        G( i , j) += -p( j, j)*val ;
-        G( j , i) += -p( j, j)*val ;
-        G( j , j) += -(p( j, i) + p( i, j))*val ;
+        G( i, j) += -p( j, j)*val ;
+        G( j, i) += -p( j, j)*val ;
+        G( j, j) += -(p( j, i) + p( i, j))*val ;
 
-      } else if ( not ieqj && i == k && j == l ){
+      } else if ( not ieqj && not keql && i == k && j == l){
 
-        /* ( i j| i J) */
+        /* ( i j| i j) */
 
-        G( i, j) += -p( i, j)*val ;
-        G( j, i) += -p( j, i)*val ;
-        G( i, i) += -p( j, j)*val ;
+        G( i, j) += -p( j, i)*val ;
+        G( j, i) += -p( i, j)*val ;
         G( j, j) += -p( i, i)*val ;
+        G( i, i) += -p( j, j)*val ;
+
 
       } else if ( ieqj && keql && i != k ){
 
         /* ( i i| k k) */
 
-        G( i, k) += -p( k, i)*val ;
-        G( k, i) += -p( i, k)*val ;
+        G( i, k) += -p( i, k)*val ;
+        G( k, i) += -p( k, i)*val ;
 
-      } else if ( ieqj && not keql && i == k ){
+      } else if ( ieqj && not keql && i == k) {
 
         /* ( i i| i l) */
 
@@ -692,72 +843,72 @@
         G( l, i) += -p( i, i)*val ;
         G( i, l) += -p( i, i)*val ;
 
-      } else if ( not ieqj && not keql && j == l && i != k){
+      } else if ( not ieqj && not keql && i != k && j == l ) {
 
         /* ( i j| k j) */
 
-        G( i, j) += -p( k, j)*val ;
-        G( j, i) += -p( j, k)*val ;
-        G( k, j) += -p( i, j)*val ;
-        G( j, k) += -p( j, i)*val ;
-        G( i, k) += -p( j, j)*val ;
-        G( k, i) += -p( j, j)*val ;
         G( j, j) += -(p( i, k) + p( k, i))*val ;
+        G( i, j) += -p( j, k)*val ;
+        G( j, k) += -p( i, j)*val ;
+        G( i, k) += -p( j, j)*val ;
+        G( k, j) += -p( j, i)*val ;
+        G( j, i) += -p( k, j)*val ;
+        G( k, i) += -p( j, j)*val ;
 
-      } else if ( not ieqj && keql && i != k ) {
+      } else if ( not ieqj && keql && i != k && j != l ) {
 
         /* ( i j| k k) */
 
-        G( i, k) += -p( k, j)*val ;
-        G( j, k) += -p( k, i)*val ;
-        G( k, j) += -p( i, k)*val ;
-        G( k, i) += -p( j, k)*val ;
+        G( i, k) += -p( j, k)*val ;
+        G( j, k) += -p( i, k)*val ;
+        G( k, j) += -p( k, i)*val ;
+        G( k, i) += -p( k, j)*val ;
 
-      } else if ( ieqj && not keql && i != k && i != l) {
-
-        /* ( i i| k l) */
-
-        G( i, l) += -p( k, i)*val ;
-        G( i, k) += -p( l, i)*val ;
-        G( k, i) += -p( i, l)*val ;
-        G( l, i) += -p( i, k)*val ;
-
-      } else if ( not ieqj && not keql && j == k ) {
+      } else if ( not ieqj && not keql && i != l && j == k ) {
 
         /* ( i j| j l) */
 
+        G( j, j) += -(p( l, i) + p( i, l))*val ;
         G( i, l) += -p( j, j)*val ;
+        G( i, j) += -p( j, l)*val ;
+        G( j, l) += -p( i, j)*val ;
+        G( l, j) += -p( j, i)*val ;
+        G( j, i) += -p( l, j)*val ;
         G( l, i) += -p( j, j)*val ;
-        G( l, j) += -p( i, j)*val ;
-        G( j, l) += -p( j, i)*val ;
-        G( i, j) += -p( l, j)*val ;
-        G( j, i) += -p( j, l)*val ;
-        G( j, j) += -(p( i, l) + p( l, i))*val ;
 
-      } else if ( not ieqj && not keql && i == k && j != l) {
+      } else if ( not ieqj && not keql && i == k && j != l ) {
 
         /* ( i j| i l) */
 
-        G( i, l) += -p( i, j)*val ;
-        G( l, i) += -p( j, i)*val ;
-        G( l, j) += -p( i, i)*val ;
+        G( i, i) += -(p( l, j) + p( j, l))*val ;
+        G( i, l) += -p( j, i)*val ;
         G( j, l) += -p( i, i)*val ;
-        G( i, j) += -p( i, l)*val ;
-        G( j, i) += -p( l, i)*val ;
-        G( i, i) += -(p( j, l) + p( l, j))*val ;
+        G( j, i) += -p( i, l)*val ;
+        G( i, j) += -p( l, i)*val ;
+        G( l, j) += -p( i, i)*val ;
+        G( l, i) += -p( i, j)*val ;
+
+      } else if ( ieqj && not keql && i != k && i != l ) {
+
+        /* ( i i| k l) */
+
+        G( i, l) += -p( i, k)*val ;
+        G( i, k) += -p( i, l)*val ;
+        G( k, i) += -p( l, i)*val ;
+        G( l, i) += -p( k, i)*val ;
 
       } else {
 
         /* ( i j| k l) */
 
-        G( i, l)+= -p( k, j)*val ;
-        G( j, l)+= -p( k, i)*val ;
-        G( k, j)+= -p( i, l)*val ;
-        G( j, k)+= -p( l, i)*val ;
-        G( i, k)+= -p( l, j)*val ;
-        G( l, j)+= -p( i, k)*val ;
-        G( k, i)+= -p( j, l)*val ;
-        G( l, i)+= -p( j, k)*val ;
+        G( i, l) += -p( j, k)*val ;
+        G( i, k) += -p( j, l)*val ;
+        G( j, l) += -p( i, k)*val ;
+        G( j, k) += -p( i, l)*val ;
+        G( k, j) += -p( l, i)*val ;
+        G( l, j) += -p( k, i)*val ;
+        G( k, i) += -p( l, j)*val ;
+        G( l, i) += -p( k, j)*val ;
 
       }
 
@@ -767,13 +918,588 @@
 
   } ;
 
-/* Evaluate elements between Slater Determinants */
+  int pairing_field( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> D, const int nbasis) {
+    /* Evaluate the pairing field for HFB type wavefunctions */
+    int ntt ;
+    int n2ei ;
+    int i ;
+    int j ;
+    int k ;
+    int l ;
+    double val ;
+    bool ieqk ;
+    bool jeql ;
+    bool ieqj ;
+    bool keql ;
 
-double tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXd> dabmat){
+    ntt = nbasis*(nbasis + 1)/2 ;
+    n2ei = ntt*(ntt+1)/2 ;
+
+    for(int t = 0; t < n2ei; t++ ) {
+      /*  ( 1 1| 2 2)
+ *        ( i j| k l) = val */
+      i = intarr[t].r_i() ;
+      j = intarr[t].r_j() ;
+      k = intarr[t].r_k() ;
+      l = intarr[t].r_l() ;
+      val = intarr[t].r_v() ;
+//   
+      ieqj = ( ( i == j) ? true : false) ;
+      keql = ( ( k == l) ? true : false) ;
+//
+      if ( ieqj && keql and i == k) {
+
+        /* ( i i| i i)*/
+
+        D(i,i) += val*p(i,i) ;
+
+      } else if ( not ieqj && keql and j == k) {
+
+        /* ( i j| j j)*/
+
+        D(i,j) += val*p(j,j) ;
+        D(j,i) += val*p(j,j) ;
+        D(j,j) += val*(p(i,j) + p(j,i)) ;
+
+      } else if ( not ieqj and not keql and i == k and j ==l) {
+
+        /* ( i j| i j)*/
+
+        D(i,i) += val*p(j,j) ;
+        D(j,j) += val*p(i,i) ;
+        D(i,j) += val*p(j,i) ;
+        D(j,i) += val*p(i,j) ;
+
+      } else if ( ieqj and keql and i !=k) {
+
+        /* ( i i| k k) */
+
+        D(i,k) += val*p(i,k) ;
+        D(k,i) += val*p(k,i) ;
+
+      } else if ( ieqj and not keql and i == k){
+
+        /* ( i i| i l) */
+
+        D(i,l) += val*p(i,i) ;
+        D(l,i) += val*p(i,i) ;
+        D(i,i) += val*(p(i,l) + p(l,i)) ;
+
+      } else if ( not ieqj and not keql and i != k and j == l){
+
+        /* ( i j| k j) */
+
+        D(i,k) += val*p(j,j) ;
+        D(j,k) += val*p(i,j) ;
+        D(i,j) += val*p(j,k) ;
+        D(k,i) += val*p(j,j) ;
+        D(j,i) += val*p(k,j) ;
+        D(k,j) += val*p(j,i) ;
+        D(j,j) += val*(p(i,k) + p(k,i)) ;
+
+      } else if ( not ieqj and keql and i != k and j != l) {
+
+        /* ( i j| k k) */
+
+        D(i,k) += val*p(j,k) ;
+        D(k,i) += val*p(k,j) ;
+        D(j,k) += val*p(i,k) ;
+        D(k,j) += val*p(k,i) ;
+
+      } else if ( not ieqj and not keql and i!=l and j == k) {
+
+        /* ( i j| j l) */
+
+        D(i,j) += val*p(j,l) ;
+        D(i,l) += val*p(j,j) ;
+        D(j,l) += val*p(i,j) ;
+        D(j,i) += val*p(l,j) ;
+        D(l,i) += val*p(j,j) ;
+        D(l,j) += val*p(j,i) ;
+        D(j,j) += val*(p(i,l) + p(l,i)) ;
+
+      } else if ( not ieqj and not keql and i == k and j != l){
+
+        /* ( i j| i l) */
+
+        D(i,l) += val*p(j,i) ;
+        D(j,i) += val*p(i,l) ;
+        D(j,l) += val*p(i,i) ;
+        D(l,j) += val*p(i,i) ;
+        D(i,j) += val*p(l,i) ;
+        D(l,i) += val*p(i,j) ;
+        D(i,i) += val*(p(j,l) + p(l,j)) ;
+
+      } else if ( ieqj and not keql and i != k and i != l){
+
+        /* ( i i| k l) */
+
+        D(i,k) += val*p(i,l) ;
+        D(i,l) += val*p(i,k) ;
+        D(k,i) += val*p(l,i) ;
+        D(l,i) += val*p(k,i) ;
+
+      } else {
+
+        /* ( i j| k l) */
+
+        D(i,k) += val*p(j,l) ;
+        D(i,l) += val*p(j,k) ;
+        D(j,k) += val*p(i,l) ;
+        D(j,l) += val*p(i,k) ;
+        D(k,i) += val*p(l,j) ;
+        D(l,i) += val*p(k,j) ;
+        D(l,j) += val*p(k,i) ;
+        D(k,j) += val*p(l,i) ;
+
+      }
+
+      }
+
+  return 0 ;
+
+  } ;
+
+  int twin_field( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> D, const int nbasis) {
+    /* Evaluate the twin field for HFB type wavefunctions */
+    int ntt ;
+    int n2ei ;
+    int i ;
+    int j ;
+    int k ;
+    int l ;
+    double val ;
+    bool ieqk ;
+    bool jeql ;
+    bool ieqj ;
+    bool keql ;
+
+    ntt = nbasis*(nbasis + 1)/2 ;
+    n2ei = ntt*(ntt+1)/2 ;
+
+    for(int t = 0; t < n2ei; t++ ) {
+      /*  ( 1 1| 2 2)
+ *        ( i j| k l) = val */
+      i = intarr[t].r_i() ;
+      j = intarr[t].r_j() ;
+      k = intarr[t].r_k() ;
+      l = intarr[t].r_l() ;
+      val = intarr[t].r_v() ;
+//   
+      ieqj = ( ( i == j) ? true : false) ;
+      keql = ( ( k == l) ? true : false) ;
+//
+      if ( ieqj && keql and i == k) {
+
+        /* ( i i| i i)*/
+
+        D(i,i) += -val*p(i,i) ;
+
+      } else if ( not ieqj && keql and j == k) {
+
+        /* ( i j| j j)*/
+
+        D(i,j) += -val*p(j,j) ;
+        D(j,i) += -val*p(j,j) ;
+        D(j,j) += -val*(p(i,j) + p(j,i)) ;
+
+      } else if ( not ieqj and not keql and i == k and j ==l) {
+
+        /* ( i j| i j)*/
+
+        D(i,i) += -val*p(j,j) ;
+        D(j,j) += -val*p(i,i) ;
+        D(i,j) += -val*p(i,j) ;
+        D(j,i) += -val*p(j,i) ;
+
+      } else if ( ieqj and keql and i !=k) {
+
+        /* ( i i| k k) */
+
+        D(i,k) += -val*p(k,i) ;
+        D(k,i) += -val*p(i,k) ;
+
+      } else if ( ieqj and not keql and i == k){
+
+        /* ( i i| i l) */
+
+        D(i,l) += -val*p(i,i) ;
+        D(l,i) += -val*p(i,i) ;
+        D(i,i) += -val*(p(i,l) + p(l,i)) ;
+
+      } else if ( not ieqj and not keql and i != k and j == l){
+
+        /* ( i j| k j) */
+
+        D(i,k) += -val*p(j,j) ;
+        D(k,i) += -val*p(j,j) ;
+        D(j,k) += -val*p(j,i) ;
+        D(i,j) += -val*p(k,j) ;
+        D(j,i) += -val*p(j,k) ;
+        D(k,j) += -val*p(i,j) ;
+        D(j,j) += -val*(p(i,k) + p(k,i)) ;
+
+      } else if ( not ieqj and keql and i != k and j != l) {
+
+        /* ( i j| k k) */
+
+        D(i,k) += -val*p(k,j) ;
+        D(j,k) += -val*p(k,i) ;
+        D(k,i) += -val*p(j,k) ;
+        D(k,j) += -val*p(i,k) ;
+
+      } else if ( not ieqj and not keql and i!=l and j == k) {
+
+        /* ( i j| j l) */
+
+        D( i, j) += -val*p( l, j) ;
+        D( j, l) += -val*p( j, i) ;
+        D( i, l) += -val*p( j, j) ;
+        D( j, i) += -val*p( j, l) ;
+        D( l, i) += -val*p( j, j) ;
+        D( l, j) += -val*p( i, j) ;
+        D( j, j) += -val*(p( i, l) + p( l, i)) ;
+
+      } else if ( not ieqj and not keql and i == k and j != l){
+
+        /* ( i j| i l) */
+
+        D( j, i) += -val*p( l, i) ;
+        D( j, l) += -val*p( i, i) ;
+        D( i, l) += -val*p( i, j) ;
+        D( i, j) += -val*p( i, l) ;
+        D( l, i) += -val*p( j, i) ;
+        D( l, j) += -val*p( i, i) ;
+        D( i, i) += -val*(p( j, l) + p( l, j)) ;
+
+      } else if ( ieqj and not keql and i != k and i != l){
+
+        /* ( i i| k l) */
+
+        D( i, k) += -val*p( l, i) ;
+        D( i, l) += -val*p( i, k) ;
+        D( k, i) += -val*p( i, l) ;
+        D( l, i) += -val*p( i, k) ;
+
+      } else {
+
+        /* ( i j| k l) */
+
+        D( i, k) += -val*p( l, j) ;
+        D( j, k) += -val*p( l, i) ;
+        D( j, l) += -val*p( k, i) ;
+        D( i, l) += -val*p( j, k) ;
+        D( k, i) += -val*p( j, l) ;
+        D( l, i) += -val*p( j, k) ;
+        D( l, j) += -val*p( i, k) ;
+        D( k, j) += -val*p( i, l) ;
+
+      }
+
+      }
+
+  return 0 ;
+
+  } ;
+
+  int pairing_field( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
+    Eigen::Ref<Eigen::MatrixXcd> D, const int nbasis) {
+    /* Evaluate the pairing field for HFB type wavefunctions */
+    int ntt ;
+    int n2ei ;
+    int i ;
+    int j ;
+    int k ;
+    int l ;
+    double val ;
+    bool ieqk ;
+    bool jeql ;
+    bool ieqj ;
+    bool keql ;
+
+    ntt = nbasis*(nbasis + 1)/2 ;
+    n2ei = ntt*(ntt+1)/2 ;
+
+    for(int t = 0; t < n2ei; t++ ) {
+      /*  ( 1 1| 2 2)
+ *        ( i j| k l) = val */
+      i = intarr[t].r_i() ;
+      j = intarr[t].r_j() ;
+      k = intarr[t].r_k() ;
+      l = intarr[t].r_l() ;
+      val = intarr[t].r_v() ;
+//   
+      ieqj = ( ( i == j) ? true : false) ;
+      keql = ( ( k == l) ? true : false) ;
+//
+      if ( ieqj && keql and i == k) {
+
+        /* ( i i| i i)*/
+
+        D(i,i) += val*p(i,i) ;
+
+      } else if ( not ieqj && keql and j == k) {
+
+        /* ( i j| j j)*/
+
+        D(i,j) += val*p(j,j) ;
+        D(j,i) += val*p(j,j) ;
+        D(j,j) += val*(p(i,j) + p(j,i)) ;
+
+      } else if ( not ieqj and not keql and i == k and j ==l) {
+
+        /* ( i j| i j)*/
+
+        D(i,i) += val*p(j,j) ;
+        D(j,j) += val*p(i,i) ;
+        D(i,j) += val*p(j,i) ;
+        D(j,i) += val*p(i,j) ;
+
+      } else if ( ieqj and keql and i !=k) {
+
+        /* ( i i| k k) */
+
+        D(i,k) += val*p(i,k) ;
+        D(k,i) += val*p(k,i) ;
+
+      } else if ( ieqj and not keql and i == k){
+
+        /* ( i i| i l) */
+
+        D(i,l) += val*p(i,i) ;
+        D(l,i) += val*p(i,i) ;
+        D(i,i) += val*(p(i,l) + p(l,i)) ;
+
+      } else if ( not ieqj and not keql and i != k and j == l){
+
+        /* ( i j| k j) */
+
+        D(i,k) += val*p(j,j) ;
+        D(j,k) += val*p(i,j) ;
+        D(i,j) += val*p(j,k) ;
+        D(k,i) += val*p(j,j) ;
+        D(j,i) += val*p(k,j) ;
+        D(k,j) += val*p(j,i) ;
+        D(j,j) += val*(p(i,k) + p(k,i)) ;
+
+      } else if ( not ieqj and keql and i != k and j != l) {
+
+        /* ( i j| k k) */
+
+        D(i,k) += val*p(j,k) ;
+        D(k,i) += val*p(k,j) ;
+        D(j,k) += val*p(i,k) ;
+        D(k,j) += val*p(k,i) ;
+
+      } else if ( not ieqj and not keql and i!=l and j == k) {
+
+        /* ( i j| j l) */
+
+        D(i,j) += val*p(j,l) ;
+        D(i,l) += val*p(j,j) ;
+        D(j,l) += val*p(i,j) ;
+        D(j,i) += val*p(l,j) ;
+        D(l,i) += val*p(j,j) ;
+        D(l,j) += val*p(j,i) ;
+        D(j,j) += val*(p(i,l) + p(l,i)) ;
+
+      } else if ( not ieqj and not keql and i == k and j != l){
+
+        /* ( i j| i l) */
+
+        D(i,l) += val*p(j,i) ;
+        D(j,i) += val*p(i,l) ;
+        D(j,l) += val*p(i,i) ;
+        D(l,j) += val*p(i,i) ;
+        D(i,j) += val*p(l,i) ;
+        D(l,i) += val*p(i,j) ;
+        D(i,i) += val*(p(j,l) + p(l,j)) ;
+
+      } else if ( ieqj and not keql and i != k and i != l){
+
+        /* ( i i| k l) */
+
+        D(i,k) += val*p(i,l) ;
+        D(i,l) += val*p(i,k) ;
+        D(k,i) += val*p(l,i) ;
+        D(l,i) += val*p(k,i) ;
+
+      } else {
+
+        /* ( i j| k l) */
+
+        D(i,k) += val*p(j,l) ;
+        D(i,l) += val*p(j,k) ;
+        D(j,k) += val*p(i,l) ;
+        D(j,l) += val*p(i,k) ;
+        D(k,i) += val*p(l,j) ;
+        D(l,i) += val*p(k,j) ;
+        D(l,j) += val*p(k,i) ;
+        D(k,j) += val*p(l,i) ;
+
+      }
+
+      }
+
+  return 0 ;
+
+  } ;
+
+  int twin_field( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
+    Eigen::Ref<Eigen::MatrixXd> D, const int nbasis) {
+    /* Evaluate the twin field for HFB type wavefunctions */
+    int ntt ;
+    int n2ei ;
+    int i ;
+    int j ;
+    int k ;
+    int l ;
+    double val ;
+    bool ieqk ;
+    bool jeql ;
+    bool ieqj ;
+    bool keql ;
+
+    ntt = nbasis*(nbasis + 1)/2 ;
+    n2ei = ntt*(ntt+1)/2 ;
+
+    for(int t = 0; t < n2ei; t++ ) {
+      /*  ( 1 1| 2 2)
+ *        ( i j| k l) = val */
+      i = intarr[t].r_i() ;
+      j = intarr[t].r_j() ;
+      k = intarr[t].r_k() ;
+      l = intarr[t].r_l() ;
+      val = intarr[t].r_v() ;
+//   
+      ieqj = ( ( i == j) ? true : false) ;
+      keql = ( ( k == l) ? true : false) ;
+//
+      if ( ieqj && keql and i == k) {
+
+        /* ( i i| i i)*/
+
+        D(i,i) += -val*p(i,i) ;
+
+      } else if ( not ieqj && keql and j == k) {
+
+        /* ( i j| j j)*/
+
+        D(i,j) += -val*p(j,j) ;
+        D(j,i) += -val*p(j,j) ;
+        D(j,j) += -val*(p(i,j) + p(j,i)) ;
+
+      } else if ( not ieqj and not keql and i == k and j ==l) {
+
+        /* ( i j| i j)*/
+
+        D(i,i) += -val*p(j,j) ;
+        D(j,j) += -val*p(i,i) ;
+        D(i,j) += -val*p(i,j) ;
+        D(j,i) += -val*p(j,i) ;
+
+      } else if ( ieqj and keql and i !=k) {
+
+        /* ( i i| k k) */
+
+        D(i,k) += -val*p(k,i) ;
+        D(k,i) += -val*p(i,k) ;
+
+      } else if ( ieqj and not keql and i == k){
+
+        /* ( i i| i l) */
+
+        D(i,l) += -val*p(i,i) ;
+        D(l,i) += -val*p(i,i) ;
+        D(i,i) += -val*(p(i,l) + p(l,i)) ;
+
+      } else if ( not ieqj and not keql and i != k and j == l){
+
+        /* ( i j| k j) */
+
+        D(i,k) += -val*p(j,j) ;
+        D(k,i) += -val*p(j,j) ;
+        D(j,k) += -val*p(j,i) ;
+        D(i,j) += -val*p(k,j) ;
+        D(j,i) += -val*p(j,k) ;
+        D(k,j) += -val*p(i,j) ;
+        D(j,j) += -val*(p(i,k) + p(k,i)) ;
+
+      } else if ( not ieqj and keql and i != k and j != l) {
+
+        /* ( i j| k k) */
+
+        D(i,k) += -val*p(k,j) ;
+        D(j,k) += -val*p(k,i) ;
+        D(k,i) += -val*p(j,k) ;
+        D(k,j) += -val*p(i,k) ;
+
+      } else if ( not ieqj and not keql and i!=l and j == k) {
+
+        /* ( i j| j l) */
+
+        D(i,j) += -val*p(l,j) ;
+        D(j,l) += -val*p(j,i) ;
+        D(i,l) += -val*p(j,j) ;
+        D(j,i) += -val*p(j,l) ;
+        D(l,i) += -val*p(j,j) ;
+        D(l,j) += -val*p(i,j) ;
+        D(j,j) += -val*(p(i,l) + p(l,i)) ;
+
+      } else if ( not ieqj and not keql and i == k and j != l){
+
+        /* ( i j| i l) */
+
+        D(j,i) += -val*p(l,i) ;
+        D(j,l) += -val*p(i,i) ;
+        D(i,l) += -val*p(i,j) ;
+        D(i,j) += -val*p(i,l) ;
+        D(l,i) += -val*p(j,i) ;
+        D(l,j) += -val*p(i,i) ;
+        D(i,i) += -val*(p(j,l) + p(l,j)) ;
+
+      } else if ( ieqj and not keql and i != k and i != l){
+
+        /* ( i i| k l) */
+
+        D(i,k) += -val*p(l,i) ;
+        D(i,l) += -val*p(i,k) ;
+        D(k,i) += -val*p(i,l) ;
+        D(l,i) += -val*p(i,k) ;
+
+      } else {
+
+        /* ( i j| k l) */
+
+        D(i,k) += -val*p(l,j) ;
+        D(j,k) += -val*p(l,i) ;
+        D(j,l) += -val*p(k,i) ;
+        D(i,l) += -val*p(j,k) ;
+        D(k,i) += -val*p(j,l) ;
+        D(l,i) += -val*p(j,k) ;
+        D(l,j) += -val*p(i,k) ;
+        D(k,j) += -val*p(i,l) ;
+
+      }
+
+      }
+
+  return 0 ;
+
+  } ;
+
+
+
+/* Evaluate elements between Slater Determinants */
+double tranden1 ( int& nele, int& nbasis, Eigen::Ref<Eigen::MatrixXd> wfna, Eigen::Ref<Eigen::MatrixXd> wfnb, Eigen::Ref<Eigen::MatrixXd> dabmat, Eigen::Ref<Eigen::MatrixXd> scr) {
 
 /*
- * Given two Slater Determinants, return the transition density in dabmat and return
- * the overlap.
+ * Given mo coeffcients for Slater Determinants, return the transition density
+ * and the overlap for a single block.
+ *
+ * The determinants need to be in oao basis.
  *
  * sum_{kl} C_{vl}D(k | l)C_{ku}^{*}
  *
@@ -793,219 +1519,85 @@ double tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXd> da
  * -Returns a GHF style transition density matrix even if many elements
  *  are zero
  *
- * Things that can be improved:
- *   - Add logic to find the transition density between different types
- *   of wavefunctions.
- *   - Allow for evaluating matrix elements between determinants in the non-orthogonal
- *   basis.
- *
  * */
 
-  int wfn_a ;
-  int wfn_b ;
-  int nocc ;
-  int nalp ;
-  int nbet ;
-  int nbasis ;
-  int lstrt ;
   double ovl ;
-  Eigen::MatrixXd moa ;
-  Eigen::MatrixXd mob ;
-  Eigen::MatrixXd dkl ;
-  Eigen::MatrixXd tmp ;
-  wfn_a = a.get_wti() ;
-  wfn_b = b.get_wti() ;
-  nocc = com.nele() ;
-  dkl.resize( nocc, nocc) ;
-  dkl.setZero() ;
 
-  if ( wfn_a == 1 && wfn_b == 1 ) {
+  /* Build D*/
+  dabmat.block( 0, 0, nele, nele) = wfna.block( 0, 0, nbasis, nele).adjoint()*wfnb.block( 0, 0, nbasis, nele) ;
 
-    nalp = com.nalp() ;
-    nbasis = com.nbas() ;
-    moa.resize( nbasis, nbasis) ;
-    mob.resize( nbasis, nbasis) ;
-    a.get_mos( moa) ;
-    b.get_mos( mob) ;
+  /* Build D(k | l) */
 
-    /* Build D*/
-    dkl.block( 0, 0, nalp, nalp) = moa.block( 0, 0, nbasis, nalp).adjoint()*mob.block( 0, 0, nbasis, nalp) ;
-    dkl.block( nalp, nalp, nalp, nalp) = dkl.block( 0, 0, nalp, nalp) ;
-
-  } else if ( wfn_a == 3 && wfn_b == 3 ) {
-
-    nalp = com.nalp() ;
-    nbet = com.nbet() ;
-    nbasis = com.nbas() ;
-    moa.resize( nbasis, 2*nbasis) ;
-    mob.resize( nbasis, 2*nbasis) ;
-    a.get_mos( moa) ;
-    b.get_mos( mob) ;
-    dkl.block( 0, 0, nalp, nalp) = moa.block( 0, 0, nbasis, nalp).adjoint()*mob.block( 0, 0, nbasis, nalp) ;
-    dkl.block( nalp, nalp, nbet, nbet) = moa.block( 0, nbasis, nbasis, com.nbet()).adjoint()*mob.block( 0, nbasis, nbasis, com.nbet()) ;
-
-  } else if ( wfn_a == 5 && wfn_b == 5 ) {
-
-    nbasis = 2*com.nbas() ;
-    moa.resize( nbasis, nbasis) ;
-    mob.resize( nbasis, nbasis) ;
-    a.get_mos( moa) ;
-    b.get_mos( mob) ;
-    dkl = moa.block( 0, 0, nbasis, nocc).adjoint()*mob.block( 0, 0, nbasis, nocc) ;
-
-  }
-
-  /* Since all three will return the same size transition density handle the rest out here
-   *
-   * Build D(k | l)
-   *
-   * */
-
-  ovl = dkl.determinant() ;
+  ovl = dabmat.block( 0, 0, nele, nele).determinant() ;
 
   /* Build the adjugate */
-  tmp.resize( nocc, nocc) ;
-  tmp = ovl*dkl.inverse() ;
+  scr = ovl*dabmat.block( 0, 0, nele, nele).inverse() ;
 
-  dkl = tmp ;
-  tmp.resize( 0, 0) ;
-
-  if ( wfn_a == 1 && wfn_b == 1 ) {
-    dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
-    dabmat.block( nbasis, nbasis, nbasis, nbasis) = dabmat.block( 0, 0, nbasis, nbasis) ;
-  } else if ( wfn_a == 3 && wfn_b == 3 ) {
-    dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
-    dabmat.block( nbasis, nbasis, nbasis, nbasis) = mob.block( 0, nbasis, nbasis, nbet)*dkl.block( nalp, nalp, nbet, nbet)*moa.block( 0, nbasis, nbasis, nbet).adjoint() ;
-  } else if ( wfn_a == 5 && wfn_b == 5 ) {
-    dabmat = mob.block( 0, 0, nbasis, nocc)*dkl*moa.block( 0, 0, nbasis, nocc).adjoint() ;
-  }
-
-  mob.resize( 0, 0) ;
-  moa.resize( 0, 0) ;
-  dkl.resize( 0, 0) ;
+  dabmat = wfnb.block( 0, 0, nbasis, nele)*scr*wfna.block( 0, 0, nbasis, nele).transpose() ;
 
   return ovl ;
 
 } ;
 
- cd tranden ( common& com, hfwfn& a, hfwfn& b, Eigen::Ref<Eigen::MatrixXcd> dabmat) {
-
-/* 
- *  This is an overloaded complex version of nointm
- * */
-
-  int wfn_a ;
-  int wfn_b ;
-  int nocc ;
-  int nalp ;
-  int nbet ;
-  int nbasis ;
-  int lstrt ;
-  cd ovl ;
-  Eigen::MatrixXcd moa ;
-  Eigen::MatrixXcd mob ;
-  Eigen::MatrixXcd dkl ;
-  Eigen::MatrixXcd tmp ;
-  wfn_a = a.get_wti() ;
-  wfn_b = b.get_wti() ;
-  nocc = com.nele() ;
-  dkl.resize( nocc, nocc) ;
-  dkl.setZero() ;
-
-  if ( wfn_a == 2 && wfn_b == 2 ) {
-
-    nalp = com.nalp() ;
-    nbasis = com.nbas() ;
-    moa.resize( nbasis, nbasis) ;
-    mob.resize( nbasis, nbasis) ;
-    a.get_mos( moa) ;
-    b.get_mos( mob) ;
-
-    /* Build D*/
-    dkl.block( 0, 0, nalp, nalp) = moa.block( 0, 0, nbasis, nalp).adjoint()*mob.block( 0, 0, nbasis, nalp) ;
-    dkl.block( nalp, nalp, nalp, nalp) = dkl.block( 0, 0, nalp, nalp) ;
-
-  } else if ( wfn_a == 4 && wfn_b == 4 ) {
-
-    nalp = com.nalp() ;
-    nbet = com.nbet() ;
-    nbasis = com.nbas() ;
-    moa.resize( nbasis, 2*nbasis) ;
-    mob.resize( nbasis, 2*nbasis) ;
-    a.get_mos( moa) ;
-    b.get_mos( mob) ;
-    dkl.block( 0, 0, nalp, nalp) = moa.block( 0, 0, nbasis, nalp).adjoint()*mob.block( 0, 0, nbasis, nalp) ;
-    dkl.block( nalp, nalp, nbet, nbet) = moa.block( 0, nbasis, nbasis, com.nbet()).adjoint()*mob.block( 0, nbasis, nbasis, com.nbet()) ;
-
-  } else if ( wfn_a == 6 && wfn_b == 6 ) {
-
-    nbasis = 2*com.nbas() ;
-    moa.resize( nbasis, nbasis) ;
-    mob.resize( nbasis, nbasis) ;
-    a.get_mos( moa) ;
-    b.get_mos( mob) ;
-    dkl = moa.block( 0, 0, nbasis, nocc).adjoint()*mob.block( 0, 0, nbasis, nocc) ;
-
-  }
-
-  /* Since all three will return the same size transition density handle the rest out here
-   *
-   * Build D(k | l) 
-   *
-   * */
-
-  ovl = dkl.determinant() ;
-
-  /* Build the adjugate */
-  tmp.resize( nocc, nocc) ;
-  tmp = ovl*dkl.inverse() ;
-
-  dkl = tmp ;
-  tmp.resize( 0, 0) ;
-
-  if ( wfn_a == 2 && wfn_b == 2 ) {
-    dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
-    dabmat.block( nbasis, nbasis, nbasis, nbasis) = dabmat.block( 0, 0, nbasis, nbasis) ;
-  } else if ( wfn_a == 4 && wfn_b == 4 ) {
-    dabmat.block( 0, 0, nbasis, nbasis) = mob.block( 0, 0, nbasis, nalp)*dkl.block( 0, 0, nalp, nalp)*moa.block( 0, 0, nbasis, nalp).adjoint() ;
-    dabmat.block( nbasis, nbasis, nbasis, nbasis) = mob.block( 0, nbasis, nbasis, nbet)*dkl.block( nalp, nalp, nbet, nbet)*moa.block( 0, nbasis, nbasis, nbet).adjoint() ;
-  } else if ( wfn_a == 6 && wfn_b == 6 ) {
-    dabmat = mob.block( 0, 0, nbasis, nocc)*dkl*moa.block( 0, 0, nbasis, nocc).adjoint() ;
-  }
-
-  mob.resize( 0, 0) ;
-  moa.resize( 0, 0) ;
-  dkl.resize( 0, 0) ;
-
-  return ovl ;
-
-} ;
-
-double td_singleblock( int& occ, int& nbas, Eigen::Ref<Eigen::MatrixXd> sd1, Eigen::Ref<Eigen::MatrixXd> sd2, Eigen::Ref<Eigen::MatrixXd> td) {
+cd tranden1 ( int& nele, int& nbasis, Eigen::Ref<Eigen::MatrixXcd> wfna, Eigen::Ref<Eigen::MatrixXcd> wfnb, Eigen::Ref<Eigen::MatrixXcd> dabmat, Eigen::Ref<Eigen::MatrixXcd> scr) {
 
 /*
- * Given two Slater Determinants wavefunctions, return the transition density in td
- *  and return the overlap as a scalar for a single spin block.  
+ * Complex overloaded transition density routine
+ * */
+
+  cd ovl ;
+
+  /* Build D*/
+  dabmat.block( 0, 0, nele, nele) = wfna.block( 0, 0, nbasis, nele).adjoint()*wfnb.block( 0, 0, nbasis, nele) ;
+
+  /* Build D(k | l) */
+
+  ovl = dabmat.block( 0, 0, nele, nele).determinant() ;
+
+  /* Build the adjugate */
+  scr = ovl*dabmat.block( 0, 0, nele, nele).inverse() ;
+
+  dabmat = wfnb.block( 0, 0, nbasis, nele)*scr*wfna.block( 0, 0, nbasis, nele).transpose() ;
+
+  return ovl ;
+
+} ;
+
+double tranden2 ( int& ne1, int& ne2, int& nbasis, Eigen::Ref<Eigen::MatrixXd> wfna, Eigen::Ref<Eigen::MatrixXd> wfnb, Eigen::Ref<Eigen::MatrixXd> dabmat, Eigen::Ref<Eigen::MatrixXd> scr1) {
+
+/*
+ * Given mo coeffcients for an unrestricted determinant, find the transition density
+ * for the alpha and beta components.
  *
- * The Slater determinants should be in the orthogonal ao basis.
- */
+ * The mos should be passed as alpha block/beta block.
+ ^
+ ^ I think this means we simply do tranden1 twice.
+ * No sure if I can pass a block of an eigen matrix so i will use scratch for
+ * now.
+ *
+ * */
 
-    double ovl = d0 ;
-    Eigen::MatrixXd dkl ;
-    Eigen::MatrixXcd tmp ;
+  double ola, olb ;
 
-    dkl.resize( occ, occ) ;
+  /* Build D*/
+  ola = tranden1( ne1, nbasis, wfna.block( 0, 0, nbasis, nbasis), wfnb.block( 0, 0, nbasis, nbasis), dabmat.block( 0, 0, nbasis, nbasis), scr1.block( 0, 0, ne1, ne1)) ;
 
-    dkl = sd1.block( 0, 0, nbas, occ).adjoint()*sd2.block( 0, 0, nbas, occ) ;
-    ovl = dkl.determinant() ;
+  olb = tranden1( ne2, nbasis, wfna.block( 0, nbasis, nbasis, nbasis), wfnb.block( 0, nbasis, nbasis, nbasis), dabmat.block( 0, nbasis, nbasis, nbasis), scr1.block( 0, 0, ne2, ne2)) ;
 
-    /* Build the adjugate */
-    td = dkl.inverse() ;
+  return ola*olb ;
 
-    dkl = td*ovl ;
-    td = sd2.block( 0, 0, nbas, occ)*dkl*sd2.block( 0, 0, nbas, occ).adjoint() ;
+} ;
 
-    return ovl ;
+cd tranden2 ( int& ne1, int& ne2, int& nbasis, Eigen::Ref<Eigen::MatrixXcd> wfna, Eigen::Ref<Eigen::MatrixXcd> wfnb, Eigen::Ref<Eigen::MatrixXcd> dabmat, Eigen::Ref<Eigen::MatrixXcd> scr) {
+
+  cd ola, olb ;
+
+  /* Build D*/
+  ola = tranden1( ne1, nbasis, wfna.block( 0, 0, nbasis, nbasis), wfnb.block( 0, 0, nbasis, nbasis), dabmat.block( 0, 0, nbasis, nbasis), scr.block( 0, 0, ne1, ne1)) ;
+
+  olb = tranden1( ne2, nbasis, wfna.block( 0, nbasis, nbasis, nbasis), wfnb.block( 0, nbasis, nbasis, nbasis), dabmat.block( 0, nbasis, nbasis, nbasis), scr.block( 0, 0, ne2, ne2)) ;
+
+  return ola*olb ;
 
 } ;
 
@@ -1026,7 +1618,7 @@ double obop ( common& com, Eigen::Ref<Eigen::MatrixXd> ouv, hfwfn& a, hfwfn& b) 
   pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
   pvu.setZero() ;
 
-  tranden ( com, a, b, pvu) ;
+ // tranden1( com, a, b, pvu) ;
 
   omega = ouv*pvu ;
   aob = omega.trace() ;
@@ -1056,7 +1648,7 @@ double obop ( common& com, Eigen::Ref<Eigen::MatrixXd> ouv, hfwfn& a, hfwfn& b) 
   pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
   pvu.setZero() ;
 
-  tranden ( com, a, b, pvu) ;
+  //tranden ( com, a, b, pvu) ;
 
   omega = ouv*pvu ;
   aob = omega.trace() ;
@@ -1065,16 +1657,12 @@ double obop ( common& com, Eigen::Ref<Eigen::MatrixXd> ouv, hfwfn& a, hfwfn& b) 
 
 } ;
 
+template<typename >
 double fockop ( common& com, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& intarr, hfwfn& a,
                hfwfn& b, double& ovl) { 
 
 /*
- * While the fock operator is one body, it requires that we contract the two electron
- * integrals with the density to build it.  This wraps up that procedure.  This routine assumes
- *
- *  - Everything has been put into an orthogonal ao basis.  
- *  - Regardless of the flavor of hf wfn, this treats everything as ghf meaning 2*nbas dimensions.
- *  
+ * Given a density matrix return 
  * */
 
   int nocc ;
@@ -1093,7 +1681,7 @@ double fockop ( common& com, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& in
   pvu.setZero() ;
   f.setZero() ;
 
-  ovl = tranden ( com, a, b, pvu) ;
+//  ovl = tranden ( com, a, b, pvu) ;
 
   ctr2eg( intarr, pvu, g, com.nbas()) ;
 
@@ -1143,64 +1731,11 @@ double fockop ( common& com, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& in
   f.setZero() ;
   a.get_mos( mos) ;
 
-  ovl = tranden ( com, a, b, pvu) ;
+//  ovl = tranden ( com, a, b, pvu) ;
 
   ctr2eg( intarr, pvu, g, com.nbas()) ;
 
   f =  h + g ;
-  g = h + f ;
-  omega = g*pvu ;
-  aob = pt5*omega.trace() ;
-
-  g.resize( 0, 0) ;
-  f.resize( 0, 0) ;
-  pvu.resize( 0, 0) ;
-  omega.resize( 0, 0) ;
-
-  return aob ;
-
-} ;
-
- cd fockop ( common& com, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, 
-                             hfwfn& b, cd& ovl, std::ofstream& traden, std::ofstream& fockmat) {
-
-/*
- * If passed file names, fockop will write the transition density and fock operator to files for 
- * later contraction with derivatives.
- * */
-
-  int nocc ;
-  cd aob ;
-  cd pt5 = cd (0.5,0.0) ;
-  Eigen::MatrixXcd pvu ;
-  Eigen::MatrixXcd omega ;
-  Eigen::MatrixXcd f ;
-  Eigen::MatrixXcd g ;
-  Eigen::MatrixXcd mos ;
-
-  /* Build pvu */
-
-  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
-  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
-  f.resize( 2*com.nbas(), 2*com.nbas()) ;
-  g.resize( 2*com.nbas(), 2*com.nbas()) ;
-  mos.resize( 2*com.nbas(), 2*com.nbas()) ;
-  pvu.setZero() ;
-  f.setZero() ;
-  a.get_mos( mos) ;
-
-  ovl = tranden ( com, a, b, pvu) ;
-  std::cout << pvu << std::endl ;
-  /* Write the transition density to file */
-  write_eigen_bin( pvu, traden) ;
-
-  ctr2eg( intarr, pvu, g, com.nbas()) ;
-
-  f =  h + g ;
-  std::cout << f << std::endl ;
-  /* Write the fock matrix to file */
-  write_eigen_bin( f, fockmat) ;
-
   g = h + f ;
   omega = g*pvu ;
   aob = pt5*omega.trace() ;

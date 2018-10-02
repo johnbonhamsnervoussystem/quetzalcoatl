@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
   */
   common com = common() ;
   std::vector<tei> intarr ;
+  std::vector<tei> trnint ;
 
   int job=0  ;
   int i, j, k, l ;
@@ -91,6 +92,7 @@ int main(int argc, char *argv[]) {
   Eigen::MatrixXd S ;
   Eigen::MatrixXd T ;
   Eigen::MatrixXd V ;
+  Eigen::MatrixXcd cV ;
   basis_set b ;
   sladet< double, Eigen::Dynamic, Eigen::Dynamic> w ;
   std::ofstream tstfile ; 
@@ -146,27 +148,34 @@ int main(int argc, char *argv[]) {
   nbas = b.nbas ;
   com.nbas( nbas) ;
   S.resize( nbas, nbas) ;
+  T.resize( nbas, nbas) ;
+  V.resize( nbas, nbas) ;
+  cV.resize( nbas, nbas) ;
   ao_overlap( com.natm(), b, S) ;
   com.setS( S) ;
-  T.resize( nbas, nbas) ;
+  // Find the orthogonalizing routine
+  canort( S, cV, nbas) ;
+  T = cV.real() ;
+  V = T.transpose()*S*T ;
+  com.setXS( T) ;
   ao_kinetic( com.natm(), b, T) ;
-  V.resize( nbas, nbas) ;
   ao_eN_V( com.natm(), b, c, a, V) ;
   S = T + V ;
   com.setH( S) ;
-  V.resize( 0, 0) ;
   T.resize( 0, 0) ;
+  V.resize( 0, 0) ;
   S.resize( 0, 0) ;
   list_ao_tei( com.natm(), b, intarr) ; 
 
-  std::cout << "Testing scf routines " << std::endl; 
-  std::cout << "rrhf " << std::endl; 
+  // The next step is really to put the integrals in the oao basis.
+
+  std::cout << "rghfb " << std::endl; 
   iopt = 21 ;
   scf_drv( com, intarr, iopt) ;
-/*  std::cout << "ruhf " << std::endl; 
-  iopt = 22 ;
-  scf_drv( com, intarr, iopt) ;
   std::cout << "rghf " << std::endl; 
+  iopt = 15 ;
+  scf_drv( com, intarr, iopt) ;
+/*  std::cout << "rghf " << std::endl; 
   iopt = 23 ;
   scf_drv( com, intarr, iopt) ;
   std::cout << "crhf " << std::endl; 
