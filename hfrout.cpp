@@ -1,3 +1,4 @@
+#include <cmath>
 #include <complex>
 #include "common.h"
 #include "constants.h"
@@ -59,9 +60,11 @@ void scf_drv( common& com, std::vector<tei>& intarr, int opt) {
 void real_HFB( common& com, std::vector<tei>& intarr, int opt) {
     /* Do the general HFB first. */
     int nbas = com.nbas() ;
+    int nele = com.nele() ;
     int maxit = com.mxscfit() ;
     double thresh = com.scfthresh() ;
     double e_scf ;
+    double lambda ;
     Eigen::MatrixXd h ;
     Eigen::MatrixXd s ;
     Eigen::MatrixXd moc ;
@@ -75,16 +78,18 @@ void real_HFB( common& com, std::vector<tei>& intarr, int opt) {
     h.setZero() ;
     h.block( 0, 0, nbas, nbas) = com.getH() ;
     h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
-    h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = h.block( 0, 0, 2*nbas, 2*nbas) ;
-    std::cout << "Core Hamiltonian" << std::endl ;
-    std::cout << h << std::endl ;
+    h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -h.block( 0, 0, 2*nbas, 2*nbas) ;
     s.setZero() ;
     s.block( 0, 0, nbas, nbas) = com.getS() ;
     s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
+//    s.block( 0, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
+//    s.block( 2*nbas, 0, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
     s.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
     std::cout << "Overlap" << std::endl ;
     std::cout << s << std::endl ;
-    e_scf = rghfbdia( h, s, intarr, nbas, moc, eig, maxit, thresh) ;
+    /* Lambda is the chemical potential. Set to zero for now */
+    lambda = d0 ;
+    e_scf = rghfbdia( h, s, intarr, nbas, nele, moc, eig, maxit, thresh) ;
 
     return ;
 
@@ -560,67 +565,159 @@ double cuhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
 
 } ;
 
-double rghfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, const int& nbasis, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh){
+double rghfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh) {
 
-  Eigen::MatrixXd H ;
+/* 
+  There are two convergence criteria here to achieve self-consistency. 
+
+    For each density, the chemical potential is adjusted until the 
+    preferred number of particles is found.  Once the number of particles
+    is correct, the density is recomputed and checked against the previous
+    iteration.  If it is below the convergence criteria then we are done.
+
+*/
+
+  Eigen::MatrixXd f ;
+  Eigen::MatrixXd C ;
+  Eigen::MatrixXd mu ;
   Eigen::MatrixXd G ;
-  Eigen::MatrixXd p ;
   Eigen::MatrixXd D ;
+  Eigen::MatrixXd p ;
   Eigen::MatrixXd k ;
+  Eigen::MatrixXd W ;
   Eigen::MatrixXd R ;
-  Eigen::MatrixXd unit ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> H_diag ;
-  int iter = 0 ;
+  Eigen::MatrixXd Ro ;
+  Eigen::MatrixXd t ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> f_diag ;
+  int iter_N =0 ;
+  int iter_d =0 ;
+  int nbas ;
   double energy=d0 ;
   double ene_p=d0 ;
   double e_dif=1e0 ;
+  double lambda=-d1 ;
+  double N ;
+  double conv=d0 ;
   time_dbg rghfbdia_time = time_dbg("rghfbdia_time") ;
 
-  R.resize( 4*nbasis, 4*nbasis) ;
-  H.resize( 4*nbasis, 4*nbasis) ;
-  G.resize( 2*nbasis, 2*nbasis) ;
-  p.resize( 2*nbasis, 2*nbasis) ;
-  k.resize( 2*nbasis, 2*nbasis) ;
-  unit.resize( 2*nbasis, 2*nbasis) ;
-  unit.setIdentity() ;
+  nbas = nbasis*4 ;
+  f.resize( nbas, nbas) ;
+  C.resize( nbas, nbas) ;
+  mu.resize( nbas, nbas) ;
+  G.resize( nbasis*2, nbasis*2) ;
+  D.resize( nbasis*2, nbasis*2) ;
+  W.resize( nbasis*4, nbasis*2) ;
+  p.resize( nbasis*2, nbasis*2) ;
+  k.resize( nbasis*2, nbasis*2) ;
+  t.resize( nbasis*2, nbasis*2) ;
+  R.resize( nbasis*4, nbasis*4) ;
+  Ro.resize( nbasis*4, nbasis*4) ;
 
-  H = h ;
+  std::cout << "Core Hamiltonian" << std::endl ;
+  std::cout << h << std::endl ;
+  p.setZero() ;
+  k.setZero() ;
+  mu.setZero() ;
+  mu.block( 0, 0, 2*nbasis, 2*nbasis) = -s.block( 0, 0, 2*nbasis, 2*nbasis) ;
+  mu.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = s.block( 0, 0, 2*nbasis, 2*nbasis) ;
 
-  while ( iter < maxit ) {
-    iter += 1 ;
-    H_diag.compute( H, s) ;
-    c = H_diag.eigenvectors().real() ;
-    std::cout << " c.block " << std::endl ;
-    std::cout << c.block( 2*nbasis, 0, 2*nbasis, 2*nbasis) << std::endl ;
-    p = c.block( 2*nbasis, 0, 2*nbasis, 2*nbasis).conjugate()*c.block( 2*nbasis, 0, 2*nbasis, 2*nbasis).transpose() ;
-//    k = c.block( 0, 0, 2*nbasis, 2*nbasis)*c.block( 0, 0, 2*nbasis, 2*nbasis).adjoint() ;
-//    std::cout << "p" << std::endl ;
-//    std::cout << p << std::endl ;
+  /* Initial guess for rho and kappa */
+  if ( c.isZero(0) ) {
+    f = h ;
+  } else {
+    W = c.block(0, 0, 4*nbasis, 2*nbasis) ;
+    R = W*W.adjoint() ;
+    ctr2eg( intarr, R.block(0, 0, 2*nbasis, 2*nbasis), G, nbasis) ;
+    ctrPairg( intarr, R.block(0, 2*nbasis, 2*nbasis, 2*nbasis), D, nbasis) ;
+    f.block( 0, 0, 2*nbasis, 2*nbasis) = h.block( 0, 0, 2*nbasis, 2*nbasis) + G - lambda*s.block( 0, 0, 2*nbasis, 2*nbasis) ;
+    f.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = -h.block( 0, 0, 2*nbasis, 2*nbasis) - G + lambda*s.block( 0, 0, 2*nbasis, 2*nbasis) ;
+  }
+
+  while ( iter_d < maxit ) {
+    iter_d += 1 ;
+    std::cout << "Self-Consistency iteration number: " << iter_d << std::endl ;
+    iter_N = 0 ;
+    while ( iter_N < maxit ){
+      iter_N += 1 ;
+      std::cout << "Particle Number Iteration: " << iter_N << std::endl ;
+      std::cout << "chemical potential: " << lambda << std::endl ;
+      f_diag.compute( f, s) ;
+      c = f_diag.eigenvectors().real() ;
+//      eig = f_diag.eigenvalues().real() ;
+//    std::cout << " eig " << std::endl ;
+//    std::cout << eig << std::endl ;
+//    std::cout << " c " << std::endl ;
+//    std::cout << c << std::endl ;
+      W = c.block(0, 0, 4*nbasis, 2*nbasis) ;
+//    std::cout << " W " << std::endl ;
+//    std::cout << W << std::endl ;
+      R = W*W.adjoint() ;
+      std::cout << " R " << std::endl ;
+      std::cout << R << std::endl ;
+      std::cout << " R*s " << std::endl ;
+      std::cout << R*s << std::endl ;
+      Ro = R*s ;
+      N = Ro.block( 0, 0, 2*nbasis, 2*nbasis).trace() ;
+      std::cout << " Particle Number " << std::endl ;
+      std::cout << N << std::endl ;
+      if  ( abs(N - static_cast<double>(nele)) < 0.1 ){
+        break ;
+      } else if ( N > static_cast<double>(nele)){
+        lambda += -0.01 ;
+      } else {
+        lambda += 0.01 ;
+      }
+      std::cout << " lambda " << std::endl ;
+      std::cout << lambda << std::endl ;
+      f = h + C + lambda*mu ;
+    }
+/*
+  Now compare densities to check convergence.
+*/
+    t = p - R.block(0, 0, 2*nbasis, 2*nbasis) ;
+    conv = sqrt(t.squaredNorm()) ;
+    t = k - R.block(0, 2*nbasis, 2*nbasis, 2*nbasis) ;
+    conv += sqrt(t.squaredNorm()) ;
+    std::cout << " rms difference in the densities: " << conv << std::endl ;
+/*
+*/
+    p = R.block(0, 0, 2*nbasis, 2*nbasis) ;
+    k = R.block(0, 2*nbasis, 2*nbasis, 2*nbasis) ;
+/* 
+  Build a new Hamiltonian
+*/
     ctr2eg( intarr, p, G, nbasis) ;
-//    std::cout << "G" << std::endl ;
-//    std::cout << G << std::endl ;
-    H.block( 0, 0, 2*nbasis, 2*nbasis) = h.block( 0, 0, 2*nbasis, 2*nbasis) + G ;
-    H.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = h.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) + G ;
-/*  Let's try adding in the pairing tensor */
-    G = p*( h.block( 0, 0, 2*nbasis, 2*nbasis) + H.block( 0, 0, 2*nbasis, 2*nbasis)) ;
-    energy = G.trace()/d2 ;
+    ctrPairg( intarr, k, D, nbasis) ;
+    C.setZero() ;
+    C.block( 0, 0, 2*nbasis, 2*nbasis) = G ;
+//    C.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) = D ;
+//    C.block( 2*nbasis, 0, 2*nbasis, 2*nbasis) = -D.conjugate() ;
+    C.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = -G.conjugate() ;
+    f.setZero() ;
+    f = h + C + lambda*mu ;
+    N *= -d1 ;
+/*    std::cout << " R " << std::endl ;
+    std::cout << R << std::endl ; 
+    f.block( 0, 0, 2*nbasis, 2*nbasis) = h.block( 0, 0, 2*nbasis, 2*nbasis) + G - lambda*s.block( 0, 0, 2*nbasis, 2*nbasis) ;
+    f.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = -h.block( 0, 0, 2*nbasis, 2*nbasis) - G + lambda*s.block( 0, 0, 2*nbasis, 2*nbasis) ;*/
+    std::cout << " f " << std::endl ;
+    std::cout << f << std::endl ;
+/*    g = p*( h + f) ;
+    energy = g.trace()/d2 ;
 
     e_dif = std::abs(ene_p - energy) ;
-    ene_p = energy ;
-    if ( iter > 3 && e_dif < thresh ) { break ;}
+    ene_p = energy ; */
+//    if ( iter > 3 && e_dif < thresh ) { break ;}
     }
-
-  eig = H_diag.eigenvalues() ;
-  std::cout << eig << std::endl ;
+/*
+  eig = f_diag.eigenvalues() ;*/ 
   p.resize( 0, 0) ;
   G.resize( 0, 0) ;
-  H.resize( 0, 0) ;
+  f.resize( 0, 0) ;
 
   rghfbdia_time.end() ;
 
-  std::cout << "Dun and done" << std::endl ;
-
-  return d0 ;
+  return energy ;
 
 } ;
 

@@ -155,8 +155,7 @@ int main(int argc, char *argv[]) {
   com.setS( S) ;
   // Find the orthogonalizing routine
   canort( S, cV, nbas) ;
-  T = cV.real() ;
-  V = T.transpose()*S*T ;
+  T = -cV.real() ;
   com.setXS( T) ;
   ao_kinetic( com.natm(), b, T) ;
   ao_eN_V( com.natm(), b, c, a, V) ;
@@ -172,10 +171,10 @@ int main(int argc, char *argv[]) {
   std::cout << "rghfb " << std::endl; 
   iopt = 21 ;
   scf_drv( com, intarr, iopt) ;
-  std::cout << "rghf " << std::endl; 
+/*  std::cout << "rghf " << std::endl; 
   iopt = 15 ;
   scf_drv( com, intarr, iopt) ;
-/*  std::cout << "rghf " << std::endl; 
+  std::cout << "rghf " << std::endl; 
   iopt = 23 ;
   scf_drv( com, intarr, iopt) ;
   std::cout << "crhf " << std::endl; 
