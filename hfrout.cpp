@@ -28,7 +28,7 @@ void scf_drv( common& com, std::vector<tei>& intarr, int opt) {
       3 - real unrestricted
       4 - complex unrestricted
       5 - real generalized
-      6 - complex gneralized
+      6 - complex generalized
      10 - Slater Determinant
      20 - Hartree-Fock-Bogoliubov
   */
@@ -114,19 +114,18 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
     Eigen::MatrixXd ca ;
     Eigen::MatrixXd cb ;
     Eigen::VectorXd eig ;
-    time_dbg real_scf_time = time_dbg("real_scf") ;
     sladet< double, Eigen::Dynamic, Eigen::Dynamic> w ;
+    time_dbg real_scf_time = time_dbg("real_scf") ;
 
     if ( (opt+1)/2 == 1 ) {
       h.resize( nbas, nbas) ;
       s.resize( nbas, nbas) ;
-      w.moc.resize( nbas, nbas) ;
-      w.moc.setZero() ;
       h = com.getH() ;
       s = com.getS() ;
+      w.moc.resize( nbas, nbas) ;
+      w.moc.setZero() ;
       w.eig.resize( nbas) ;
       w.e_scf = rrhfdia( h, s, intarr, nbas, nele, w.moc, w.eig, maxit, thresh) ;
-      save_slater_det( w) ;
       std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "MO Eigenvalues : " << std::endl << std::endl ;
       std::cout << w.eig << std::endl ;
@@ -163,7 +162,6 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
       w.eig.resize( 2*nbas) ;
       w.e_scf = rghfdia( h, s, intarr, nbas, nele, w.moc, w.eig, maxit, thresh) ;
-      save_slater_det( w) ;
       std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "MO Eigenvalues : " << std::endl << std::endl ;
       std::cout << w.eig << std::endl ;
@@ -201,79 +199,69 @@ void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
     Eigen::MatrixXcd ca ;
     Eigen::MatrixXcd cb ;
     Eigen::VectorXd eig ;
+    sladet< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
     time_dbg cplx_scf_time = time_dbg("cplx_scf") ;
 
     if ( opt/2 == 1 ) {
       h.resize( nbas, nbas) ;
       s.resize( nbas, nbas) ;
-      ca.resize( nbas, nbas) ;
       h.setZero() ;
       s.setZero() ;
-      ca.setZero() ;
       h.real() = com.getH() ;
       s.real() = com.getS() ;
-      eig.resize( nbas) ;
-      energy = crhfdia( h, s, intarr, nbas, nele, ca, eig, maxit, thresh) ;
-      std::cout << "Mean Field Energy : " << energy + com.nrep() << std::endl ;
+      w.moc.resize( nbas, nbas) ;
+      w.moc.setZero() ;
+      w.eig.resize( nbas) ;
+      w.e_scf = crhfdia( h, s, intarr, nbas, nele, w.moc, w.eig, maxit, thresh) ;
+      std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "MO Eigenvalues : " << std::endl << std::endl ;
-      std::cout << eig << std::endl ;
+      std::cout << w.eig << std::endl ;
       std::cout << "MO coefficients : " << std::endl << std::endl ;
-      std::cout << ca << std::endl ;
-      eig.resize( 0) ;
-      ca.resize( 0, 0) ;
-      s.resize( 0, 0) ;
-      h.resize( 0, 0) ;
+      std::cout << w.moc << std::endl ;
     } else if ( opt/2 == 2 ) {
       h.resize( nbas, nbas) ;
       s.resize( nbas, nbas) ;
-      ca.resize( nbas, nbas) ;
-      cb.resize( nbas, nbas) ;
       h.setZero() ;
       s.setZero() ;
-      ca.setZero() ;
-      cb = ca ;
       h.real() = com.getH() ;
       s.real() = com.getS() ;
-      eig.resize( 2*nbas) ;
-      energy = cuhfdia( h, s, intarr, nbas, nalp, nbet, ca, cb, eig, maxit, thresh) ;
-      std::cout << "Mean Field Energy : " << energy + com.nrep() << std::endl ;
+      w.moc.resize( nbas, 2*nbas) ;
+      w.moc.setZero() ;
+      w.eig.resize( 2*nbas) ;
+      w.e_scf = cuhfdia( h, s, intarr, nbas, nalp, nbet, w.moc.block( 0, 0, nbas, nbas), w.moc.block( 0, nbas, nbas, nbas), w.eig, maxit, thresh) ;
+      std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "Alpha MO Eigenvalues : " << std::endl << std::endl ;
-      std::cout << eig.head(nbas) << std::endl ;
+      std::cout << w.eig.head(nbas) << std::endl ;
       std::cout << "Beta MO Eigenvalues : " << std::endl << std::endl ;
-      std::cout << eig.tail(nbas) << std::endl ;
+      std::cout << w.eig.tail(nbas) << std::endl ;
       std::cout << "Alpha MO coefficients : " << std::endl << std::endl ;
-      std::cout << ca << std::endl ;
+      std::cout <<  w.moc.block( 0, 0, nbas, nbas) << std::endl ;
       std::cout << "Beta MO coefficients : " << std::endl << std::endl ;
-      std::cout << cb << std::endl ;
-      eig.resize( 0) ;
-      cb.resize( 0, 0) ;
-      ca.resize( 0, 0) ;
-      s.resize( 0, 0) ;
-      h.resize( 0, 0) ;
+      std::cout <<  w.moc.block( 0, nbas, nbas, nbas) << std::endl ;
     } else if ( opt/2 == 3 ) {
       h.resize( 2*nbas, 2*nbas) ;
       h.setZero() ;
       s.resize( 2*nbas, 2*nbas) ;
       s.setZero() ;
-      ca.resize( 2*nbas, 2*nbas) ;
-      ca.setZero() ;
-      h.block( 0, 0, nbas, nbas).real() = com.getH() ;
+      w.moc.resize( 2*nbas, 2*nbas) ;
+      w.moc.setZero() ;
+      h.block( 0, 0, nbas, nbas) = com.getH() ;
       h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
-      s.block( 0, 0, nbas, nbas).real() = com.getS() ;
+      s.block( 0, 0, nbas, nbas) = com.getS() ;
       s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
-      eig.resize( 2*nbas) ;
-      energy = cghfdia( h, s, intarr, nbas, nele, ca, eig, maxit, thresh) ;
-      std::cout << "Mean Field Energy : " << energy + com.nrep() << std::endl ;
+      w.eig.resize( 2*nbas) ;
+      w.e_scf = cghfdia( h, s, intarr, nbas, nele, w.moc, w.eig, maxit, thresh) ;
+      std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "MO Eigenvalues : " << std::endl << std::endl ;
-      std::cout << eig << std::endl ;
+      std::cout << w.eig << std::endl ;
       std::cout << "MO coefficients : " << std::endl << std::endl ;
-      std::cout << ca << std::endl ;
-      eig.resize( 0) ;
-      ca.resize( 0, 0) ;
-      s.resize( 0, 0) ;
-      h.resize( 0, 0) ;
+      std::cout << w.moc << std::endl ;
       }
 
+    w.eig.resize( 0, 0) ;
+    w.moc.resize( 0, 0) ;
+    s.resize( 0, 0) ;
+    h.resize( 0, 0) ;
     cplx_scf_time.end() ;
 
     return ;

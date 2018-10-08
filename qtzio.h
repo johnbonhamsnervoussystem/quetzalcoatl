@@ -12,6 +12,8 @@ void read_input( common& c, const std::string& in_s) ;
 
 void getmel( std::string file1, std::string file2, std::vector<tei>& I, common& c) ;
 
+void strip_lower( std::string& s) ;
+
 //void rdsdet ( int n, std::vector<std::string>& m, std::vector<hfwfn>& d) ;
 
 template <class matrix> 

@@ -1,4 +1,5 @@
 /* Routines for Quetz I/O */
+#include <algorithm>
 #include "common.h"
 #include <complex>
 #include "constants.h"
@@ -25,6 +26,7 @@ void read_input( common& com, const std::string& inpfile){
   std::string line ;
   std::string s_junk ;
   std::string delim = "," ;
+  std::string::iterator end_pos ;
   std::ifstream jobfile ;
   std::vector<double> atnum ;
   std::vector<std::vector<double>> t_c ;
@@ -33,9 +35,47 @@ void read_input( common& com, const std::string& inpfile){
   jobfile.open( inpfile, std::ifstream::in ) ;
 
   while( getline( jobfile, line)){
-    if ( line.substr(0,7) == "jobtyp " ){
-      i_junk = stoi(line.substr(9)) ;
-    }  else if ( line.substr(0,7) == "basis  " ){
+    if ( line.substr(0,7) == "hamilt " ){
+      s_junk = line.substr(9) ;
+      strip_lower( s_junk) ;
+/*
+      Molecular/mol
+      Semi-Empirical/se
+*/
+      if ( s_junk == "mol"){
+/* Molecular Electronic Hamiltonian */
+        com.hamil(1) ;
+      } else if ( s_junk == "se"){
+/* Semi-Empirical Hamiltonian */
+        std::cout << "  NOT IMPLEMENTED " << std::endl ;
+        com.hamil(1) ;
+      } else {
+        com.hamil(1) ;
+        }
+
+    } else if ( line.substr(0,7) == "method " ){
+/*
+        real/r
+        complex/c
+
+        restricted/r
+        unrestricted/u
+        genralized/g
+
+	Hartree-Fock/HF
+        Hartree-Fock-Bogliubov/HFB
+*/
+      s_junk = line.substr(9) ;
+      strip_lower( s_junk) ;
+      if ( s_junk.substr(0,2) == "rr" ) { com.methd(1) ;}
+      else if ( s_junk.substr(0,2) == "cr" ) { com.methd(2) ;}
+      else if ( s_junk.substr(0,2) == "ru" ) { com.methd(3) ;}
+      else if ( s_junk.substr(0,2) == "cu" ) { com.methd(4) ;}
+      else if ( s_junk.substr(0,2) == "rg" ) { com.methd(5) ;}
+      else if ( s_junk.substr(0,2) == "cg" ) { com.methd(6) ;}
+      if ( s_junk.substr(2) == "hf" ) { com.methd(10) ;}
+      else if ( s_junk.substr(2) == "hfb" ) { com.methd(20) ;}
+    } else if ( line.substr(0,7) == "basis  " ){
       s_junk = line.substr(9) ;
       com.bnam( s_junk) ;
     }  else if ( line.substr(0,7) == "geom   " ) {
@@ -76,6 +116,19 @@ void read_input( common& com, const std::string& inpfile){
   return ;
 
 } 
+
+void strip_lower( std::string& s) {
+/*
+  Wrap together whitespace trimming and lower casing for input file parsing
+*/
+  std::string::iterator end_pos ;
+  end_pos = std::remove( s.begin(), s.end(), ' ') ;
+  s.erase( end_pos, s.end()) ;
+  std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+
+  return ;
+
+} ;
 
 void getmel( string file1, string file2, vector<tei>& intarr, common& com) {
 /* 
@@ -246,10 +299,10 @@ void read_eigen_bin (const matrix& m, std::ifstream& F_IN) {
 
 }
 
-template void read_eigen_bin(const Eigen::VectorXf&, std::ofstream&) ;
-template void read_eigen_bin(const Eigen::VectorXd&, std::ofstream&) ;
-template void read_eigen_bin(const Eigen::VectorXcf&, std::ofstream&) ;
-template void read_eigen_bin(const Eigen::VectorXcd&, std::ofstream&) ;
+template void read_eigen_bin(const Eigen::VectorXf&, std::ifstream&) ;
+template void read_eigen_bin(const Eigen::VectorXd&, std::ifstream&) ;
+template void read_eigen_bin(const Eigen::VectorXcf&, std::ifstream&) ;
+template void read_eigen_bin(const Eigen::VectorXcd&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::MatrixXf&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::MatrixXd&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::MatrixXcf&, std::ifstream&) ;

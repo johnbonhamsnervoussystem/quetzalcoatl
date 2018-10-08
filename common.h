@@ -6,9 +6,11 @@
 #define COMMON_H
 
 class common {
-/* Job dimensions
- *
-  General information :
+/* Job Information
+    hamiltonian - Indiacates the type of matrix elements we are computing
+    method - What type of job are we doing.
+
+  System information :
     nbasis - number of ao basis functions
     nbsuse - number of basis functions after orthogonalization of the 
              aos.
@@ -20,9 +22,10 @@ class common {
 
   Algorithm Control :
     max_scf_iter - the maximum number of scf iterations
+    scf_convergence_threshold - the threshold at which we consider the wavefunction
+      converged.
 
  * Stored Matrices
- *
    s - overlap matrix
    h - core hamiltonian
    a - atomic number
@@ -31,6 +34,9 @@ class common {
  */
 
 private :
+
+  int hamiltonian ;
+  int method ;
   int nbasis ;
   int n2ei ;
   int natoms ;
@@ -44,15 +50,18 @@ private :
   int scf_convergence_threshold ;
 
   Eigen::MatrixXd s_c ;
+  Eigen::MatrixXd xs_c ;
   Eigen::MatrixXd h_c ;
   Eigen::VectorXd a_c ;
   Eigen::MatrixXd coord ;
 
 public :
-/* Initializer to set default values */
+/* Initializers to set default values */
   common( void) ;
 
 /* Set the data */
+  void hamil( int n) ;
+  void methd( int n) ;
   void nbas( int n) ;
   void ntei( int n) ;
   void natm( int n) ;
@@ -71,11 +80,14 @@ public :
 
 /* Set matrix elements */
   void setS( Eigen::MatrixXd s) ;
+  void setXS( Eigen::MatrixXd xs) ;
   void setH( Eigen::MatrixXd h) ;
   void setA( std::vector<double> a) ;
   void setC( std::vector<std::vector<double>> c) ;
 
 /* Retrieve the data */
+  int hamil( void) ;
+  int methd( void) ;
   int nbas( void) ;
   int ntei( void) ;
   int natm( void) ;
@@ -91,6 +103,7 @@ public :
 
 /* Retrieve a matrix */
   Eigen::MatrixXd getS( void) ;
+  Eigen::MatrixXd getXS( void) ;
   Eigen::MatrixXd getH( void) ;
   Eigen::VectorXd getA( void) ;
   Eigen::MatrixXd getC( void) ;

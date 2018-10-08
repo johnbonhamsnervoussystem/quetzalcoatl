@@ -7,11 +7,16 @@
   common::common( void) {
     max_scf_iter = 20 ;
     scf_convergence_threshold = 1.0e-9 ;
+    hamiltonian = 0 ;
+    method = 0 ;
     return ;
   } 
+
 /* This stores information which is needed in most routines.
  Set things --
   General data for calculations */
+  void common::hamil( int n) { hamiltonian += n ; return ;}
+  void common::methd( int n) { method += n ; return ;}
   void common::nbas( int n) { nbasis = n ; return ;}
   void common::ntei( int n) { n2ei   = n ; return ;}
   void common::natm( int n) { natoms = n ; return ;}
@@ -24,7 +29,6 @@
 /* Routine/algorithm control options */
   void common::mxscfit( int n) { max_scf_iter = n ; return ;}
   void common::scfthresh( double d) { scf_convergence_threshold = d ; return ;}
-  
 
 /* Matrix elements */
   void common::setS ( Eigen::MatrixXd s_in) {
@@ -36,6 +40,12 @@
   void common::setH ( Eigen::MatrixXd h_in) {
     h_c.resize( nbasis, nbasis) ;
     h_c = h_in ;
+    return ;
+  }
+
+  void common::setXS ( Eigen::MatrixXd xs_in) {
+    xs_c.resize( nbasis, nbasis) ;
+    xs_c = xs_in ;
     return ;
   }
 
@@ -60,6 +70,8 @@
   }
 
 /* Get things */
+  int common::hamil( void) { return hamiltonian ;}
+  int common::methd( void) { return method ;}
   int common::nbas( void) {return nbasis ;}
   int common::ntei( void) {return n2ei   ;}
   int common::natm( void) {return natoms ;}
@@ -74,6 +86,7 @@
 
 /* Retrieve a matrix */
   Eigen::MatrixXd common::getS( void) { return s_c   ;}
+  Eigen::MatrixXd common::getXS( void) { return xs_c   ;}
   Eigen::MatrixXd common::getH( void) { return h_c   ;}
   Eigen::VectorXd common::getA( void) { return a_c   ;}
   Eigen::MatrixXd common::getC( void) { return coord ;}
