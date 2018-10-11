@@ -8,7 +8,7 @@
 #include "hfrout.h"
 #include <iostream>
 #include "qtzio.h"
-#include "sladet.h"
+#include "wfn.h"
 #include "solver.h"
 #include <string>
 #include "tei.h"
@@ -64,32 +64,40 @@ void real_HFB( common& com, std::vector<tei>& intarr, int opt) {
     int maxit = com.mxscfit() ;
     double thresh = com.scfthresh() ;
     double e_scf ;
-    double lambda ;
     Eigen::MatrixXd h ;
     Eigen::MatrixXd s ;
     Eigen::MatrixXd moc ;
     Eigen::VectorXd eig ;
+    time_dbg real_HFB_time = time_dbg("real_HFB") ;
+    if ( (opt+1)/2 == 1 ) {
+      std::cout << "Not yet implemented" << std::endl ;
+      std::cout << "Exiting Quetzalcoatl" << std::endl ;
+      exit(EXIT_FAILURE) ;
+    } else if ( (opt+1)/2 == 2 ) {
+      std::cout << "Not yet implemented" << std::endl ;
+      std::cout << "Exiting Quetzalcoatl" << std::endl ;
+      exit(EXIT_FAILURE) ;
+    } else if ( (opt+1)/2 == 3 ) {
+      h.resize( 4*nbas, 4*nbas) ;
+      s.resize( 4*nbas, 4*nbas) ;
+      moc.resize( 4*nbas, 4*nbas) ;
+      eig.resize( 4*nbas) ;
+      h.setZero() ;
+      h.block( 0, 0, nbas, nbas) = com.getH() ;
+      h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
+      h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -h.block( 0, 0, 2*nbas, 2*nbas) ;
+      s.setZero() ;
+      s.block( 0, 0, nbas, nbas) = com.getS() ;
+      s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
+      s.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
+      e_scf = rghfbdia( h, s, intarr, nbas, nele, moc, eig, maxit, thresh) ;
+    } else {
+      std::cout << "Unrecognized option in real_HFB" << std::endl ;
+      std::cout << "Exiting Quetzalcoatl" << std::endl ;
+      exit(EXIT_FAILURE) ;
+      }
 
-    h.resize( 4*nbas, 4*nbas) ;
-    s.resize( 4*nbas, 4*nbas) ;
-    moc.resize( 4*nbas, 4*nbas) ;
-    eig.resize( 4*nbas) ;
-
-    h.setZero() ;
-    h.block( 0, 0, nbas, nbas) = com.getH() ;
-    h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
-    h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -h.block( 0, 0, 2*nbas, 2*nbas) ;
-    s.setZero() ;
-    s.block( 0, 0, nbas, nbas) = com.getS() ;
-    s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
-//    s.block( 0, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
-//    s.block( 2*nbas, 0, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
-    s.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
-    std::cout << "Overlap" << std::endl ;
-    std::cout << s << std::endl ;
-    /* Lambda is the chemical potential. Set to zero for now */
-    lambda = d0 ;
-    e_scf = rghfbdia( h, s, intarr, nbas, nele, moc, eig, maxit, thresh) ;
+    real_HFB_time.end() ;
 
     return ;
 
@@ -114,7 +122,7 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
     Eigen::MatrixXd ca ;
     Eigen::MatrixXd cb ;
     Eigen::VectorXd eig ;
-    sladet< double, Eigen::Dynamic, Eigen::Dynamic> w ;
+    wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
     time_dbg real_scf_time = time_dbg("real_scf") ;
 
     if ( (opt+1)/2 == 1 ) {
@@ -167,9 +175,13 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       std::cout << w.eig << std::endl ;
       std::cout << "MO coefficients : " << std::endl << std::endl ;
       std::cout << w.moc << std::endl ;
+    } else {
+      std::cout << "Unrecognized option in real_SlaDet" << std::endl ;
+      std::cout << "Exiting Quetzalcoatl" << std::endl ;
+      exit(EXIT_FAILURE) ;
       }
 
-    save_slater_det( w) ;
+    save_slater_det(w) ;
     w.eig.resize( 0) ;
     w.moc.resize( 0, 0) ;
     s.resize( 0, 0) ;
@@ -199,7 +211,7 @@ void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
     Eigen::MatrixXcd ca ;
     Eigen::MatrixXcd cb ;
     Eigen::VectorXd eig ;
-    sladet< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
+    wfn< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
     time_dbg cplx_scf_time = time_dbg("cplx_scf") ;
 
     if ( opt/2 == 1 ) {
@@ -256,9 +268,14 @@ void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       std::cout << w.eig << std::endl ;
       std::cout << "MO coefficients : " << std::endl << std::endl ;
       std::cout << w.moc << std::endl ;
+    } else {
+      std::cout << "Unrecognized option in cplx_SlaDet" << std::endl ;
+      std::cout << "Exiting Quetzalcoatl" << std::endl ;
+      exit(EXIT_FAILURE) ;
       }
 
-    w.eig.resize( 0, 0) ;
+    save_slater_det(w) ;
+    w.eig.resize( 0) ;
     w.moc.resize( 0, 0) ;
     s.resize( 0, 0) ;
     h.resize( 0, 0) ;

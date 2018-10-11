@@ -10,11 +10,11 @@
 
 void read_input( common& c, const std::string& in_s) ;
 
-void getmel( std::string file1, std::string file2, std::vector<tei>& I, common& c) ;
+bool open_binary( std::ofstream& F_OUT, int cntl) ;
+
+bool open_binary( std::ifstream& F_IN) ;
 
 void strip_lower( std::string& s) ;
-
-//void rdsdet ( int n, std::vector<std::string>& m, std::vector<hfwfn>& d) ;
 
 template <class matrix> 
 void write_eigen_bin (const matrix& m, std::ofstream& F_OUT) ;

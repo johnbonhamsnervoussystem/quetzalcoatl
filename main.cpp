@@ -19,11 +19,11 @@
 #include "postscf.h"
 #include "project.h"
 #include "qtzio.h"
-#include "sladet.h"
 #include "solver.h"
 #include "tei.h"
 #include "time_dbg.h"
 #include "util.h"
+#include "wfn.h"
 
 void quetzalcoatl( void){
 /* Title Card */
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
   Eigen::MatrixXd V ;
   Eigen::MatrixXcd cV ;
   basis_set b ;
-  sladet< double, Eigen::Dynamic, Eigen::Dynamic> w ;
+  wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
   std::ofstream tstfile ; 
   std::ifstream tstfe ; 
   time_dbg quetz_time = time_dbg("Quetzalcoatl") ;
@@ -198,15 +198,16 @@ int main(int argc, char *argv[]) {
   T.resize( 0, 0) ;
   V.resize( 0, 0) ;
   S.resize( 0, 0) ;
-  list_ao_tei( com.natm(), b, intarr) ; 
+  list_ao_tei( com.natm(), b, intarr) ;
 
   scf_drv( com, intarr, com.methd()) ;
+
   mo_integrals( com, intarr) ;
 
   intarr.clear() ;
-  V.resize( 0, 0) ; 
-  T.resize( 0, 0) ; 
-  S.resize( 0, 0) ;  
+  V.resize( 0, 0) ;
+  T.resize( 0, 0) ;
+  S.resize( 0, 0) ;
   quetz_time.end() ;
 
   return 0 ;

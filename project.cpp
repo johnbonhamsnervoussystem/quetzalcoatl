@@ -13,29 +13,60 @@
 #include "wigner.h"
 
 /* Controlling routines to do Projection methods. 
- *
- * Wish list -
- *   -HF
- *     - Spin
- *     - C.C.
- *     - Point Group
- *   -HFB
- *     - All of the above
- *     - Number
- *
- * */
+
+ Wish list -
+   -HF
+     - Spin
+     - C.C.
+     - Point Group
+   -HFB
+     - All of the above
+     - Number
+
+ */
+
+void phf_drv( common& com, int opt){
+/*
+  Driver routine for projected methods.  
+  We need parse a lot of options here.  
+    -Type of projection
+      - Particle Number
+      - Spin
+      - Complex Conjugation
+      - Time Reversal
+    -Number of grid points
+      - alpha
+      - beta
+      - gamma
+      - part
+    -Type of grid
+      - ???
+    -Type of wavefunction
+      - HF
+      - HFB
+
+  I mean, we only got HFB for now!!
+
+*/
+
+  if( true ){
+     ;
+  }
+
+  return ;
+
+} ;
 
 /* 
- * Solve for a projected Hartree-Fock wavefunction by repeated 
- * diagonalization of the Projected Fock operator.
- *
- * The theory is outlined in 
- *
- * Jimenez-hoyos, Carlos A.; Henderson, Thomas M.; Tsuchimochi, T;
- * Scuseria, G.; "Projected Hartree-Fock theory" J. Chem. Phys. 
- * 136, (2012)
- *
- * */
+  Solve for a projected Hartree-Fock wavefunction by repeated 
+  diagonalization of the Projected Fock operator.
+  
+  The theory is outlined in 
+  
+  Jimenez-hoyos, Carlos A.; Henderson, Thomas M.; Tsuchimochi, T;
+  Scuseria, G.; "Projected Hartree-Fock theory" J. Chem. Phys. 
+  136, (2012)
+*/
 
 void e_phf( common& com, hfwfn& refd, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr) {
 
