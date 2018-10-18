@@ -2,11 +2,13 @@
 #include <complex>
 #include "common.h"
 #include "constants.h"
+#include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include "evalm.h"
 #include "hfrout.h"
 #include <iostream>
+#include "qtzcntrl.h"
 #include "qtzio.h"
 #include "wfn.h"
 #include "solver.h"
@@ -38,9 +40,7 @@ void scf_drv( common& com, std::vector<tei>& intarr, int opt) {
       real_HFB( com, intarr, opt % 10) ;
     } else if ( (opt % 10) % 2 == 0 ) {
       /* Do Complex scf */
-      std::cout << " Complex HFB not yet implemented " << std::endl ;
-      std::cout << " Exiting Quetzalcoatl " << std::endl ;
-      exit(EXIT_FAILURE) ;
+      cplx_HFB( com, intarr, opt % 10) ;
       }
   } else if ( opt / 10 == 1) {
     if ( (opt % 10) % 2 == 1 ) {
@@ -51,9 +51,7 @@ void scf_drv( common& com, std::vector<tei>& intarr, int opt) {
       cplx_SlaDet( com, intarr, opt % 10) ;
       }
     } else {
-      std::cout << " Unrecognized option in scf_drv " << std::endl ;
-      std::cout << " Exiting Quetzalcoatl " << std::endl ;
-      exit(EXIT_FAILURE) ;
+      qtzcntrl::shutdown( "Unrecognized option in scf_drv") ;
       }
   } ;
 
@@ -66,22 +64,18 @@ void real_HFB( common& com, std::vector<tei>& intarr, int opt) {
     double e_scf ;
     Eigen::MatrixXd h ;
     Eigen::MatrixXd s ;
-    Eigen::MatrixXd moc ;
-    Eigen::VectorXd eig ;
+    wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
     time_dbg real_HFB_time = time_dbg("real_HFB") ;
+
     if ( (opt+1)/2 == 1 ) {
-      std::cout << "Not yet implemented" << std::endl ;
-      std::cout << "Exiting Quetzalcoatl" << std::endl ;
-      exit(EXIT_FAILURE) ;
+      qtzcntrl::shutdown("Not yet implemented") ;
     } else if ( (opt+1)/2 == 2 ) {
-      std::cout << "Not yet implemented" << std::endl ;
-      std::cout << "Exiting Quetzalcoatl" << std::endl ;
-      exit(EXIT_FAILURE) ;
+      qtzcntrl::shutdown("Not yet implemented") ;
     } else if ( (opt+1)/2 == 3 ) {
       h.resize( 4*nbas, 4*nbas) ;
       s.resize( 4*nbas, 4*nbas) ;
-      moc.resize( 4*nbas, 4*nbas) ;
-      eig.resize( 4*nbas) ;
+      w.moc.resize( 4*nbas, 4*nbas) ;
+      w.eig.resize( 4*nbas) ;
       h.setZero() ;
       h.block( 0, 0, nbas, nbas) = com.getH() ;
       h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
@@ -90,13 +84,17 @@ void real_HFB( common& com, std::vector<tei>& intarr, int opt) {
       s.block( 0, 0, nbas, nbas) = com.getS() ;
       s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
       s.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
-      e_scf = rghfbdia( h, s, intarr, nbas, nele, moc, eig, maxit, thresh) ;
+      w.e_scf = rghfbdia( h, s, intarr, nbas, nele, w.moc, w.eig, maxit, thresh) ;
+      std::cout << "Mean Field Energy + NN : " << w.e_scf + com.nrep() << std::endl ;
+      std::cout << "Eigenvalues : " << std::endl << std::endl ;
+      std::cout << w.eig << std::endl ;
+      std::cout << "Quasi-particle coefficients : " << std::endl << std::endl ;
+      std::cout << w.moc << std::endl ;
     } else {
-      std::cout << "Unrecognized option in real_HFB" << std::endl ;
-      std::cout << "Exiting Quetzalcoatl" << std::endl ;
-      exit(EXIT_FAILURE) ;
+      qtzcntrl::shutdown("Unrecognized option in real_HFB") ;
       }
 
+    w.wfntyp = opt ;
     real_HFB_time.end() ;
 
     return ;
@@ -119,9 +117,6 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
     double thresh = com.scfthresh() ;
     Eigen::MatrixXd h ;
     Eigen::MatrixXd s ;
-    Eigen::MatrixXd ca ;
-    Eigen::MatrixXd cb ;
-    Eigen::VectorXd eig ;
     wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
     time_dbg real_scf_time = time_dbg("real_scf") ;
 
@@ -176,11 +171,10 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       std::cout << "MO coefficients : " << std::endl << std::endl ;
       std::cout << w.moc << std::endl ;
     } else {
-      std::cout << "Unrecognized option in real_SlaDet" << std::endl ;
-      std::cout << "Exiting Quetzalcoatl" << std::endl ;
-      exit(EXIT_FAILURE) ;
+      qtzcntrl::shutdown("Unrecognized option in real_SlaDet") ;
       }
 
+    w.wfntyp = opt ;
     save_slater_det(w) ;
     w.eig.resize( 0) ;
     w.moc.resize( 0, 0) ;
@@ -192,6 +186,52 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
     return ;
 
   } ;
+
+void cplx_HFB( common& com, std::vector<tei>& intarr, int opt) {
+    /* Do the general HFB first. */
+    int nbas = com.nbas() ;
+    int nele = com.nele() ;
+    int maxit = com.mxscfit() ;
+    double thresh = com.scfthresh() ;
+    double e_scf ;
+    Eigen::MatrixXcd h ;
+    Eigen::MatrixXcd s ;
+    wfn< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
+    time_dbg cplx_HFB_time = time_dbg("cplx_HFB") ;
+
+    if ( opt/2 == 1 ) {
+      qtzcntrl::shutdown("Not yet implemented") ;
+    } else if ( opt/2 == 2 ) {
+      qtzcntrl::shutdown("Not yet implemented") ;
+    } else if ( opt/2 == 3 ) {
+      h.resize( 4*nbas, 4*nbas) ;
+      s.resize( 4*nbas, 4*nbas) ;
+      w.moc.resize( 4*nbas, 4*nbas) ;
+      w.eig.resize( 4*nbas) ;
+      h.setZero() ;
+      h.block( 0, 0, nbas, nbas).real() = com.getH() ;
+      h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
+      h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -h.block( 0, 0, 2*nbas, 2*nbas) ;
+      s.setZero() ;
+      s.block( 0, 0, nbas, nbas).real() = com.getS() ;
+      s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
+      s.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
+      w.e_scf = cghfbdia( h, s, intarr, nbas, nele, w.moc, w.eig, maxit, thresh) ;
+      std::cout << "Mean Field Energy + NN : " << w.e_scf + com.nrep() << std::endl ;
+      std::cout << "Eigenvalues : " << std::endl << std::endl ;
+      std::cout << w.eig << std::endl ;
+      std::cout << "Quasi-particle coefficients : " << std::endl << std::endl ;
+      std::cout << w.moc << std::endl ;
+    } else {
+      qtzcntrl::shutdown("Unrecognized option in cplx_HFB") ;
+      }
+
+    w.wfntyp = opt ;
+    cplx_HFB_time.end() ;
+
+    return ;
+
+} ;
 
 void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
   /*Driver routine for solving self consistent wavefunctions and various things.
@@ -269,11 +309,10 @@ void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       std::cout << "MO coefficients : " << std::endl << std::endl ;
       std::cout << w.moc << std::endl ;
     } else {
-      std::cout << "Unrecognized option in cplx_SlaDet" << std::endl ;
-      std::cout << "Exiting Quetzalcoatl" << std::endl ;
-      exit(EXIT_FAILURE) ;
+      qtzcntrl::shutdown("Unrecognized option in cplx_SlaDet") ;
       }
 
+    w.wfntyp = opt ;
     save_slater_det(w) ;
     w.eig.resize( 0) ;
     w.moc.resize( 0, 0) ;
@@ -745,7 +784,8 @@ double rghfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
   energy = t.trace() ;
   t = k.conjugate()*D ;
   energy += t.trace()/4.0e0 ;
-  std::cout << " HFB energy: " << energy << std::endl ;
+  eig = H_diag.eigenvalues().real() ;
+  c = H_diag.eigenvectors().real() ;
 
   t.resize( 0, 0) ;
   Ro.resize( 0, 0) ;
@@ -820,6 +860,204 @@ double rghfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
   return energy ;
 
 } ;
+
+double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh) {
+
+/* 
+  There are two convergence criteria here to achieve self-consistency. 
+
+    For each density, the chemical potential is adjusted until the 
+    preferred number of particles is found.  Once the number of particles
+    is correct, the density is recomputed and checked against the previous
+    iteration.  If it is below the convergence criteria then we are done.
+
+  Input :
+    h - core hamiltonian
+    s - overlap
+    intarr - two electron integrals
+    nbasis - the number of spin free basis functions
+    nele - the target for particle number in HFB
+    c - container for the coefficients
+    eig - container for the eigenvalues
+    maxit - maxiterations before convergence is stopped
+    thresh - threshold for convergence o the density
+
+  Local :
+    H - HFB Hamiltonian
+    p - Stores the normal density
+    k - Stores the abnormal density
+    W - This is a container for the lowest eigenvectors of the HFB quasiparticles
+    R - generalized density matrix
+    G - Self-Consistent Field 
+    D - Pairing Field 
+    C - Container for Self-Consisten and Pairing fields
+    mu - anti-symmetric overlap for updating chemical potential
+    iter_d - iterations on density convergence
+    iter_N - iterations on particle number
+    lambda - chemical potential
+    update_lambda - magnitude by which to change the chemical potential
+    H_diag - Eigensolver object
+    Ro - orthogonal density
+    t - scratch space
+    energy - final HFB energy/ this also stores the rms error of the density
+	in order to check convergence
+    N - number of particles
+    N_p - number of particles from a previous iteration
+
+*/
+
+  Eigen::MatrixXcd H ;
+  Eigen::MatrixXcd p ;
+  Eigen::MatrixXcd k ;
+  Eigen::MatrixXcd W ;
+  Eigen::MatrixXcd R ;
+  Eigen::MatrixXcd G ;
+  Eigen::MatrixXcd D ;
+  Eigen::MatrixXcd C ;
+  Eigen::MatrixXcd mu ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> H_diag ;
+  Eigen::MatrixXcd Ro ;
+  Eigen::MatrixXcd t ;
+/*
+*/
+  int iter_N = 0 ;
+  int iter_d = 0 ;
+  double lambda=-d1 ;
+  double update_lambda=d1 ;
+  cd energy=z0 ;
+  cd N ;
+  cd N_p=-N ;
+  double conv=d0 ;
+  time_dbg cghfbdia_time = time_dbg("cghfbdia") ;
+
+  H.resize( nbasis*4, nbasis*4) ;
+  p.resize( nbasis*2, nbasis*2) ;
+  k.resize( nbasis*2, nbasis*2) ;
+  W.resize( nbasis*4, nbasis*2) ;
+  R.resize( nbasis*4, nbasis*4) ;
+  G.resize( nbasis*2, nbasis*2) ;
+  D.resize( nbasis*2, nbasis*2) ;
+  mu.resize( nbasis*4, nbasis*4) ;
+  Ro.resize( nbasis*4, nbasis*4) ;
+
+  C.resize( nbasis*4, nbasis*4) ;
+  t.resize( nbasis*2, nbasis*2) ;
+
+  /* Initial guess for rho and kappa */
+  if ( c.isZero(0)) {
+    H = h + C.setRandom() ;
+    p.setZero() ;
+    k.setZero() ;
+  } else {
+    W = c.block(0, 0, 4*nbasis, 2*nbasis) ;
+    R = W*W.adjoint() ;
+    p = R.block(0, 0, 2*nbasis, 2*nbasis) ;
+    k = R.block(0, 2*nbasis, 2*nbasis, 2*nbasis) ;
+    ctr2eg( intarr, p, G, nbasis) ;
+    ctrPairg( intarr, k, D, nbasis) ;
+    C.setZero() ;
+    C.block( 0, 0, 2*nbasis, 2*nbasis) = G ;
+    C.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) = D/d2 ;
+    C.block( 2*nbasis, 0, 2*nbasis, 2*nbasis) = -(D.conjugate())/d2 ;
+    C.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = -G.conjugate() ;
+    H.setZero() ;
+    H = h + C + lambda*mu ;
+    }
+
+  mu.setZero() ;
+  mu.block( 0, 0, 2*nbasis, 2*nbasis) = -s.block( 0, 0, 2*nbasis, 2*nbasis) ;
+  mu.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = s.block( 0, 0, 2*nbasis, 2*nbasis) ;
+
+  while ( iter_d < maxit ) {
+    iter_d += 1 ;
+    std::cout << std::endl << "Self-Consistency iteration number: " << iter_d << std::endl ;
+    iter_N = 0 ;
+    while ( iter_N < maxit ){
+      iter_N += 1 ;
+      std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
+      std::cout << "    chemical potential: " << lambda << std::endl ;
+      H_diag.compute( H, s) ;
+      c = H_diag.eigenvectors() ;
+      W = c.block(0, 0, 4*nbasis, 2*nbasis) ;
+      R = W*W.adjoint() ;
+      Ro = R*s ;
+      N = Ro.block( 0, 0, 2*nbasis, 2*nbasis).trace() ;
+      std::cout << "    Particle Number: " << N.real() << std::endl ;
+      if  ( abs(real(N) - static_cast<double>(nele)) < 0.1 ){
+        break ;
+      } else if ( real(N) > static_cast<double>(nele)){
+        lambda += -update_lambda ;
+      } else {
+        lambda += update_lambda ;
+      }
+      H = h + C + lambda*mu ;
+    }
+/*
+  Now compare densities to check convergence.
+*/
+    t = p - R.block(0, 0, 2*nbasis, 2*nbasis) ;
+    energy = (t*t.adjoint()).norm() ;
+    t = k - R.block(0, 2*nbasis, 2*nbasis, 2*nbasis) ;
+    energy += (t*t.adjoint()).norm() ;
+    std::cout << "  rms difference in the densities: " << real(energy) << std::endl ;
+
+/*  Update the normal and abnormal density before we check convergence. */
+
+    p = R.block(0, 0, 2*nbasis, 2*nbasis) ;
+    k = R.block(0, 2*nbasis, 2*nbasis, 2*nbasis) ;
+
+/*
+  It's not immediately clear to me how to optimize the chemical potential.
+  For now I will have it make steps of size 1.  
+*/
+
+/* Check that the density has converged */
+    if ( real(energy) <= thresh){
+/*    Check that the particle number has converged */
+      if ( abs(real(N) - N_p) < 0.1 ) {
+	break ;
+      } else {
+        N_p = N ;
+        }
+      }
+/*
+  If we have not converged then build a new Hamiltonian
+*/
+    ctr2eg( intarr, p, G, nbasis) ;
+    ctrPairg( intarr, k, D, nbasis) ;
+    C.setZero() ;
+    C.block( 0, 0, 2*nbasis, 2*nbasis) = G ;
+    C.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) = D/d2 ;
+    C.block( 2*nbasis, 0, 2*nbasis, 2*nbasis) = -(D.conjugate())/d2 ;
+    C.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = -G.conjugate() ;
+    H.setZero() ;
+    H = h + C + lambda*mu ;
+  }
+
+  t = (h.block( 0, 0, 2*nbasis, 2*nbasis) + G/d2 - lambda*s.block( 0, 0, 2*nbasis, 2*nbasis))*p ;
+  energy = t.trace() ;
+  t = k.conjugate()*D ;
+  energy += t.trace()/4.0e0 ;
+  eig = H_diag.eigenvalues().real() ;
+  c = H_diag.eigenvectors() ;
+
+  t.resize( 0, 0) ;
+  Ro.resize( 0, 0) ;
+  mu.resize( 0, 0) ;
+  D.resize( 0, 0) ;
+  G.resize( 0, 0) ;
+  R.resize( 0, 0) ;
+  W.resize( 0, 0) ;
+  k.resize( 0, 0) ;
+  p.resize( 0, 0) ;
+  H.resize( 0, 0) ;
+
+  cghfbdia_time.end() ;
+
+  return real(energy) ;
+
+} ;
+
 
 double cghfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh){
 

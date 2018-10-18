@@ -100,6 +100,18 @@ void read_input( common& com, const std::string& inpfile){
       com.natm( at_count) ;
       com.setA( atnum) ;
       com.setC( t_c) ;
+    }  else if ( line.substr(0,7) == "options" ) {
+/*
+  Parse random options we may want to use
+*/
+      getline( jobfile, line) ;
+      while( line.substr(0,5) != " end" ){
+        if ( line.substr(0,7) == "mxscfit" ) {
+          i_junk = stoi(line.substr(9)) ;
+          com.mxscfit(i_junk) ;
+          }
+        getline( jobfile, line) ;
+        }
     }  else if ( line.substr(0,7) == "nalpha " ) {
       i_junk = stoi(line.substr(9)) ;
       com.nalp(i_junk) ;

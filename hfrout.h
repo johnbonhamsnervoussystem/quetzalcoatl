@@ -12,6 +12,8 @@ void scf_drv( common& com, std::vector<tei>& intarr, int o) ;
 
 void real_HFB( common& com, std::vector<tei>& intarr, int opt) ;
 
+void cplx_HFB( common& com, std::vector<tei>& intarr, int opt) ;
+
 void real_SlaDet( common& com, std::vector<tei>& intarr, int o) ;
 
 void cplx_SlaDet( common& com, std::vector<tei>& intarr, int o) ;
@@ -27,6 +29,8 @@ double cuhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
 double rghfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
 
 double rghfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
+
+double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
 
 double cghfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
 
