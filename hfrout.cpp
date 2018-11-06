@@ -175,7 +175,7 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       }
 
     w.wfntyp = opt ;
-    save_slater_det(w) ;
+    save_wfn(w) ;
     w.eig.resize( 0) ;
     w.moc.resize( 0, 0) ;
     s.resize( 0, 0) ;
@@ -313,7 +313,7 @@ void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       }
 
     w.wfntyp = opt ;
-    save_slater_det(w) ;
+    save_wfn(w) ;
     w.eig.resize( 0) ;
     w.moc.resize( 0, 0) ;
     s.resize( 0, 0) ;

@@ -1,5 +1,6 @@
-#include<Eigen/Dense>
-#include<vector>
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <vector>
 #include "hfwfn.h"
 #include "tei.h"
 
@@ -12,9 +13,10 @@ double factfact ( int n=1) ;
 
 double fboys( int k, double t) ;
 
-void oao( int n, hfwfn& a, Eigen::MatrixXd s) ;
+//template<class matrix>
+//void oao( int& n, int& t, Eigen::MatrixBase<matrix>& a, Eigen::Ref<Eigen::MatrixXd> s, Eigen::Ref<Eigen::MatrixXd> x) ;
 
-void oao( int n, Eigen::Ref<Eigen::MatrixXd> ouv, Eigen::MatrixXd s) ;
+void oao( Eigen::Ref<Eigen::MatrixXd> tmp, Eigen::Ref<Eigen::MatrixXd> O, Eigen::Ref<Eigen::MatrixXd> X) ;
 
 void oao( int n, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::MatrixXd s) ;
 
@@ -29,5 +31,7 @@ void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, int b ) ;
 void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, int b ) ;
 
 double pfaffian( Eigen::Ref<Eigen::MatrixXd> m) ;
+
+cd pfaffian( Eigen::Ref<Eigen::MatrixXcd> m) ;
 
 #endif

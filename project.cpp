@@ -1,16 +1,19 @@
-#include "constants.h"
 #include "common.h"
-#include <Eigen/Dense>
 #include <complex>
-#include <vector>
-#include <iostream>
+#include "constants.h"
+#include <Eigen/Dense>
 #include "evalm.h"
+#include <iostream>
 #include "hfwfn.h"
 #include "integr.h"
 #include "project.h"
+#include "qtzcntrl.h"
 #include "tei.h"
+#include "time_dbg.h"
 #include "util.h"
+#include <vector>
 #include "wigner.h"
+#include "wfn.h"
 
 /* Controlling routines to do Projection methods. 
 
@@ -25,7 +28,7 @@
 
  */
 
-void phf_drv( common& com, int opt){
+void prj_drv( common& com, std::vector<tei>& intarr, int opt){
 /*
   Driver routine for projected methods.  
   We need parse a lot of options here.  
@@ -47,26 +50,121 @@ void phf_drv( common& com, int opt){
 
   I mean, we only got HFB for now!!
 
+  Let's put everything in the orthonormal ao basis here since it will
+  greatly simplify the calculations. This means we must pass in all 
+  quantities we want to use from the calling routine which is fine.
+
 */
 
-  if( true ){
-     ;
-  }
+  int nbas = com.nbas() ;
+  std::vector<tei> oaoint ;
+  Eigen::MatrixXd Tmp ;
+  Eigen::MatrixXd Xs ;
+  Eigen::MatrixXcd H ;
+  wfn < cd, Eigen::Dynamic, Eigen::Dynamic> w;
+
+/*
+  Load the basis transformation
+*/
+
+  w.moc.resize( 4*nbas, 4*nbas) ;
+  w.eig.resize( 4*nbas) ;
+  Tmp.resize( nbas, nbas) ;
+  H.resize( 4*nbas, 4*nbas) ;
+  Xs.resize( nbas, nbas) ;
+
+  Xs = com.getXS() ;
+  H.block( 0, 0, nbas, nbas).real() = com.getH() ;
+  load_wfn( w) ;
+
+  oao( Tmp, H.block( 0, 0, nbas, nbas).real(), Xs) ;
+  H.block( nbas, nbas, nbas, nbas) = H.block( 0, 0, nbas, nbas) ;
+  H.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = H.block( 0, 0, 2*nbas, 2*nbas) ;
+/*
+  Each block of V and U is made of four components and must be 
+  transformed as such.
+*/
+  oao( Tmp, w.moc.block( 0, 0, nbas, nbas), Xs) ;
+  oao( Tmp, w.moc.block( 0, nbas, nbas, nbas), Xs) ;
+  oao( Tmp, w.moc.block( nbas, 0, nbas, nbas), Xs) ;
+  oao( Tmp, w.moc.block( nbas, nbas, nbas, nbas), Xs) ;
+/*
+*/
+  oao( Tmp, w.moc.block( 2*nbas, 0, nbas, nbas), Xs) ;
+  oao( Tmp, w.moc.block( 2*nbas, nbas, nbas, nbas), Xs) ;
+  oao( Tmp, w.moc.block( 3*nbas, 0, nbas, nbas), Xs) ;
+  oao( Tmp, w.moc.block( 3*nbas, nbas, nbas, nbas), Xs) ;
+
+  w.moc.block( 0, 2*nbas, 2*nbas, 2*nbas) = w.moc.block( 2*nbas, 0, 2*nbas, 2*nbas).conjugate() ;
+  w.moc.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = w.moc.block( 0, 0, 2*nbas, 2*nbas).conjugate() ;
+
+  oao( nbas, intarr, oaoint, Xs) ;
+
+  if( true){
+     if ( false){
+//       proj_HFB_real() ;
+     } else {
+       proj_HFB_cplx( com, H, oaoint, w) ;
+       }
+  } else {
+    ;
+//    proj_HF
+    }
 
   return ;
 
 } ;
 
-/* 
-  Solve for a projected Hartree-Fock wavefunction by repeated 
-  diagonalization of the Projected Fock operator.
-  
-  The theory is outlined in 
-  
-  Jimenez-hoyos, Carlos A.; Henderson, Thomas M.; Tsuchimochi, T;
-  Scuseria, G.; "Projected Hartree-Fock theory" J. Chem. Phys. 
-  136, (2012)
+void proj_HFB_cplx( common& com, Eigen::Ref<Eigen::MatrixXcd>H, std::vector<tei>& oaoint, Eigen::Ref<Eigen::MatrixXcd> w){
+/*
+  Projected HFB
 */
+  time_dbg proj_HFB_cplx_time = time_dbg("proj_HFB_cplx") ;
+
+  Eigen::MatrixXcd m ;
+  Eigen::MatrixXcd V ;
+  Eigen::MatrixXcd U ;
+  Eigen::MatrixXcd Uinv ;
+
+  /* First things first, read the converged HFB wavefunciton from another job */
+  wfn < cd, Eigen::Dynamic, Eigen::Dynamic> w;
+
+  w.moc.resize( 4*nbas, 4*nbas) ;
+  m.resize( 4*nbas, 4*nbas) ;
+  V.resize( 2*nbas, 2*nbas) ;
+  U.resize( 2*nbas, 2*nbas) ;
+  Uinv.resize( 2*nbas, 2*nbas) ;
+
+  load_wfn( w) ;
+
+/* 
+   W should have
+   
+     V U^{*}
+     U V^{*}
+*/
+
+  V = w.moc.block( 0, 0, 2*nbas, 2*nbas) ;
+  U = w.moc.block( 2*nbas, 0, 2*nbas, 2*nbas) ;
+  Uinv = U.inverse() ;
+
+  /* Let's check our implementation of the pfaffian first */
+
+  m.block( 2*nbas, 0, 2*nbas, 2*nbas).real() =  Eigen::MatrixXd::Identity( 2*nbas, 2*nbas)  ;
+  m.block( 0, 2*nbas, 2*nbas, 2*nbas).real() = - Eigen::MatrixXd::Identity( 2*nbas, 2*nbas)  ;
+  U = V*Uinv ;
+  m.block( 0, 0, 2*nbas, 2*nbas) =  U ;
+  m.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) =  -U.conjugate() ;
+
+  std::cout << m << std::endl ;
+  
+  std::cout << pfaffian( m) << std::endl ;
+
+  proj_HFB_cplx_time.end() ;
+
+  return ; 
+
+} ;
 
 void e_phf( common& com, hfwfn& refd, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr) {
 

@@ -11,6 +11,7 @@
 #include <iostream>
 #include "solver.h"
 #include "tei.h"
+#include "time_dbg.h"
 #include "util.h"
 #include <vector>
 #include "wigner.h"
@@ -47,273 +48,117 @@
   
   } ;
 
-  double fboys( int k, double t) {
-      double f, m, n ;
-      /*  Let's not mess around.  Just compute this*/
+double fboys( int k, double t) {
+    double f, m, n ;
+/*
+Let's not mess around.  Just compute this
+*/
 
-      m = static_cast<double>(k) + d1/d2 ;
-      n = static_cast<double>(k) + 3.0e0/d2 ;
-      f = gsl_sf_hyperg_1F1( m, n, -t)/( d2*static_cast<double>(k) + d1) ;
-      
-      return f ;
+    m = static_cast<double>(k) + d1/d2 ;
+    n = static_cast<double>(k) + 3.0e0/d2 ;
+    f = gsl_sf_hyperg_1F1( m, n, -t)/( d2*static_cast<double>(k) + d1) ;
+    
+    return f ;
 
-    } ;
+  } ;
 
+//template<class matrix>
+//void oao( int& nbasis, int& wfntyp, matrix& a, Eigen::Ref<Eigen::MatrixXd> s, Eigen::Ref<Eigen::MatrixXd> x) {
+/* 
+  Given a Slater determinant put it into the oao basis.
+*/
+//    typename matrix::Scalar f ;
+//    matrix t ; 
+//    time_dbg oao_wfn = time_dbg("oao_wfn") ;
+//
+//    std::cout << f << std::endl ;
+//
+//    if ( wfntyp % 2 == 1) {
+//      /* Real wavefuntion*/
+//      if ( wfntyp == 1) {
+//        /* Restricted wavefuntion*/
+//        t.resize( nbasis, nbasis) ;
+//        t = x.adjoint()*s*a ;
+//        a = t ;
+//  
+//      } else if ( wfntyp == 3 ){
+//        /* unrestricted wavefuntion*/
+//        t.resize( nbasis, 2*nbasis) ;
+//        t.block( 0, 0, nbasis, nbasis) = x.adjoint()*s*a.block( 0, 0, nbasis, nbasis) ;
+//        t.block( 0, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( 0, nbasis, nbasis, nbasis) ;
+//        a = t ;
+//  
+//      } else if ( wfntyp == 5 ){
+//        /* Generalized wavefuntion*/
+//        t.resize( 2*nbasis, 2*nbasis) ;
+//        t.block( 0, 0, nbasis, nbasis) = x.adjoint()*s*a.block( 0, 0, nbasis, nbasis) ;
+//        t.block( 0, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( 0, nbasis, nbasis, nbasis) ;
+//        t.block( nbasis, 0, nbasis, nbasis) = x.adjoint()*s*a.block( nbasis, 0, nbasis, nbasis) ;
+//        t.block( nbasis, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( nbasis, nbasis, nbasis, nbasis) ;
+//    
+//        a = t ;
+//        }
+//  
+//        t.resize( 0, 0) ;
+//      } else {
+//      /* Real wavefuntion*/
+//        if ( wfntyp == 2) {
+//          /* Restricted wavefuntion*/
+//          t.resize( nbasis, nbasis) ;
+//          t = x.adjoint()*s*a ;
+//          a = t ;
+//  
+//        } else if ( wfntyp == 4 ){
+//          /* unrestricted wavefuntion*/
+//          t.resize( nbasis, 2*nbasis) ;
+//          t.block( 0, 0, nbasis, nbasis) = x.adjoint()*s*a.block( 0, 0, nbasis, nbasis) ;
+//          t.block( 0, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( 0, nbasis, nbasis, nbasis) ;
+//          a = t ;
+//  
+//        } else if ( wfntyp == 6 ){
+//          /* Generalized wavefuntion*/
+//          t.resize( 2*nbasis, 2*nbasis) ;
+//          t.block( 0, 0, nbasis, nbasis) = x.adjoint()*s*a.block( 0, 0, nbasis, nbasis) ;
+//          t.block( 0, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( 0, nbasis, nbasis, nbasis) ;
+//          t.block( nbasis, 0, nbasis, nbasis) = x.adjoint()*s*a.block( nbasis, 0, nbasis, nbasis) ;
+//          t.block( nbasis, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( nbasis, nbasis, nbasis, nbasis) ;
+//    
+//          a = t ;
+//          }
+//  
+//          t.resize( 0, 0) ;
+//  
+//        }
+//
+//    oao_wfn.end() ;
+//
+//    return ;
+//  
+//  }  ;
 
-  void oao( int nbasis, hfwfn& a, Eigen::MatrixXd s) {
-  
-    /* Given an overlap and a Slater determinant, check if the determinant is
-     * already in the orthogonal atomic orbital basis.  If not, put it into the 
-     * oao basis. */
-  
-    int iwfnt ;
-    double detr ;
-    double detru ;
-    double d1 = 1e0 ;
-    double thresh = 1e-7 ;
-    std::complex<double> detc ;
-    std::complex<double> detcu ;
-    Eigen::MatrixXd mor ; 
-    Eigen::MatrixXd tmpr ; 
-    Eigen::MatrixXd shf_r ; 
-    Eigen::MatrixXcd moc ; 
-    Eigen::MatrixXcd tmpc ; 
-    Eigen::MatrixXcd shf_c ; 
-    
-    iwfnt = a.get_wti() ;
-    if ( iwfnt % 2 == 1 ){
-  
-    /* Real wavefuntion*/
-  
-      if ( iwfnt == 1 ){
-  
-      /* Restricted wavefuntion*/
-  
-        mor.resize( nbasis, nbasis) ;
-        tmpr.resize( nbasis, nbasis) ;
-        a.get_mos( mor) ;
-        tmpr = mor.adjoint()*mor ;
-        detr = tmpr.determinant() ;
-  
-        if ( std::abs(detr - d1) > thresh ){ 
-  
-        /* The determinant is not orthogonal. */
-  
-          shf_r.resize( nbasis, nbasis) ;
-          shf_c.resize( nbasis, nbasis) ;
-          canort( s, shf_c, nbasis) ;
-          shf_r = shf_c.real() ;
-          tmpr = shf_r.adjoint()*s*mor ;
-  
-          a.set_mos( tmpr) ;
-  
-        } 
-  
-        shf_c.resize( 0, 0) ; 
-        shf_r.resize( 0, 0) ;  
-        tmpr.resize( 0, 0) ;
-        mor.resize( 0, 0) ;
-  
-      } else if ( iwfnt == 3 ){
-  
-      /* unrestricted wavefuntion*/
-  
-        mor.resize( nbasis, 2*nbasis) ;
-        tmpr.resize( nbasis, 2*nbasis) ;
-        a.get_mos( mor) ;
-        tmpr.block( 0, 0, nbasis, nbasis) = mor.block( 0, 0, nbasis, nbasis).adjoint()*mor.block( 0, 0, nbasis, nbasis) ;
-        tmpr.block( 0, nbasis, nbasis, nbasis) = mor.block( 0, nbasis, nbasis, nbasis).adjoint()*mor.block( 0, nbasis, nbasis, nbasis) ;
-        detr = tmpr.block( 0, 0, nbasis, nbasis).determinant() ;
-        detru = tmpr.block( 0, nbasis, nbasis, nbasis).determinant() ;
-  
-        if ( std::abs(detr - d1) > thresh |  std::abs(detru - d1) > thresh ){ 
-  
-        /* The determinant is not orthogonal. */
-  
-          shf_r.resize( nbasis, nbasis) ;
-          shf_c.resize( nbasis, nbasis) ;
-          canort( s, shf_c, nbasis) ;
-          shf_r = shf_c.real() ;
-          tmpr.block( 0, 0, nbasis, nbasis) = shf_r.adjoint()*s*mor.block( 0, 0, nbasis, nbasis) ;
-          tmpr.block( 0, nbasis, nbasis, nbasis) = shf_r.adjoint()*s*mor.block( 0, nbasis, nbasis, nbasis) ;
-    
-          a.set_mos( tmpr) ;
-  
-        } 
-  
-        shf_c.resize( 0, 0) ; 
-        shf_r.resize( 0, 0) ;  
-        tmpr.resize( 0, 0) ;
-        mor.resize( 0, 0) ;
-  
-      } else if ( iwfnt == 5 ){
-  
-      /* Generalized wavefuntion*/
-  
-        mor.resize( 2*nbasis, 2*nbasis) ;
-        tmpr.resize( 2*nbasis, 2*nbasis) ;
-        a.get_mos( mor) ;
-        tmpr = mor.adjoint()*mor ;
-        detr = tmpr.determinant() ;
-  
-        if ( std::abs(detr - d1) > thresh ){ 
-  
-        /* The determinant is not orthogonal. */
-  
-          shf_r.resize( nbasis, nbasis) ;
-          shf_c.resize( nbasis, nbasis) ;
-          canort( s, shf_c, nbasis) ;
-          shf_r = shf_c.real() ;
-          tmpr.block( 0, 0, nbasis, nbasis) = shf_r.adjoint()*s*mor.block( 0, 0, nbasis, nbasis) ;
-          tmpr.block( 0, nbasis, nbasis, nbasis) = shf_r.adjoint()*s*mor.block( 0, nbasis, nbasis, nbasis) ;
-          tmpr.block( nbasis, 0, nbasis, nbasis) = shf_r.adjoint()*s*mor.block( nbasis, 0, nbasis, nbasis) ;
-          tmpr.block( nbasis, nbasis, nbasis, nbasis) = shf_r.adjoint()*s*mor.block( nbasis, nbasis, nbasis, nbasis) ;
-    
-          a.set_mos( tmpr) ;
-  
-        } 
-  
-        shf_c.resize( 0, 0) ; 
-        shf_r.resize( 0, 0) ;  
-        tmpr.resize( 0, 0) ;
-        mor.resize( 0, 0) ;
-  
-  
-        }
-  
-      } else {
-  
-      /* complex wavefuntion*/
-  
-      if ( iwfnt == 2 ){
-  
-      /* Restricted wavefuntion*/
-  
-        moc.resize( nbasis, nbasis) ;
-        tmpc.resize( nbasis, nbasis) ;
-        a.get_mos( moc) ;
-        tmpc = moc.adjoint()*moc ;
-        detc = tmpc.determinant() ;
-        detr = (std::conj( detc)*detc).real() ;
-  
-        if ( std::abs(detr - d1) > thresh ){ 
-  
-        /* The determinant is not orthogonal. */
-  
-          shf_c.resize( nbasis, nbasis) ;
-          canort( s, shf_c, nbasis) ;
-          tmpc = shf_c.adjoint()*s*mor ;
-          
-          a.set_mos( tmpc) ;
-  
-        } 
-  
-        shf_c.resize( 0, 0) ; 
-        tmpc.resize( 0, 0) ;
-        moc.resize( 0, 0) ;
-  
-      } else if ( iwfnt == 4 ){
-  
-      /* unrestricted wavefuntion*/
-  
-        moc.resize( nbasis, 2*nbasis) ;
-        tmpc.resize( nbasis, 2*nbasis) ;
-        a.get_mos( moc) ;
-        tmpc.block( 0, 0, nbasis, nbasis) = moc.block( 0, 0, nbasis, nbasis).adjoint()*moc.block( 0, 0, nbasis, nbasis) ;
-        tmpc.block( 0, nbasis, nbasis, nbasis) = moc.block( 0, nbasis, nbasis, nbasis).adjoint()*moc.block( 0, nbasis, nbasis, nbasis) ;
-        detc = tmpc.block( 0, 0, nbasis, nbasis).determinant() ;
-        detcu = tmpc.block( 0, nbasis, nbasis, nbasis).determinant() ;
-        detr = (std::conj( detc)*detc).real() ;
-        detru = (std::conj( detcu)*detcu).real() ;
-  
-        if ( std::abs(detr - d1) > thresh |  std::abs(detru - d1) > thresh ){ 
-  
-        /* The determinant is not orthogonal. */
-  
-          shf_c.resize( nbasis, nbasis) ;
-          canort( s, shf_c, nbasis) ;
-          tmpc.block( 0, 0, nbasis, nbasis) = shf_c.adjoint()*s*moc.block( 0, 0, nbasis, nbasis) ;
-          tmpc.block( 0, nbasis, nbasis, nbasis) = shf_c.adjoint()*s*moc.block( 0, nbasis, nbasis, nbasis) ;
-    
-          a.set_mos( tmpc) ;
-  
-        } 
-  
-        shf_c.resize( 0, 0) ; 
-        tmpc.resize( 0, 0) ;
-        moc.resize( 0, 0) ;
-  
-      } else if ( iwfnt == 6 ){
-  
-      /* Generalized wavefuntion*/
-  
-        moc.resize( 2*nbasis, 2*nbasis) ;
-        tmpc.resize( 2*nbasis, 2*nbasis) ;
-        a.get_mos( moc) ;
-        tmpc = moc.adjoint()*moc ;
-        detc = tmpc.determinant() ;
-        detr = (std::conj( detc)*detc).real() ;
-  
-        if ( std::abs(detr - d1) > thresh ){ 
-  
-        /* The determinant is not orthogonal. */
-  
-          shf_c.resize( nbasis, nbasis) ;
-          canort( s, shf_c, nbasis) ;
-          tmpc.block( 0, 0, nbasis, nbasis) = shf_c.adjoint()*s*moc.block( 0, 0, nbasis, nbasis) ;
-          tmpc.block( 0, nbasis, nbasis, nbasis) = shf_c.adjoint()*s*moc.block( 0, nbasis, nbasis, nbasis) ;
-          tmpc.block( nbasis, 0, nbasis, nbasis) = shf_c.adjoint()*s*moc.block( nbasis, 0, nbasis, nbasis) ;
-          tmpc.block( nbasis, nbasis, nbasis, nbasis) = shf_c.adjoint()*s*moc.block( nbasis, nbasis, nbasis, nbasis) ;
-    
-          a.set_mos( tmpc) ;
-  
-        } 
-  
-        shf_c.resize( 0, 0) ; 
-        tmpc.resize( 0, 0) ;
-        moc.resize( 0, 0) ;
-  
-        }  
-  
-      }
-  
-    }  ;
+//template void oao( int&, int&, Eigen::Ref<Eigen::MatrixXd>&, Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>) ;
+//template void oao( int&, int&, Eigen::Ref<Eigen::MatrixXcd>&, Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>) ;
 
-  void oao( int nbasis, Eigen::Ref<Eigen::MatrixXd> ouv, Eigen::MatrixXd s) {
-  
-    /* Given an overlap and matrix elements, put the matrix elements into
-    *  the orthogonal ao basis.  Since our basis will alwyas be real, the
-    *  routine will only accept the nbasis*nbasis real matrix.  Any conversion
-    *  to complex or ghf must occur in the calling routines.*/
-  
-    Eigen::MatrixXd tmpr ;
-    Eigen::MatrixXd shf_r ;
-    Eigen::MatrixXcd shf_c ;
-  
-    shf_r.resize( nbasis, nbasis) ;
-    shf_c.resize( nbasis, nbasis) ;
-    tmpr.resize( nbasis, nbasis) ;
-  
-    canort( s, shf_c, nbasis) ;
-    shf_r = shf_c.real() ;
-  
-    tmpr = ouv*shf_r ;
-    ouv = shf_r.adjoint()*tmpr ;
-  
-    tmpr.resize( 0, 0) ;
-    shf_c.resize( 0, 0) ;
-    shf_r.resize( 0, 0) ;
-  
+void oao( Eigen::Ref<Eigen::MatrixXd> tmp, Eigen::Ref<Eigen::MatrixXd> O, Eigen::MatrixXd X) {
+
+/*
+  This is a wrapper to perform a basic function and make the code clearner.
+  Pass this two matrices and a transformation and do a similary transform.
+
+*/
+    tmp = X.adjoint()*O*X ;
+    O = tmp ;
+
     return ;
-  
+
     } ;
 
-  void oao( int nbasis, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::MatrixXd s) {
+  void oao( int nbasis, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::MatrixXd shf) {
   
-    /* 
-     * Given an overlap and two electron integrals.  Convert them to an
-     * orthogonal basis.
-     */
+/* 
+    Given an overlap and two electron integrals.  Convert them to an
+    orthogonal basis.
+*/
   
     Eigen::MatrixXd shf_r ;
     Eigen::MatrixXcd shf_c ;
@@ -332,17 +177,7 @@
     double shfprd ;
     double oao_tei ;
   
-    shf_r.resize( nbasis, nbasis) ;
-    shf_c.resize( nbasis, nbasis) ;
-  
-    canort( s, shf_c, nbasis) ;
-    shf_r = -1*shf_c.real() ;
-  
-    shf_c.resize( 0, 0) ;
-    /* I imagine there is a better way to do this but you don't know
-     * what you don't know. */
-  
-    /* These four loops generate all uniqure two electron integrals */
+    /* These four loops generate all unique two electron integrals */
     for ( int i=1; i < nbasis+1; i++) {
       for ( int j=1; j < i+1; j++) {
         for ( int k=1; k < i+1; k++) {
@@ -387,7 +222,7 @@
                       kl = ok*( ok - 1)/2 + ol ;
                       t = ij*( ij-1)/2 + kl ;
                       val = iarr[t-1].r_v() ;
-                      shfprd = shf_r.adjoint()(i-1,mu-1)*shf_r(nu-1,j-1)*shf_r.adjoint()(k-1,lm-1)*shf_r(sg-1,l-1) ;
+                      shfprd = shf.adjoint()(i-1,mu-1)*shf(nu-1,j-1)*shf.adjoint()(k-1,lm-1)*shf(sg-1,l-1) ;
                       oao_tei += shfprd*val ;
                     } /* End sg */
                   } /* End lm */
@@ -587,6 +422,55 @@ double pfaffian( Eigen::Ref<Eigen::MatrixXd> m){
   return pf ;
 
 } ;
+
+cd pfaffian( Eigen::Ref<Eigen::MatrixXcd> m){
+
+  Eigen::MatrixXcd::Index i = m.rows() ;
+  Eigen::MatrixXcd::Index j = m.cols() ;
+  int k, h ;
+  const size_t N = i ;
+  cd sgn, pf ;
+  cd x = z0 ;
+
+  /* Do some error handling */
+
+  if ( i != j ){
+    std::cout << " Non square matrix passed to pfaffian: " << std::endl ;
+    std::cout << " 1.0 returned " << std::endl ;
+    return 1.0 ;
+    }
+
+  if ( i > GSL_SF_FACT_NMAX ){
+    std::cout << " GSL factorial is limited to values <= " << GSL_SF_FACT_NMAX << std::endl ;
+    std::cout << " Tell Kyle to add gamma functionality for larger systems. " << std::endl ;
+    std::cout << " 1.0 returned " << std::endl ;
+    return 1.0 ;
+    }
+
+  h = i/2 ;
+
+  gsl_permutation* p = gsl_permutation_alloc(N) ;
+  gsl_permutation_init(p) ;
+
+  do {
+    sgn = z1*pow( -1.0, gsl_permutation_inversions( p)) ;
+    pf = z1 ;
+    for( k=1; k <= h; k++){
+      pf *= m( p->data[2*k-2], p->data[2*k-1]) ;
+      }
+    x += sgn*pf ;
+    }
+  while( gsl_permutation_next(p) == GSL_SUCCESS) ;
+
+  gsl_permutation_free(p) ;
+
+  sgn = z1*pow( 2.0, h)*gsl_sf_fact( h) ;
+  pf = x/sgn ;
+
+  return pf ;
+
+} ;
+
 
 /*
 template<class matrix>

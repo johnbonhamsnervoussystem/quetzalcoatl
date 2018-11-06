@@ -19,6 +19,7 @@
 #include "postscf.h"
 #include "project.h"
 #include "qtzio.h"
+#include "qtzcntrl.h"
 #include "solver.h"
 #include "tei.h"
 #include "time_dbg.h"
@@ -154,6 +155,60 @@ int main(int argc, char *argv[]) {
   ss >> inpfile ;
   read_input( com, inpfile) ;
 
+/*
+  What sort of Hamiltonian are we doing
+*/
+  if ( com.hamil() == 1 || com.hamil() == 2 ){
+/*
+  Molecular Hamiltonian
+*/
+    natm = com.natm() ;
+    c.resize( natm, 3) ;
+    a.resize( natm) ;
+    c = com.getC() ;
+    a = com.getA() ;
+    for (int i=0; i < natm; i++){
+      for (int j=i+1; j < natm; j++){
+        cx = c( j, 0) - c( i, 0) ;
+        cy = c( j, 1) - c( i, 1) ;
+        cz = c( j, 2) - c( i, 2) ;
+        r2 = pow( cx, 2.0) + pow( cy, 2.0) + pow( cz, 2.0) ;
+        n_rep += a(i)*a(j)/sqrt(r2) ;
+        }
+      }
+ 
+    com.nrep( n_rep ) ;
+
+    b = build_basis( com.bnam(), a, c) ;
+    nbas = b.nbas ;
+    com.nbas( nbas) ;
+    S.resize( nbas, nbas) ;
+    T.resize( nbas, nbas) ;
+    V.resize( nbas, nbas) ;
+    cV.resize( nbas, nbas) ;
+    ao_overlap( com.natm(), b, S) ;
+    com.setS( S) ;
+    // Find the orthogonalizing routine
+    canort( S, cV, nbas) ;
+    T = -cV.real() ;
+    com.setXS( T) ;
+    ao_kinetic( com.natm(), b, T) ;
+    ao_eN_V( com.natm(), b, c, a, V) ;
+    S = T + V ;
+    com.setH( S) ;
+    T.resize( 0, 0) ;
+    V.resize( 0, 0) ;
+    S.resize( 0, 0) ;
+    list_ao_tei( com.natm(), b, intarr) ;
+
+  } else if ( com.hamil() == 3 ){
+/*
+  Hubbard
+*/
+     ;
+  } else {
+    qtzcntrl::shutdown( "Unrecognized Hamiltonian in Main." ) ;
+    }
   /* Step 1 :
      Build the relevant data in memory.
      SCF routines
@@ -161,48 +216,10 @@ int main(int argc, char *argv[]) {
                   unrestricted
                   generalized  */
   
-  natm = com.natm() ;
-  c.resize( natm, 3) ;
-  a.resize( natm) ;
-  c = com.getC() ;
-  a = com.getA() ;
-  for (int i=0; i < natm; i++){
-    for (int j=i+1; j < natm; j++){
-      cx = c( j, 0) - c( i, 0) ;
-      cy = c( j, 1) - c( i, 1) ;
-      cz = c( j, 2) - c( i, 2) ;
-      r2 = pow( cx, 2.0) + pow( cy, 2.0) + pow( cz, 2.0) ;
-      n_rep += a(i)*a(j)/sqrt(r2) ;
-      }
-    }
- 
-  com.nrep( n_rep ) ;
-
-  b = build_basis( com.bnam(), a, c) ;
-  nbas = b.nbas ;
-  com.nbas( nbas) ;
-  S.resize( nbas, nbas) ;
-  T.resize( nbas, nbas) ;
-  V.resize( nbas, nbas) ;
-  cV.resize( nbas, nbas) ;
-  ao_overlap( com.natm(), b, S) ;
-  com.setS( S) ;
-  // Find the orthogonalizing routine
-  canort( S, cV, nbas) ;
-  T = -cV.real() ;
-  com.setXS( T) ;
-  ao_kinetic( com.natm(), b, T) ;
-  ao_eN_V( com.natm(), b, c, a, V) ;
-  S = T + V ;
-  com.setH( S) ;
-  T.resize( 0, 0) ;
-  V.resize( 0, 0) ;
-  S.resize( 0, 0) ;
-  list_ao_tei( com.natm(), b, intarr) ;
-
   scf_drv( com, intarr, com.methd()) ;
 
-  mo_integrals( com, intarr) ;
+  prj_drv( com, 1) ;
+
 
   intarr.clear() ;
   V.resize( 0, 0) ;
