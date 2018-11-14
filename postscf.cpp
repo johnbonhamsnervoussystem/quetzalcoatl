@@ -1,7 +1,7 @@
 #include "common.h"
 #include <Eigen/Dense>
 #include <iostream>
-#include "sladet.h"
+#include "wfn.h"
 #include "tei.h"
 #include "time_dbg.h"
 #include <vector>
@@ -10,7 +10,7 @@
   Correlated methods for post scf
 */
 
-void mo_integrals( common &com, std::vector<tei>& intarr){
+void mo_integrals( common &com, std::vector<tei>& intarr) {
 /*
   Transform the integrals from the ao to the mo basis.
 */
@@ -19,12 +19,12 @@ void mo_integrals( common &com, std::vector<tei>& intarr){
 /*
   Start with real integrals
 */
-  sladet< double, Eigen::Dynamic, Eigen::Dynamic> w ;
+  wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
 
   w.moc.resize( nbasis, nbasis) ;
   w.eig.resize( nbasis) ;
 
-  load_slater_det( w) ;
+  load_wfn( w) ;
 
   std::cout << w.moc << std::endl ;
 

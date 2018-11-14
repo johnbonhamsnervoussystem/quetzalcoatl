@@ -7,6 +7,13 @@
   const double d0 = 0.0e0 ;
   const double d1 = 1.0e0 ;
   const double d2 = 2.0e0 ;
+  const double d3 = 3.0e0 ;
+  const double d4 = 4.0e0 ;
+  const double d5 = 5.0e0 ;
+  const double d6 = 6.0e0 ;
+  const double d7 = 7.0e0 ;
+  const double d8 = 8.0e0 ;
+  const double d9 = 9.0e0 ;
   const cd z0 = cd( 0.0e0, 0.0e0) ;
   const cd z1 = cd( 1.0e0, 0.0e0) ;
   const cd zi = cd( 0.0e0, 1.0e0) ;

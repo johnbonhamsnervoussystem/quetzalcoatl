@@ -5,8 +5,8 @@
 
 /* Intialize defaults */
   common::common( void) {
-    max_scf_iter = 20 ;
-    scf_convergence_threshold = 1.0e-9 ;
+    max_scf_iter = 30 ;
+    scf_convergence_threshold = 1.0e-8 ;
     hamiltonian = 0 ;
     method = 0 ;
     return ;
@@ -23,6 +23,7 @@
   void common::nele( int n) { nel    = n ; return ;}
   void common::nalp( int n) { nal    = n ; return ;}
   void common::nbet( int n) { nbe    = n ; return ;}
+  void common::mu( int n) { chemical_potential = n ; return ;}
   void common::nrep( double f) { nn = f ; return ;}
   void common::bnam( std::string n) { basis_name = n ; return ; }
 
@@ -78,6 +79,7 @@
   int common::nele( void) {return nel    ;}
   int common::nalp( void) {return nal    ;}
   int common::nbet( void) {return nbe    ;}
+  double common::mu( void) {return chemical_potential ;}
   double common::nrep( void) {return nn   ;}
   std::string common::bnam( void) {return basis_name ;}
 

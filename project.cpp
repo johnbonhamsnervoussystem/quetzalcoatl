@@ -1,3 +1,4 @@
+#include <cmath>
 #include "common.h"
 #include <complex>
 #include "constants.h"
@@ -8,6 +9,7 @@
 #include "integr.h"
 #include "project.h"
 #include "qtzcntrl.h"
+#include "solver.h"
 #include "tei.h"
 #include "time_dbg.h"
 #include "util.h"
@@ -30,7 +32,10 @@
 
 void prj_drv( common& com, std::vector<tei>& intarr, int opt){
 /*
-  Driver routine for projected methods.  
+  Driver routine for projected methods.  This routine will unpack the 
+  options and set flags for passing into the drivers for various flavors
+  of the model.  
+
   We need parse a lot of options here.  
     -Type of projection
       - Particle Number
@@ -55,110 +60,127 @@ void prj_drv( common& com, std::vector<tei>& intarr, int opt){
   quantities we want to use from the calling routine which is fine.
 
 */
-
-  int nbas = com.nbas() ;
-  std::vector<tei> oaoint ;
-  Eigen::MatrixXd Tmp ;
-  Eigen::MatrixXd Xs ;
-  Eigen::MatrixXcd H ;
-  wfn < cd, Eigen::Dynamic, Eigen::Dynamic> w;
-
-/*
-  Load the basis transformation
-*/
-
-  w.moc.resize( 4*nbas, 4*nbas) ;
-  w.eig.resize( 4*nbas) ;
-  Tmp.resize( nbas, nbas) ;
-  H.resize( 4*nbas, 4*nbas) ;
-  Xs.resize( nbas, nbas) ;
-
-  Xs = com.getXS() ;
-  H.block( 0, 0, nbas, nbas).real() = com.getH() ;
-  load_wfn( w) ;
-
-  oao( Tmp, H.block( 0, 0, nbas, nbas).real(), Xs) ;
-  H.block( nbas, nbas, nbas, nbas) = H.block( 0, 0, nbas, nbas) ;
-  H.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = H.block( 0, 0, 2*nbas, 2*nbas) ;
-/*
-  Each block of V and U is made of four components and must be 
-  transformed as such.
-*/
-  oao( Tmp, w.moc.block( 0, 0, nbas, nbas), Xs) ;
-  oao( Tmp, w.moc.block( 0, nbas, nbas, nbas), Xs) ;
-  oao( Tmp, w.moc.block( nbas, 0, nbas, nbas), Xs) ;
-  oao( Tmp, w.moc.block( nbas, nbas, nbas, nbas), Xs) ;
-/*
-*/
-  oao( Tmp, w.moc.block( 2*nbas, 0, nbas, nbas), Xs) ;
-  oao( Tmp, w.moc.block( 2*nbas, nbas, nbas, nbas), Xs) ;
-  oao( Tmp, w.moc.block( 3*nbas, 0, nbas, nbas), Xs) ;
-  oao( Tmp, w.moc.block( 3*nbas, nbas, nbas, nbas), Xs) ;
-
-  w.moc.block( 0, 2*nbas, 2*nbas, 2*nbas) = w.moc.block( 2*nbas, 0, 2*nbas, 2*nbas).conjugate() ;
-  w.moc.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = w.moc.block( 0, 0, 2*nbas, 2*nbas).conjugate() ;
-
-  oao( nbas, intarr, oaoint, Xs) ;
+  time_dbg prj_drv_time = time_dbg("prj_drv") ;
 
   if( true){
      if ( false){
 //       proj_HFB_real() ;
      } else {
-       proj_HFB_cplx( com, H, oaoint, w) ;
+       proj_HFB_cplx( com , intarr) ;
        }
   } else {
     ;
 //    proj_HF
     }
 
+  prj_drv_time.end() ;
+
   return ;
 
 } ;
 
-void proj_HFB_cplx( common& com, Eigen::Ref<Eigen::MatrixXcd>H, std::vector<tei>& oaoint, Eigen::Ref<Eigen::MatrixXcd> w){
+void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
 /*
-  Projected HFB
+  Projected HFB for Complex wavefunctions
+
+    - This will set up all the necessary routines to do various projection.
+    - Set up integration grids
+
+    - Let's start with Number projection as defualt.  We will do repreated diagonalization 
+      of the Number projected Hmailtonian
+
+    - This is only Generalized right now
+
+    - Matrices are complex
+
+  H - Core hamiltonian
+  oaoint - integrals in the orthogonal basis
+  W - HFB wavefunction
+  x - integration points
+  wt - integration weights
 */
+
+  int nbas = com.nbas() ;
+  int maxit = com.mxscfit() ;
+  Eigen::MatrixXd rtmp ;
+  Eigen::MatrixXcd Tmp ;
+  Eigen::MatrixXcd H ;
+  Eigen::MatrixXd s ;
+  Eigen::MatrixXcd sc ;
+  Eigen::MatrixXd Xs ;
+  Eigen::MatrixXcd Xsc ;
+  std::vector<tei> oaoint ;
+  wfn < cd, Eigen::Dynamic, Eigen::Dynamic> w;
   time_dbg proj_HFB_cplx_time = time_dbg("proj_HFB_cplx") ;
 
+  rtmp.resize( nbas, nbas) ;
+  Tmp.resize( 4*nbas, 2*nbas) ;
+  H.resize( 2*nbas, 2*nbas) ;
+  s.resize( 4*nbas, 4*nbas) ;
+  sc.resize( 4*nbas, 4*nbas) ;
+  Xs.resize( nbas, nbas) ;
+  Xsc.resize( 4*nbas, 4*nbas) ;
+  w.moc.resize( 4*nbas, 2*nbas) ;
+  w.eig.resize( 4*nbas) ;
+
+/*
+  Eigen::MatrixXcd V ;
+  Eigen::MatrixXcd R ;
+  int nbas = com.nbas() ;
   Eigen::MatrixXcd m ;
   Eigen::MatrixXcd V ;
   Eigen::MatrixXcd U ;
+  Eigen::MatrixXcd rho ;
+  Eigen::MatrixXcd kappa ;
   Eigen::MatrixXcd Uinv ;
 
-  /* First things first, read the converged HFB wavefunciton from another job */
-  wfn < cd, Eigen::Dynamic, Eigen::Dynamic> w;
-
-  w.moc.resize( 4*nbas, 4*nbas) ;
   m.resize( 4*nbas, 4*nbas) ;
   V.resize( 2*nbas, 2*nbas) ;
   U.resize( 2*nbas, 2*nbas) ;
-  Uinv.resize( 2*nbas, 2*nbas) ;
+
+  V.resize( 2*nbas, 2*nbas) ;
+  R.resize( 2*nbas, 2*nbas) ;
+*/
+
+/*
+  Orthogonalize the 
+    -one electron Hamiltonian
+    -two electron integrals
+    -the wavefunction.
+*/  
+
+  H.setZero() ;
+  rtmp = com.getH() ;
+  Xs = com.getXS() ;
+  H.block( 0, 0, nbas, nbas).real() =  Xs.adjoint()*rtmp*Xs ;
+  H.block(  nbas, nbas, nbas, nbas) = H.block( 0, 0, nbas, nbas) ;
+
+  oao( nbas, intarr, oaoint, Xs) ;
 
   load_wfn( w) ;
+  s.setZero() ;
+  s.block( 0, 0, nbas, nbas) = com.getS() ;
+  s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
+  s.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
+
+  canort( s, Xsc, 4*nbas) ;
+  sc.real() = s ;
+  Tmp.block( 0, 0, 4*nbas, 2*nbas) = Xsc.adjoint()*sc*w.moc ;
+  w.moc = Tmp.block( 0, 0, 4*nbas, 2*nbas) ;
+
+/*
+  Build the particle number integration grid
+*/
+  trapezoid* ngrid = new trapezoid( d0, d2*pi, 11) ;
 
 /* 
    W should have
    
-     V U^{*}
-     U V^{*}
+     V
+     U
 */
 
-  V = w.moc.block( 0, 0, 2*nbas, 2*nbas) ;
-  U = w.moc.block( 2*nbas, 0, 2*nbas, 2*nbas) ;
-  Uinv = U.inverse() ;
-
-  /* Let's check our implementation of the pfaffian first */
-
-  m.block( 2*nbas, 0, 2*nbas, 2*nbas).real() =  Eigen::MatrixXd::Identity( 2*nbas, 2*nbas)  ;
-  m.block( 0, 2*nbas, 2*nbas, 2*nbas).real() = - Eigen::MatrixXd::Identity( 2*nbas, 2*nbas)  ;
-  U = V*Uinv ;
-  m.block( 0, 0, 2*nbas, 2*nbas) =  U ;
-  m.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) =  -U.conjugate() ;
-
-  std::cout << m << std::endl ;
-  
-  std::cout << pfaffian( m) << std::endl ;
+  cgHFB_projection( nbas, H, oaoint, w.moc, ngrid, maxit) ;
 
   proj_HFB_cplx_time.end() ;
 
@@ -166,71 +188,133 @@ void proj_HFB_cplx( common& com, Eigen::Ref<Eigen::MatrixXcd>H, std::vector<tei>
 
 } ;
 
-void e_phf( common& com, hfwfn& refd, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr) {
+void cgHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> w, trapezoid*& ngrid, int& maxit) {
 
-/* 
- * Return the PHF energy given a determinant
- *
- * E = (int dOmega x(Omega) <0|H|Omega>/(int dOmega x(Omega) )
- *
- * */
+/*
+  Step one is to build a transition density.
+    - BUild the rotation matrix for particle number
+  
+  input :
+    nbas - number of basis functions
+    h - core hamiltonian in the orthogonal basis
+    intarr - vector of two electron integrals
+    w - hfb wavefunction
+      | V|
+      | U|
+    ngrid - a trapezoidal grid for integration
+    maxit - the upper limit for the scf iterations
 
+  local :
+    iter - iterations through the scf loop
+    t - local scratch
+    Rp - Previous iteration density
+    R - Current iteration density
+*/
 
-/* 
- * Developing notes: I will start with a PAV that does not require
- * coefficients for spin states or complex conjugation.
- *
- * */
-
- // Variables
-
-  int nbasis ;
-  double Intg = 0.0 ;
-  cd w_val ;
-  cd energy ;
-  cd ovl ;
-  cd n_k = cd( 0.0, 0.0) ;
-  cd h_k = cd( 0.0, 0.0) ;
+  int iter = 0 ;
+  int in ;
+  int inmb = ngrid->ns() ;
+  double energy = d0 ;
+  cd e_theta, fnw, fnx ;
+  Eigen::MatrixXcd t ;
+  Eigen::MatrixXcd nX ;
+  Eigen::MatrixXcd Rp ;
+  Eigen::MatrixXcd R ;
+  Eigen::MatrixXcd rho ;
+  Eigen::MatrixXcd kappa ;
   Eigen::MatrixXcd tmp ;
+/*
+  Rotated Densities
+*/
+  Eigen::MatrixXcd r_theta ;
+  Eigen::MatrixXcd k_theta ;
+  Eigen::MatrixXcd I ;
+  Eigen::MatrixXcd G ;
+  Eigen::MatrixXcd D ;
+/*
+  C_theta = [-kappa*R^{*}kappa^{*} + rho*R*rho]^{-1}
+*/
+  Eigen::MatrixXcd C_theta ;
+  time_dbg cgHFB_projection_time = time_dbg("cgHFB_projection") ;
 
- // One reference determinant. One for storage space.
+  tmp.resize( 2*nbas, 2*nbas) ;
+  kappa.resize( 2*nbas, 2*nbas) ;
+  rho.resize( 2*nbas, 2*nbas) ;
+  C_theta.resize( 2*nbas, 2*nbas) ;
+  Rp.resize( 4*nbas, 4*nbas) ;
+  R.resize( 4*nbas, 4*nbas) ;
+  nX.resize( 2*nbas, 2*nbas) ;
+  I.resize( 2*nbas, 2*nbas) ;
+  I.setIdentity() ;
+  R.setZero() ;
+  Rp.setZero() ;
+  G.resize( 2*nbas, 2*nbas) ;
+  D.resize( 2*nbas, 2*nbas) ;
 
-  hfwfn rotd ;
- 
- // integration grid.
+  /*
+    I guess we will go on RMS density for convergence.
+  */
+  
+  rho = w.block( 0, 0 , 2*nbas, 2*nbas).conjugate()*w.block( 0, 0 , 2*nbas, 2*nbas).transpose() ;
+  kappa = w.block( 0, 0, 2*nbas, 2*nbas).conjugate()*w.block( 2*nbas, 0 , 2*nbas, 2*nbas).transpose() ;
 
-  std::vector<double> w_a ;
-  std::vector<double> w_b ;
-  std::vector<double> w_g ;
-  std::vector<double> x_a ;
-  std::vector<double> x_b ;
-  std::vector<double> x_g ;
-
-  nbasis = com.nbas() ;
-  tmp.resize( 2*nbasis, 2*nbasis) ;
-  tmp.setZero() ;
-  eulrgrd ( 8, 8, 8, w_a, w_b, w_g, x_a, x_b, x_g, 3) ;
-  rotd.fil_mos( nbasis, tmp, 6) ;
-
-  // Loop over the spin integration
-
-  for ( int a=0; a < 8; a++ ){
-    for ( int b=0; b < 8; b++ ){
-      for ( int g=0; g < 8; g++ ){
-        R_s ( com, refd, rotd, x_a[a], x_b[b], x_g[g]) ;
-        energy = fockop ( com, H, intarr, refd, rotd, ovl) ;
-        w_val = wigner_D ( 0, 0, 0, x_a[a], x_b[b], x_g[g]) ;
-        h_k += w_a[a]*w_b[b]*w_g[g]*ovl*energy ;
-        n_k += w_a[a]*w_b[b]*w_g[g]*ovl ;
-      }
+  do {
+    /*
+      Loop over the number projection grid
+    */
+    for ( in = 0; in < inmb; in++){
+      std::cout << " in : " << in << std::endl ;
+      fnx = static_cast<cd>( ngrid->q()) ;
+      std::cout << " a " << std::endl ;
+      fnw = ngrid->w()*std::exp( -zi*fnx) ;
+      std::cout << " b " << std::endl ;
+      /*
+        Generate the rotation matrix for particle number
+      */
+      nX = I*std::exp( zi*fnx) ;
+      /*
+        Generate our Rotated quantities
+      */
+      tmp = rho*nX*rho - kappa*nX.conjugate()*kappa.conjugate() ;
+      C_theta = tmp.inverse() ;
+      r_theta = nX*rho*C_theta*rho ;
+      k_theta = nX*rho*C_theta*kappa ;
+      /*
+        Get the energy for this state.
+      */
+      std::cout << " r_theta " << std::endl ;
+      std::cout << r_theta << std::endl ;
+      std::cout << " k_theta " << std::endl ;
+      std::cout << k_theta << std::endl ;
+      ctr2eg( intarr, r_theta, G, nbas) ;
+      ctrPairg( intarr, k_theta, D, nbas) ;
+      t = (h + G/d2)*r_theta ;
+      std::cout << " (h + G)*r_theta " << std::endl ;
+      std::cout << t.trace() << std::endl ;
+      e_theta = t.trace() ;
+      std::cout << " k " << std::endl ;
+      t = k_theta.conjugate()*D ;
+      std::cout << " l " << std::endl ;
+      e_theta += t.trace()/d4 ;
+      std::cout << " energy " << std::endl ;
+      std::cout << e_theta << std::endl ;
     }
-  }
- 
-  std::cout << "h_k = " << h_k << std::endl ;
-  std::cout << "n_k = " << n_k << std::endl ;
-  std::cout << "E = " << h_k/n_k << std::endl ;
+
+    ngrid->set_s() ;
+
+    std::cout << " integral " << std::endl ;
+    std::cout << energy << std::endl ;
+    /*
+      Check for convergence
+    */
+    t = Rp - R ;
+    energy = (t*t.adjoint()).norm() ;
+    std::cout << "  rms difference in the densities: " << energy << std::endl ;
+    if ( std::real(energy) < d1) { break ;}
+    } while ( ++iter <= maxit ) ;
+
+  cgHFB_projection_time.end() ;
 
   return ;
- 
-} ;
 
+} ;

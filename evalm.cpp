@@ -1,36 +1,39 @@
 #include "constants.h"
 #include <iostream>
 #include <vector>
+#include <Eigen/Core>
 #include <Eigen/Dense>
 #include "binio.h"
 #include "evalm.h"
 #include "hfwfn.h"
 #include "tei.h"
 
-/* evalm is a collection of routines that evaluates matrix elements  */
+/* 
+   evalm is a collection of routines that evaluates matrix elements.
+   I think these routines are not properly accounting for the complex
+   conjugation of densities.  I will have to look at this at some point.
+*/
 
-/* Given a vector of two electron integrals contract it with a density
- * and return the matrix. */
+void ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> p, 
+  Eigen::Ref<Eigen::MatrixXd> g, const int nb) {
 
-  int ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> p, 
-    Eigen::Ref<Eigen::MatrixXd> g, const int nb) {
+/* 
+  G is split into four quadrants.  
 
- /* G is split into four quadrants.  
-  *
-  *    | alpha alpha | alpha beta |
-  *    ---------------------------- 
-  *    | beta alpha  | beta beta  | 
-  *
-  *    For restricted Hartree-Fock calculations, the orbitals are either
-  *    alpha or beta, not a combination of both so the mixed blocks are
-  *    zero.  Further, the alpha and beta blocks are identical so we only
-  *    need to calculate the coulomb and exchange for a single block.
-  *
-  *    G_{mu nu} = sum_{lambda sigma}(p_{sigma lambda}^{alpha alpha + 
-  *    p_{sigma lambda}^{beta beta })( mu nu| lambda sigma) - 
-  *    sum_{lambda sigma}(p_{sigma lambda}^{alpha alpha)( mu nu| sigma lambda ) 
-  *
-  */
+  | alpha alpha | alpha beta |
+  ---------------------------- 
+  | beta alpha  | beta beta  | 
+  
+  For restricted Hartree-Fock calculations, the orbitals are either
+  alpha or beta, not a combination of both so the mixed blocks are
+  zero.  Further, the alpha and beta blocks are identical so we only
+  need to calculate the coulomb and exchange for a single block.
+  
+  G_{mu nu} = sum_{lambda sigma}(p_{sigma lambda}^{alpha alpha + 
+  p_{sigma lambda}^{beta beta })( mu nu| lambda sigma) - 
+  sum_{lambda sigma}(p_{sigma lambda}^{alpha alpha)( mu nu| sigma lambda ) 
+  
+*/
 
     Eigen::MatrixXd t_p ;
 
@@ -47,10 +50,10 @@
 
     t_p.resize( 0, 0) ;
 
-    return 0 ;
+    return ;
 } ;
 
-  int ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p, 
+void ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p, 
     Eigen::Ref<Eigen::MatrixXcd> g, const int nb) {
 
  /*  
@@ -73,10 +76,10 @@
 
     t_p.resize( 0, 0) ;
 
-    return 0 ;
+    return ;
 } ;
 
-  int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> pt, 
+void ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> pt, 
      Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> g, const int nb) {
 
  /* G is split into four quadrants.
@@ -105,10 +108,10 @@
     /* Do the exchange terms for the alpha alpha block  */
     exchblk( intarr, p, g, nb) ;
 
-    return 0 ;
+    return ;
 } ;
 
-  int ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> pt, 
+void ctr2eu( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> pt, 
      Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> g, const int nb) {
 
  /*  
@@ -123,10 +126,10 @@
     /* Do the exchange terms for the alpha alpha block  */
     exchblk( intarr, p, g, nb) ;
 
-    return 0 ;
+    return ;
 } ;
 
-  int ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> p, 
+void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> p, 
     Eigen::Ref<Eigen::MatrixXd> g, const int nb) {
 
  /* G is split into four quadrants.  
@@ -180,10 +183,10 @@
 
     t_p.resize( 0, 0) ;
 
-    return 0 ;
+    return ;
 } ;
 
-  int ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p, 
+void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p, 
     Eigen::Ref<Eigen::MatrixXcd> g, const int nb) {
 
  /*   
@@ -194,7 +197,7 @@
     g.setZero() ;
     t_p.resize( nb, nb) ;
 
-    t_p.block(0,0,nb,nb) = p.block(0,0,nb,nb) + p.block(nb,nb,nb,nb) ;
+    t_p = p.block(0,0,nb,nb) + p.block(nb,nb,nb,nb) ;
 
     /* Do the coulomb terms for the alpha alpha block  */
     coulblk( intarr, t_p, g.block( 0, 0, nb, nb), nb) ;
@@ -216,7 +219,128 @@
 
     t_p.resize( 0, 0) ;
 
-    return 0 ;
+    return ;
+} ;
+
+  void ctrPairg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> k, 
+    Eigen::Ref<Eigen::MatrixXd> D, const int nb) {
+
+ /* 
+  *    This routine contracts the two electron integrals to build the pairing
+  *    field for Hartree-Fock-Bogoliubov
+  *
+  *    D is split into four quadrants
+  *
+  *    | alpha alpha | alpha beta |
+  *    ---------------------------- 
+  *    | beta alpha  | beta beta  | 
+  *
+  *    The ghf orbitals are a combination of alpha and beta spins. In this case
+  *    the mixed spin blocks have a contribution too. The same spin blocks have 
+  *    the form
+  *
+  *    D_{mu nu}^{alpha alpha} = sum_{lambda sigma}( mu lambda|| nu sigma)k_{lambda sigma}^{alpha alpha} 
+  *
+  *    The mixed spin block doesn't have a coulomb term but it has an exchange 
+  *    term.  
+  *
+  *    D_{mu nu}^{alpha beta} = sum_{lambda sigma}( mu lambda| nu sigma)k_{lambda sigma}^{alpha beta} -
+  *     ( mu sigma| nu lambda)k_{lambda sigma}^{beta alpha} 
+  *
+  *    Pass each quadrant to be contracted with the two electron integrals.
+  *
+  */
+
+    Eigen::MatrixXd t_p ;
+
+    D.setZero() ;
+
+    /* Do the pairing terms for the alpha alpha block */
+    pairing_field( intarr, k.block( 0, 0, nb, nb), D.block( 0, 0, nb, nb), nb) ;
+
+    /* Do the twin terms for the alpha alpha block */
+    twin_field( intarr, k.block( 0, 0, nb, nb), D.block( 0, 0, nb, nb), nb) ;
+
+    /* Do the pairing terms for the beta beta block */
+    pairing_field( intarr, k.block( nb, nb, nb, nb), D.block( nb, nb, nb, nb), nb) ;
+
+    /* Do the twin terms for the beta beta block */
+    twin_field( intarr, k.block( nb, nb, nb, nb), D.block( nb, nb, nb, nb), nb) ;
+
+    /* Do the pairing terms for the alpha beta block */
+    pairing_field( intarr, k.block( 0, nb, nb, nb), D.block( 0, nb, nb, nb), nb) ;
+
+    /* Do the twin terms for the alpha beta block */
+    twin_field( intarr, k.block( nb, 0, nb, nb), D.block( 0, nb, nb, nb), nb) ;
+
+    /* Do the pairing terms for the beta alpha block */
+    pairing_field( intarr, k.block( nb, 0, nb, nb), D.block( nb, 0, nb, nb), nb) ;
+
+    /* Do the twin terms for the beta alpha block */
+    twin_field( intarr, k.block( 0, nb, nb, nb), D.block( nb, 0, nb, nb), nb) ;
+
+    return ;
+} ;
+
+  void ctrPairg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> k, 
+    Eigen::Ref<Eigen::MatrixXcd> D, const int nb) {
+
+ /* 
+  *    This routine contracts the two electron integrals to build the pairing
+  *    field for Hartree-Fock-Bogoliubov
+  *
+  *    D is split into four quadrants
+  *
+  *    | alpha alpha | alpha beta |
+  *    ---------------------------- 
+  *    | beta alpha  | beta beta  | 
+  *
+  *    The ghf orbitals are a combination of alpha and beta spins. In this case
+  *    the mixed spin blocks have a contribution too. The same spin blocks have 
+  *    the form
+  *
+  *    D_{mu nu}^{alpha alpha} = sum_{lambda sigma}( mu lambda|| nu sigma)k_{lambda sigma}^{alpha alpha} 
+  *
+  *    The mixed spin block doesn't have a coulomb term but it has an exchange 
+  *    term.  
+  *
+  *    D_{mu nu}^{alpha beta} = sum_{lambda sigma}( mu lambda| nu sigma)k_{lambda sigma}^{alpha beta} -
+  *     ( mu sigma| nu lambda)k_{lambda sigma}^{beta alpha} 
+  *
+  *    Pass each quadrant to be contracted with the two electron integrals.
+  *
+  */
+
+    Eigen::MatrixXd t_p ;
+
+    D.setZero() ;
+
+    /* Do the pairing terms for the alpha alpha block */
+    pairing_field( intarr, k.block( 0, 0, nb, nb), D.block( 0, 0, nb, nb), nb) ;
+
+    /* Do the twin terms for the alpha alpha block */
+    twin_field( intarr, k.block( 0, 0, nb, nb), D.block( 0, 0, nb, nb), nb) ;
+
+    /* Do the pairing terms for the beta beta block */
+    pairing_field( intarr, k.block( nb, nb, nb, nb), D.block( nb, nb, nb, nb), nb) ;
+
+    /* Do the twin terms for the beta beta block */
+    twin_field( intarr, k.block( nb, nb, nb, nb), D.block( nb, nb, nb, nb), nb) ;
+
+    /* Do the pairing terms for the alpha beta block */
+    pairing_field( intarr, k.block( 0, nb, nb, nb), D.block( 0, nb, nb, nb), nb) ;
+
+    /* Do the twin terms for the alpha beta block */
+    twin_field( intarr, k.block( nb, 0, nb, nb), D.block( 0, nb, nb, nb), nb) ;
+
+    /* Do the pairing terms for the beta alpha block */
+    pairing_field( intarr, k.block( nb, 0, nb, nb), D.block( nb, 0, nb, nb), nb) ;
+
+    /* Do the twin terms for the beta alpha block */
+    twin_field( intarr, k.block( 0, nb, nb, nb), D.block( nb, 0, nb, nb), nb) ;
+
+    return ;
+
 } ;
 
   int coulblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
@@ -230,15 +354,13 @@
     int k ;
     int l ;
     double val ;
-    bool ieqk ;
-    bool jeql ;
     bool ieqj ;
     bool keql ;
 
     ntt = nbasis*(nbasis + 1)/2 ;
     n2ei = ntt*(ntt+1)/2 ;
 
-    for(int t = 0; t < n2ei; t++ ) {
+    for ( int t = 0; t < n2ei; t++) {
       /*  ( 1 1| 2 2)
        *  ( i j| k l) = val */
       i = intarr[t].r_i() ;
@@ -340,7 +462,9 @@
 
       }
 
+
       }
+
 
     return 0 ;
 
@@ -359,8 +483,6 @@
     int k ;
     int l ;
     double val ;
-    bool ieqk ;
-    bool jeql ;
     bool ieqj ;
     bool keql ;
 
@@ -506,8 +628,6 @@
     int k ;
     int l ;
     double val ;
-    bool ieqk ;
-    bool jeql ;
     bool ieqj ;
     bool keql ;
 
@@ -638,8 +758,6 @@
 //    int k ;
 //    int l ;
 //    double val ;
-//    bool ieqk ;
-//    bool jeql ;
 //    bool ieqj ;
 //    bool keql ;
 //
@@ -784,8 +902,6 @@
     int k ;
     int l ;
     double val ;
-    bool ieqk ;
-    bool jeql ;
     bool ieqj ;
     bool keql ;
 
@@ -928,8 +1044,6 @@
     int k ;
     int l ;
     double val ;
-    bool ieqk ;
-    bool jeql ;
     bool ieqj ;
     bool keql ;
 
@@ -1071,8 +1185,6 @@
     int k ;
     int l ;
     double val ;
-    bool ieqk ;
-    bool jeql ;
     bool ieqj ;
     bool keql ;
 
@@ -1214,8 +1326,6 @@
     int k ;
     int l ;
     double val ;
-    bool ieqk ;
-    bool jeql ;
     bool ieqj ;
     bool keql ;
 
@@ -1357,8 +1467,6 @@
     int k ;
     int l ;
     double val ;
-    bool ieqk ;
-    bool jeql ;
     bool ieqj ;
     bool keql ;
 
@@ -1490,8 +1598,6 @@
 
   } ;
 
-
-
 /* Evaluate elements between Slater Determinants */
 double tranden1 ( int& nele, int& nbasis, Eigen::Ref<Eigen::MatrixXd> wfna, Eigen::Ref<Eigen::MatrixXd> wfnb, Eigen::Ref<Eigen::MatrixXd> dabmat, Eigen::Ref<Eigen::MatrixXd> scr) {
 
@@ -1607,7 +1713,6 @@ double obop ( common& com, Eigen::Ref<Eigen::MatrixXd> ouv, hfwfn& a, hfwfn& b) 
  * One body operator.  Return <A|O|B> = sum_{ l k}<k|O|l> = sum{ u v} <u|O|v>C_{vl}D(k|l)C_{ku}^{*}
  * Passed two Slater determinants and matrix elements in an orthogonal basis, return the evaluated operator. */
 
-  int nocc ;
   double aob ;
   Eigen::MatrixXd pvu ;
   Eigen::MatrixXd omega ;
@@ -1636,8 +1741,6 @@ double obop ( common& com, Eigen::Ref<Eigen::MatrixXd> ouv, hfwfn& a, hfwfn& b) 
  * Overloaded for complex functions.
  */
 
-  int nbas ;
-
   cd aob ;
   Eigen::MatrixXcd pvu ;
   Eigen::MatrixXcd omega ;
@@ -1665,7 +1768,6 @@ double fockop ( common& com, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& in
  * Given a density matrix return 
  * */
 
-  int nocc ;
   double aob ;
   Eigen::MatrixXd pvu ;
   Eigen::MatrixXd omega ;
@@ -1703,15 +1805,13 @@ double fockop ( common& com, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& in
                              hfwfn& b, cd& ovl) {
 
 /*
- * While the fock operator is one body, it requires that we contract the two electron
- * integrals with the density to build it.  This wraps up that procedure.  This routine assumes
- *
- *  - Everything has been put into an orthogonal ao basis.
- *  - Regardless of the flavor of hf wfn, this treats everything as ghf meaning 2*nbas dimensions.
- *
- * */
+  While the fock operator is one body, it requires that we contract the two electron
+  integrals with the density to build it.  This wraps up that procedure.  This routine assumes
+ 
+   - Everything has been put into an orthogonal ao basis.
+   - Regardless of the flavor of hf wfn, this treats everything as ghf meaning 2*nbas dimensions.
+*/
 
-  int nocc ;
   cd aob ;
   cd pt5 = cd (0.5,0.0) ;
   Eigen::MatrixXcd pvu ;
