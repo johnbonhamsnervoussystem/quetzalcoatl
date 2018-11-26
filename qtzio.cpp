@@ -20,11 +20,7 @@
   Reading and parsing the input for traversal through the program may end
   up being the most complicated part of the whole program
 
-  This needs to be clear and easy to modify
-
-  First thought is to have a class which contains options specfic to 
-  each driver routine.  This will contain the necessary options for
-  that driver.
+  This needs to be clear and easy to modify and I will think more about it
 
 */
 
