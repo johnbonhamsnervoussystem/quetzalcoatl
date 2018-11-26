@@ -1,19 +1,32 @@
-/* Routines for Quetz I/O */
+/* Routines for Quetz I/O and printing */
 #include <algorithm>
 #include "common.h"
 #include <complex>
 #include "constants.h"
-#include <iostream>
-#include <string>
-#include <fstream>
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <vector>
-#include <sys/stat.h>
+#include <fstream>
+#include <iostream>
 #include "qtzcntrl.h"
 #include "qtzio.h"
+#include <sys/stat.h>
+#include <string>
 #include "tei.h"
 #include "time_dbg.h"
+#include <vector>
+
+/*
+
+  Reading and parsing the input for traversal through the program may end
+  up being the most complicated part of the whole program
+
+  This needs to be clear and easy to modify
+
+  First thought is to have a class which contains options specfic to 
+  each driver routine.  This will contain the necessary options for
+  that driver.
+
+*/
 
 void read_input( common& com, const std::string& inpfile){
  /* Read the input file and save the information into common. */
@@ -42,17 +55,37 @@ void read_input( common& com, const std::string& inpfile){
       Semi-Empirical/se
 */
       if ( s_junk == "mol"){
-/* Molecular Electronic Hamiltonian */
+        /* Molecular Electronic Hamiltonian */
         com.hamil(1) ;
       } else if ( s_junk == "se"){
-/* Semi-Empirical Hamiltonian */
+        /* Semi-Empirical Hamiltonian */
         std::cout << "  NOT IMPLEMENTED " << std::endl ;
         com.hamil(1) ;
+      } else if ( s_junk.substr(0,3) == "hub"){
+        /* Hubbard */
+        i_junk = 2 ;
+	if ( s_junk.substr(3,4) == "p"){
+	  /* Periodic */
+          i_junk += 10 ;
+          }
+	if ( s_junk.substr(4,5) == "1"){
+	  /* One-dimensional */
+          i_junk += 100 ;
+        } else if ( s_junk.substr(4,5) == "2"){
+	  /* two-dimensional */
+          i_junk += 200 ;
+        } else if ( s_junk.substr(4,5) == "3"){
+	  /* three-dimensional */
+          i_junk += 300 ;
+        } else {
+	  std::cout << " Unrecognized dimension in Hubbard. Setting to 1." ;
+          i_junk += 100 ;
+          }
+        com.hamil(i_junk) ;
       } else {
         com.hamil(1) ;
         }
-
-    } else if ( line.substr(0,7) == "method " ){
+    } else if ( line.substr( 0, 7) == "method " ){
 /*
         real/r
         complex/c
@@ -66,14 +99,25 @@ void read_input( common& com, const std::string& inpfile){
 */
       s_junk = line.substr(9) ;
       strip_lower( s_junk) ;
-      if ( s_junk.substr(0,2) == "rr" ) { com.methd(1) ;}
+      if ( s_junk.substr( 0, 2) == "rr" ) { com.methd(1) ;}
       else if ( s_junk.substr(0,2) == "cr" ) { com.methd(2) ;}
       else if ( s_junk.substr(0,2) == "ru" ) { com.methd(3) ;}
       else if ( s_junk.substr(0,2) == "cu" ) { com.methd(4) ;}
       else if ( s_junk.substr(0,2) == "rg" ) { com.methd(5) ;}
       else if ( s_junk.substr(0,2) == "cg" ) { com.methd(6) ;}
       if ( s_junk.substr(2) == "hf" ) { com.methd(10) ;}
-      else if ( s_junk.substr(2) == "hfb" ) { com.methd(20) ;}
+      else if ( s_junk.substr( 2) == "hfb" ) {
+        getline( jobfile, line) ;
+        s_junk = line.substr( 0, 7) ;
+        strip_lower( s_junk) ;
+        if ( s_junk == "mu") {
+          com.methd(20) ;
+        } else {
+          qtzcntrl::shutdown( "Unrecognized chemical potential") ;
+	  }
+        d_junk = stod(line.substr(9)) ;
+        com.mu( d_junk) ;
+        }
     } else if ( line.substr(0,7) == "basis  " ){
       s_junk = line.substr(9) ;
       com.bnam( s_junk) ;
@@ -229,13 +273,9 @@ void write_eigen_bin (const matrix& m, std::ofstream& F_OUT) {
 
 }
 
-template void write_eigen_bin(const Eigen::VectorXf&, std::ofstream&) ;
 template void write_eigen_bin(const Eigen::VectorXd&, std::ofstream&) ;
-template void write_eigen_bin(const Eigen::VectorXcf&, std::ofstream&) ;
 template void write_eigen_bin(const Eigen::VectorXcd&, std::ofstream&) ;
-template void write_eigen_bin(const Eigen::MatrixXf&, std::ofstream&) ;
 template void write_eigen_bin(const Eigen::MatrixXd&, std::ofstream&) ;
-template void write_eigen_bin(const Eigen::MatrixXcf&, std::ofstream&) ;
 template void write_eigen_bin(const Eigen::MatrixXcd&, std::ofstream&) ;
 
 template <class matrix> 
@@ -248,12 +288,38 @@ void read_eigen_bin (const matrix& m, std::ifstream& F_IN) {
 
 }
 
-template void read_eigen_bin(const Eigen::VectorXf&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::VectorXd&, std::ifstream&) ;
-template void read_eigen_bin(const Eigen::VectorXcf&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::VectorXcd&, std::ifstream&) ;
-template void read_eigen_bin(const Eigen::MatrixXf&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::MatrixXd&, std::ifstream&) ;
-template void read_eigen_bin(const Eigen::MatrixXcf&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::MatrixXcd&, std::ifstream&) ;
+
+template <class matrix>
+void print_mat( const matrix& o){
+  int i = 0 ;
+  typename matrix::Index cols = o.cols(), rows = o.rows() ;
+  Eigen::IOFormat matprt(5, 0, "  ", "\n", "| ", "|", "") ;
+
+  if ( cols <= 5){
+      std::cout << o.format( matprt) << std::endl ;
+  } else {
+    do {
+      std::cout << o.block( 0, i, rows, 5).format( matprt) << std::endl << std::endl ;
+      i += 5 ;
+      cols -= 5 ;
+      } while ( cols > 5) ;
+      std::cout << o.block( 0, i, rows, cols).format( matprt) << std::endl ;
+    }
+
+  return ;
+
+}
+
+template void print_mat(const Eigen::VectorXd&) ;
+template void print_mat(const Eigen::VectorXcd&) ;
+template void print_mat(const Eigen::MatrixXd&) ;
+template void print_mat(const Eigen::MatrixXcd&) ;
+template void print_mat(const Eigen::Ref<Eigen::VectorXd>&) ;
+template void print_mat(const Eigen::Ref<Eigen::VectorXcd>&) ;
+template void print_mat(const Eigen::Ref<Eigen::MatrixXd>&) ;
+template void print_mat(const Eigen::Ref<Eigen::MatrixXcd>&) ;
 

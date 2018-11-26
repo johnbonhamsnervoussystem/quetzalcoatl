@@ -1,10 +1,12 @@
 #include "common.h"
 #include <Eigen/Core>
+#include <Eigen/Dense>
 #include <fstream>
 #include "hfwfn.h"
 #include <string>
 #include "tei.h"
 #include <vector>
+
 #ifndef QTZIO_H
 #define QTZIO_H
 
@@ -21,5 +23,8 @@ void write_eigen_bin (const matrix& m, std::ofstream& F_OUT) ;
 
 template <class matrix> 
 void read_eigen_bin (const matrix& m, std::ifstream& F_IN) ;
+
+template <class matrix>
+void print_mat( const matrix& o) ;
 
 #endif

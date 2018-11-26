@@ -48,16 +48,16 @@
     otmp.resize(na+2,nb+2) ;
 
 /* Increment over each Cartesian */
-    for (int i = 1; i < 4; i++){
+    for ( i = 1; i < 4; i++){
       otmp.setZero() ;
       otmp(1,1) = o ;
-      for ( int ib = 0; ib < lb[i-1]; ib++){
+      for ( ib = 0; ib < lb[i-1]; ib++){
         otmp(1,ib+2) = (p(i-1) - b(i-1))*otmp(1,ib+1) 
          + otmp(1,ib)*static_cast<double>(ib)/(d2*zeta);
         }
 
-      for ( int ib = 0; ib < lb(i-1)+1; ib++){
-        for ( int ia = 0; ia < la[i-1]; ia++){
+      for ( ib = 0; ib < lb(i-1)+1; ib++){
+        for ( ia = 0; ia < la[i-1]; ia++){
           otmp(ia+2,ib+1) = (p(i-1) - a(i-1))*otmp(ia+1,ib+1) 
            + static_cast<double>(ib)/(d2*zeta)*otmp(ia+1,ib) 
            + static_cast<double>(ia)/(d2*zeta)*otmp(ia,ib+1) ;
@@ -111,21 +111,21 @@
     otmp.resize(na+2,nb+2) ;
     ttmp.resize(na+2,nb+2) ;
 
-    for (int i = 1; i < 4; i++){
+    for ( i = 1; i < 4; i++){
       otmp.setZero() ;
       ttmp.setZero() ;
       otmp(1,1) = o ;
       ttmp(1,1) = t ;
 
-      for ( int ib = 0; ib < lb[i-1]; ib++) {
+      for ( ib = 0; ib < lb[i-1]; ib++) {
         otmp(1,ib+2) = (p(i-1) - b(i-1))*otmp(1,ib+1) 
          + otmp(1,ib)*static_cast<double>(ib)/(d2*zeta);
         ttmp(1,ib+2) = (p(i-1) - b(i-1))*ttmp(1,ib+1) + d2*xi*otmp(1,ib+2)
           + static_cast<double>(ib)*(ttmp(1,ib)/(d2*zeta) - otmp(1,ib)*xi/zb) ;
          }
 
-      for ( int ib = 0; ib < lb(i-1)+1; ib++) {
-        for ( int ia = 0; ia < la[i-1]; ia++) {
+      for ( ib = 0; ib < lb(i-1)+1; ib++) {
+        for ( ia = 0; ia < la[i-1]; ia++) {
          otmp(ia+2,ib+1) = (p(i-1) - a(i-1))*otmp(ia+1,ib+1)
            + otmp(ia+1,ib)*static_cast<double>(ib)/(d2*zeta) 
            + otmp(ia,ib+1)*static_cast<double>(ia)/(d2*zeta) ;
@@ -168,7 +168,7 @@
     Eigen::Tensor< double, 3> vtmp( 1, 1, 1) ;
     Eigen::Vector3i lt ;
     Eigen::Vector3d p, abd ;
-    int na, nb, ia, ib, i ;
+    int na, nb ;
     int ltot, m ;
 
     zeta = za + zb ;
@@ -292,7 +292,7 @@
     ocd = pow( pi/eta, d1_5)*exp( -zc*zd*rcd2/eta) ;
 
     e.resize( ltot+1) ;
-    etmp = Eigen::Tensor <double, 5>( na+2, na+2, na+2, na+2, ltot+1) ;
+    etmp = Eigen::Tensor <double, 5>( na+2, nb+2, nc+2, nd+2, ltot+1) ;
 
     for( m = 0; m <= ltot; m++) {
       e(m) = d2*sqrt( rho/pi)*oab*ocd*fboys( m, t) ;
@@ -454,7 +454,6 @@
 
   void ao_overlap( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> ovl) {
     /* Given a Slater-type Orbital basis, return the overlap. */
-    int nbas = b.nbas ;
     int ind = -1 ;
     int jnd ;
     int nst1, nst2, jstrt ;
@@ -492,11 +491,9 @@
   void ao_kinetic( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> T) {
     /* Given a Slater-type Orbital basis, return the kinetic
        energy. */
-    int nbas = b.nbas ;
     int ind = -1 ;
     int jnd ;
     int nst1, nst2, jstrt ;
-    double k ;
     time_dbg ao_kinetic_time = time_dbg("ao_kinetic") ;
  
     for ( int i = 0; i < natm; i++) {
@@ -529,11 +526,9 @@
   void ao_eN_V( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> n_c, Eigen::Ref<Eigen::VectorXd> q, Eigen::Ref<Eigen::MatrixXd> V) {
     /* Given a Slater-type Orbital basis and the nuclear information, return
     the electron nuclear potential integrals */
-    int nbas = b.nbas ;
     int ind = -1 ;
     int jnd ;
     int nst1, nst2, jstrt ;
-    double k ;
     time_dbg ao_eN_V_time = time_dbg("ao_eN_V") ;
  
     for ( int i = 0; i < natm; i++) {
@@ -564,10 +559,8 @@
     } ;
 
 /*  void tensor_ao_tei( int nbas, int natm, basis_set& b, Eigen::Ref<Eigen::Tensor< double, nbas>> eri) {
-     Given a Slater-type Orbital basis and the nuclear information, return
-    the two electron repulsion integrals over Muliken ao indexes.
-
-    This routine goes over all indexes and fills a 4 index tensor.
+   Given a Slater-type Orbital basis and the nuclear information, return
+    the two electron repulsion integrals over Muliken ao indexes. 
     
     int i, j, k, l, m, n, o, p ;
     int ix, kx, mx, ox ;
@@ -623,28 +616,28 @@
     time_dbg list_ao_tei_time = time_dbg("list_ao_tei_time") ;
 
     i_v = -1 ;
-    for ( int i = 0; i < natm; i++) {
+    for ( i = 0; i < natm; i++) {
       nst1 = b.b[i].nshl ;
-      for ( int j = 0; j < nst1; j++) {
+      for ( j = 0; j < nst1; j++) {
 	i_v++ ;
         k_v = -1 ;
-        for ( int k = 0; k <= i; k++) {
+        for ( k = 0; k <= i; k++) {
           if ( i != k ) {
             nst2 = b.b[k].nshl ;
           } else {
             nst2 = j + 1 ;
             }
-          for ( int l = 0; l < nst2; l++) {
+          for ( l = 0; l < nst2; l++) {
 	    k_v++ ;
             m_v = -1 ;
  //
-            for ( int m = 0; m <= i; m++) {
+            for ( m = 0; m <= i; m++) {
               if ( i != m ) {
                 nst3 = b.b[m].nshl ;
               } else {
                 nst3 = j + 1 ;
                 }
-              for ( int n = 0; n < nst3; n++) {
+              for ( n = 0; n < nst3; n++) {
 	        m_v++ ;
                 o_v = -1 ;
                 if ( i != m ) {
@@ -652,7 +645,7 @@
                 } else {
                   lto = k ;
                   }
-                for ( int o = 0; o <= lto; o++) {
+                for ( o = 0; o <= lto; o++) {
                   if ( i != m && o == m) {
                     nst4 = n + 1 ;
                   } else if ( i == m && k == o ) {
@@ -660,7 +653,7 @@
                   } else {
                     nst4 = b.b[o].nshl ;
                     }
-                  for ( int p = 0; p < nst4; p++) {
+                  for ( p = 0; p < nst4; p++) {
 	            o_v++ ;
                     int_v = r12_sto( b.b[i].s[j], b.b[i].c, b.b[k].s[l], b.b[k].c, b.b[m].s[n], b.b[m].c, b.b[o].s[p], b.b[o].c) ;
                     tmp_tei.set( i_v, k_v, m_v, o_v, int_v) ;

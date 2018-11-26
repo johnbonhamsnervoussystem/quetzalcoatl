@@ -54,7 +54,7 @@
   void common::setA ( std::vector<double> a) {
     /* Save the atomic coordinates into an eigen array */
     a_c.resize(natoms) ;
-    for ( int i=0; i < a.size(); i++){
+    for ( unsigned int i=0; i < a.size(); i++){
       a_c[i] = a[i] ;
     }
     return ;
@@ -64,7 +64,7 @@
   void common::setC ( std::vector<std::vector<double>> c) {
     /* Save the coordinates into an Eigen Array */
     coord.resize(natoms,3) ;
-    for ( int i=0; i < c.size(); i++){
+    for ( unsigned int i=0; i < c.size(); i++){
       coord.row(i) << c[i][0], c[i][1], c[i][2] ;
     }
     return ;

@@ -11,7 +11,7 @@
 const std::string wfnIO = "qtz.wfn.bin" ;
 
 template<typename s, int r, int c>
-void save_slater_det( wfn< s, r, c>& w, int cntl){
+void save_wfn( wfn< s, r, c>& w, int cntl){
 /*
   Save a slater determinant to a binary file for passing between
   various routines.
@@ -23,9 +23,10 @@ void save_slater_det( wfn< s, r, c>& w, int cntl){
   std::ofstream F_OUT ;
 
   if ( open_binary( F_OUT, cntl) ) {
-    qtzcntrl::shutdown( "IO Error (save_slater_det)") ;
+    qtzcntrl::shutdown( "IO Error (save_wfn)") ;
     }
 
+  F_OUT << w.wfntyp ;
   F_OUT << w.e_scf ;
   write_eigen_bin( w.moc, F_OUT) ;
   write_eigen_bin( w.eig, F_OUT) ;
@@ -36,24 +37,25 @@ void save_slater_det( wfn< s, r, c>& w, int cntl){
 
 }
 
-template void save_slater_det( wfn< double, Eigen::Dynamic, Eigen::Dynamic>&, int) ;
-template void save_slater_det( wfn< std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>&, int) ;
+template void save_wfn( wfn< double, Eigen::Dynamic, Eigen::Dynamic>&, int) ;
+template void save_wfn( wfn< std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>&, int) ;
 
 template<typename s, int r, int c>
-void load_slater_det( wfn< s, r, c>& w, int cntl) {
+void load_wfn( wfn< s, r, c>& w, int cntl) {
 /* 
   A controlling routine to read slater determinants from file.
 
   cntl : 
-    0 - (default) read the first SlaDet. 
-    N - Read N Slater Determinants 
+    0 - (default) read the first wfn. 
+    N - Read N wfn Determinants 
 */
   std::ifstream F_IN ;
 
   if ( open_binary( F_IN) ) {
-    qtzcntrl::shutdown( "IO Error (save_slater_det)") ;
+    qtzcntrl::shutdown( "IO Error (save_wfn)") ;
     }
 
+  F_IN >> w.wfntyp ;
   F_IN >> w.e_scf ;
   read_eigen_bin( w.moc, F_IN) ;
   read_eigen_bin( w.eig, F_IN) ;
@@ -64,6 +66,6 @@ void load_slater_det( wfn< s, r, c>& w, int cntl) {
 
 } ;
 
-template void load_slater_det( wfn< double, Eigen::Dynamic, Eigen::Dynamic>&, int) ;
-template void load_slater_det( wfn< std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>&, int) ;
+template void load_wfn( wfn< double, Eigen::Dynamic, Eigen::Dynamic>&, int) ;
+template void load_wfn( wfn< std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>&, int) ;
 

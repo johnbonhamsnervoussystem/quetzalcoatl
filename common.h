@@ -19,6 +19,7 @@ class common {
     nel - the number of electrons
     nalp - the number of spin up electrons
     nbet - the number of spin down electrons
+    chemical_potential - the initial guess for mu
 
   Algorithm Control :
     max_scf_iter - the maximum number of scf iterations
@@ -43,11 +44,12 @@ private :
   int nel ;
   int nal ;
   int nbe ;
+  double chemical_potential ;
   double nn ;
   std::string basis_name ;
 
   int max_scf_iter ;
-  int scf_convergence_threshold ;
+  double scf_convergence_threshold ;
 
   Eigen::MatrixXd s_c ;
   Eigen::MatrixXd xs_c ;
@@ -68,6 +70,7 @@ public :
   void nele( int n) ;
   void nalp( int n) ;
   void nbet( int n) ;
+  void mu( int n) ;
   void nrep( double f) ;
   void bnam( std::string n) ;
 
@@ -94,6 +97,7 @@ public :
   int nele( void) ;
   int nalp( void) ;
   int nbet( void) ;
+  double mu( void) ;
   double nrep( void) ;
   std::string bnam( void) ;
 

@@ -1,3 +1,4 @@
+#include "constants.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <vector>
@@ -6,6 +7,10 @@
 
 #ifndef UTIL_H
 #define UTIL_H
+
+void bonnet_r ( int n, double x, double& p2) ;
+
+void bonnet_r( int n, double x, double& p2, double& dp) ;
 
 double fact ( int n=1) ;
 
@@ -16,7 +21,7 @@ double fboys( int k, double t) ;
 //template<class matrix>
 //void oao( int& n, int& t, Eigen::MatrixBase<matrix>& a, Eigen::Ref<Eigen::MatrixXd> s, Eigen::Ref<Eigen::MatrixXd> x) ;
 
-void oao( Eigen::Ref<Eigen::MatrixXd> tmp, Eigen::Ref<Eigen::MatrixXd> O, Eigen::Ref<Eigen::MatrixXd> X) ;
+//void oao( Eigen::Ref<Eigen::MatrixXd> tmp, Eigen::Ref<Eigen::MatrixXd> O, Eigen::Ref<Eigen::MatrixXd> X) ;
 
 void oao( int n, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::MatrixXd s) ;
 

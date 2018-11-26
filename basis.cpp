@@ -14,8 +14,6 @@
      obtained from https://bse.pnl.gov/bse/portal */
     gau_prm g ;
     sto s ;
-    double n ;
-    double t3_f4 = 3.0e0/4.0e0 ;
     atm_basis bf ;
     basis_set basis ;
     basis.nbas = 0 ;
@@ -108,8 +106,6 @@
      obtained from https://bse.pnl.gov/bse/portal */
     gau_prm g ;
     sto s ;
-    double n ;
-    double t3_f4 = 3.0e0/4.0e0 ;
     atm_basis bf ;
     basis_set basis ;
     basis.nbas = 0 ;
@@ -409,7 +405,6 @@
     double o = d0 ;
     double alpexp = d0 ;
     double s = d1 ;
-    double t1_f2 = d1/d2 ;
     double t3_f4 = 3.0e0/4.0e0 ;
  
     for (int i=0; i < 3; i++) {

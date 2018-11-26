@@ -154,8 +154,6 @@ int main(int argc, char *argv[]) {
   cd ejunk ;
   cd ojunk ;
   std::vector<std::string> wfn_vec ;
-  std::string trden="tden.rwf" ;
-  std::string fokmat="fmat.rwf" ;
   Eigen::MatrixXd c ;
   Eigen::VectorXd a ;
   Eigen::MatrixXd S ;
