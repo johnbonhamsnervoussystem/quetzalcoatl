@@ -1,11 +1,14 @@
-jobtyp : 1
-basis  : sto-3g
-nn rep : 1.23
-geom   :
- 1,1.9988,-1.0,-1.0
- 1,-0.5678,5.3,-12.6
- 1,-0.5678,5.3,12.6
- 4,-1.5678,2.3,-2.6
+hamilt : mol
+method : P{n}|cghfb>
+ngrid  : 11
  end
+mu     : 11
+basis  : sto-3g
 nalpha : 2
-beta   : 2
+nbeta  : 2
+geom   :
+ 1,1.4,0.0,1.4
+ 1,-1.4,0.0,1.4
+ end
+options:
+ end

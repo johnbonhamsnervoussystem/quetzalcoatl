@@ -23,19 +23,20 @@
  *
  * */
 void scf_drv( common& com, std::vector<tei>& intarr, int opt) {
-  /* 
-     Adding HFB :
-      1 - real restricted
-      2 - complex restricted
-      3 - real unrestricted
-      4 - complex unrestricted
-      5 - real generalized
-      6 - complex generalized
-     10 - Slater Determinant
-     20 - Hartree-Fock-Bogoliubov - optimize mu
-  */
+/* 
+   Adding HFB :
+    1 - real restricted
+    2 - complex restricted
+    3 - real unrestricted
+    4 - complex unrestricted
+    5 - real generalized
+    6 - complex generalized
+   10 - Slater Determinant
+   20 - Hartree-Fock-Bogoliubov 
+   40 - Initial HFB guess for projection
+*/
   
-  if ( opt / 10 == 2 ) {
+  if ( ( opt / 10) % 2 == 0 ) {
     if ( (opt % 10) % 2 == 1 ) {
       /* Do real scf */
       real_HFB( com, intarr, opt) ;
@@ -43,7 +44,7 @@ void scf_drv( common& com, std::vector<tei>& intarr, int opt) {
       /* Do Complex scf */
       cplx_HFB( com, intarr, opt) ;
       }
-  } else if ( opt / 10 == 1) {
+  } else if ( ( opt / 10) % 2 == 1) {
     if ( (opt % 10) % 2 == 1 ) {
     /* Do real scf */
       real_SlaDet( com, intarr, opt % 10) ;
@@ -1047,10 +1048,11 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
   No = R.block( 0, 0, 2*nbasis, 2*nbasis)*s.block( 0, 0, 2*nbasis, 2*nbasis) ;
   N = No.trace() ;
   std::cout << "    Particle Number: " << N.real() << std::endl ;
-  t = (h.block( 0, 0, 2*nbasis, 2*nbasis) + G/d2 - lambda*s.block( 0, 0, 2*nbasis, 2*nbasis))*p ;
+  t = (h.block( 0, 0, 2*nbasis, 2*nbasis) + G/d2)*p ;
   energy = t.trace() ;
   t = k.conjugate()*D ;
   energy += t.trace()/d4 ;
+  std::cout << "    Electronic Energy: " << energy.real() << std::endl ;
 
 /*
   Save the eigenvalues and vectors

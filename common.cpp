@@ -9,6 +9,7 @@
     scf_convergence_threshold = 1.0e-8 ;
     hamiltonian = 0 ;
     method = 0 ;
+    nbr_g = 11 ;
     return ;
   } 
 
@@ -26,6 +27,7 @@
   void common::mu( int n) { chemical_potential = n ; return ;}
   void common::nrep( double f) { nn = f ; return ;}
   void common::bnam( std::string n) { basis_name = n ; return ; }
+  void common::ngrid( int n){ nbr_g = n ;} 
 
 /* Routine/algorithm control options */
   void common::mxscfit( int n) { max_scf_iter = n ; return ;}
@@ -82,6 +84,7 @@
   double common::mu( void) {return chemical_potential ;}
   double common::nrep( void) {return nn   ;}
   std::string common::bnam( void) {return basis_name ;}
+  int common::ngrid( void){ return nbr_g ;} 
 
   int common::mxscfit( void) {return max_scf_iter ;}
   double common::scfthresh( void) {return scf_convergence_threshold ;}

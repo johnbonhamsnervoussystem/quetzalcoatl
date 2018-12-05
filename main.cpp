@@ -245,8 +245,11 @@ int main(int argc, char *argv[]) {
                   generalized  */
   
   scf_drv( com, intarr, com.methd()) ;
-
-//  prj_drv( com, intarr, 1) ;
+  std::cout << com.methd() << std::endl ;
+  std::cout << com.methd() / 100 << std::endl ;
+  if ( com.methd() / 100 != 0 ){
+    prj_drv( com, intarr, 1) ;
+    }
 
 
   intarr.clear() ;

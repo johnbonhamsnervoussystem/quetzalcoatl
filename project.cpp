@@ -3,19 +3,24 @@
 #include <complex>
 #include "constants.h"
 #include <Eigen/Dense>
+#include <Eigen/LU>
 #include "evalm.h"
 #include <iostream>
 #include "hfwfn.h"
 #include "integr.h"
 #include "project.h"
+#include <Eigen/QR>
+#include "qtzio.h"
 #include "qtzcntrl.h"
 #include "solver.h"
 #include "tei.h"
+#include <time.h>
 #include "time_dbg.h"
 #include "util.h"
 #include <vector>
 #include "wigner.h"
 #include "wfn.h"
+#include <gsl/gsl_rng.h>
 
 /* Controlling routines to do Projection methods. 
 
@@ -100,6 +105,7 @@ void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
   wt - integration weights
 */
 
+  int i, j ;
   int nbas = com.nbas() ;
   int maxit = com.mxscfit() ;
   Eigen::MatrixXd rtmp ;
@@ -108,39 +114,47 @@ void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
   Eigen::MatrixXd s ;
   Eigen::MatrixXcd sc ;
   Eigen::MatrixXd Xs ;
-  Eigen::MatrixXcd Xsc ;
+  Eigen::MatrixXcd Xsc, R ;
+  Eigen::MatrixXcd V ;
+  Eigen::MatrixXcd U ;
   std::vector<tei> oaoint ;
   wfn < cd, Eigen::Dynamic, Eigen::Dynamic> w;
   time_dbg proj_HFB_cplx_time = time_dbg("proj_HFB_cplx") ;
+  srand(time(NULL)) ;
+//
+  unsigned long int seed = 7652413 ;
+  double tmp, dlt_occ ;
+  time_t clock ;
+  std::vector<double> rl ;
+  cd Uval, Vval ;
+  const gsl_rng_type* T ;
+  gsl_rng* r ;
+  seed *= static_cast<unsigned long int>(time(&clock) % 100) ;
+//
 
   rtmp.resize( nbas, nbas) ;
-  Tmp.resize( 4*nbas, 2*nbas) ;
+  Tmp.resize( 4*nbas, 4*nbas) ;
   H.resize( 2*nbas, 2*nbas) ;
   s.resize( 4*nbas, 4*nbas) ;
   sc.resize( 4*nbas, 4*nbas) ;
   Xs.resize( nbas, nbas) ;
   Xsc.resize( 4*nbas, 4*nbas) ;
-  w.moc.resize( 4*nbas, 2*nbas) ;
+  w.moc.resize( 4*nbas, 4*nbas) ;
   w.eig.resize( 4*nbas) ;
 
 /*
   Eigen::MatrixXcd V ;
   Eigen::MatrixXcd R ;
   int nbas = com.nbas() ;
-  Eigen::MatrixXcd m ;
-  Eigen::MatrixXcd V ;
-  Eigen::MatrixXcd U ;
-  Eigen::MatrixXcd rho ;
+  Eigen::MatrixXcd m ;*/
+/*  Eigen::MatrixXcd rho ;
   Eigen::MatrixXcd kappa ;
   Eigen::MatrixXcd Uinv ;
+  m.resize( 4*nbas, 4*nbas) ; */
+  R.resize( 2*nbas, 2*nbas) ;
 
-  m.resize( 4*nbas, 4*nbas) ;
   V.resize( 2*nbas, 2*nbas) ;
   U.resize( 2*nbas, 2*nbas) ;
-
-  V.resize( 2*nbas, 2*nbas) ;
-  R.resize( 2*nbas, 2*nbas) ;
-*/
 
 /*
   Orthogonalize the 
@@ -157,34 +171,95 @@ void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
 
   oao( nbas, intarr, oaoint, Xs) ;
 
-  load_wfn( w) ;
   s.setZero() ;
   s.block( 0, 0, nbas, nbas) = com.getS() ;
   s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
   s.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
 
-  canort( s, Xsc, 4*nbas) ;
-  sc.real() = s ;
-  Tmp.block( 0, 0, 4*nbas, 2*nbas) = Xsc.adjoint()*sc*w.moc ;
-  w.moc = Tmp.block( 0, 0, 4*nbas, 2*nbas) ;
+/*
+  Generate a random number broken guess
+    1. Build the diagonalized U and V.  We must have fractional
+       occupation of each state otherwise rho will not be invertible.
+    2. Use the eigenvalues from an HFB guess to populate the levels
+*/
+
+  U.setZero() ;
+  V.setZero() ;
+
+  dlt_occ = d6*1.0e-1/static_cast<double>(nbas) ;
+
+  for( int qtz=0; qtz < nbas; qtz++){
+    tmp = 0.8e0 - static_cast<double>(qtz)*dlt_occ ;
+    rl.push_back( tmp) ;
+    }
+
+  for( int qtz=0; qtz<2*nbas; qtz+=2){
+    Vval = rl[qtz/2]*z1 ;
+    Uval = (std::sqrt( d1 - std::pow( rl[qtz/2], 2)))*z1 ;
+    U( qtz, qtz) = Uval ;
+    U( qtz + 1, qtz + 1) = Uval ;
+    V( qtz, qtz + 1) = Vval ;
+    V( qtz + 1, qtz) = -Vval ;
+    }
+
+  w.moc.block( 0, 0, 2*nbas, 2*nbas) = U ;
+  w.moc.block( 2*nbas, 0, 2*nbas, 2*nbas) = V ;
+  w.moc.block( 0, 2*nbas, 2*nbas, 2*nbas) = V ;
+  w.moc.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = U ;
+
+/*  rand_unitary( U) ;
+  Xsc.setZero() ;
+  Xsc.block( 0, 0, 2*nbas, 2*nbas) = U ;
+  Xsc.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = U.conjugate() ;
+  Tmp = w.moc*Xsc ;
+  w.moc = Tmp ;
+  rand_unitary( U) ;
+  Xsc.setZero() ;
+  Xsc.block( 0, 0, 2*nbas, 2*nbas) = U ;
+  Xsc.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = U.conjugate() ;
+  Tmp = Xsc*w.moc ;
+  w.moc = Tmp ; 
+
+
+  std::cout << " U " << std::endl ;
+  std::cout << U << std::endl ;
+  std::cout << " V " << std::endl ;
+  std::cout << V << std::endl ;
+*/
+
+  std::cout << " U^{t}*U + V^{t}*V " << std::endl ;
+  R = U.adjoint()*U + V.adjoint()*V ;
+  std::cout << R << std::endl ;
+  std::cout << " sqrt(det(U^{t}*U + V^{t}*V)) " << std::endl ;
+  std::cout << std::sqrt(R.determinant()) << std::endl ;
+
+/*  
+  std::cout << " U^{T}*V + V^{T}*U " << std::endl ;
+  std::cout << U.transpose()*V + V.transpose()*U << std::endl ;
+  std::cout << " U^{T}*V + V^{T}*U " << std::endl ;
+  std::cout << U*V.adjoint() + V.conjugate()*U.transpose() << std::endl ;
+*/
+
 
 /*
+
+  canort( s, Xsc, 4*nbas ) ;
+
+  Tmp = Xsc.adjoint()*s*w.moc ;
+  w.moc = Tmp ; 
+
+
   Build the particle number integration grid
+
 */
+
   trapezoid* ngrid = new trapezoid( d0, d2*pi, 11) ;
 
-/* 
-   W should have
-   
-     V
-     U
-*/
-
-  cgHFB_projection( nbas, H, oaoint, w.moc, ngrid, maxit) ;
+  cgHFB_projection( nbas, H, oaoint, w.moc, ngrid, maxit) ; 
 
   proj_HFB_cplx_time.end() ;
 
-  return ; 
+  return ;
 
 } ;
 
@@ -199,8 +274,8 @@ void cgHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
     h - core hamiltonian in the orthogonal basis
     intarr - vector of two electron integrals
     w - hfb wavefunction
-      | V|
-      | U|
+      | U V^{*}|
+      | V U^{*}|
     ngrid - a trapezoidal grid for integration
     maxit - the upper limit for the scf iterations
 
@@ -215,7 +290,8 @@ void cgHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
   int in ;
   int inmb = ngrid->ns() ;
   double energy = d0 ;
-  cd e_theta, fnw, fnx ;
+  cd vac_nrm ; /* This is the vacuum normalization */
+  cd e_theta, fnw, fnx, s_theta ;
   Eigen::MatrixXcd t ;
   Eigen::MatrixXcd nX ;
   Eigen::MatrixXcd Rp ;
@@ -251,23 +327,42 @@ void cgHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
   G.resize( 2*nbas, 2*nbas) ;
   D.resize( 2*nbas, 2*nbas) ;
 
-  /*
-    I guess we will go on RMS density for convergence.
-  */
+/*
+  I guess we will go on RMS density for convergence.
+*/
   
-  rho = w.block( 0, 0 , 2*nbas, 2*nbas).conjugate()*w.block( 0, 0 , 2*nbas, 2*nbas).transpose() ;
-  kappa = w.block( 0, 0, 2*nbas, 2*nbas).conjugate()*w.block( 2*nbas, 0 , 2*nbas, 2*nbas).transpose() ;
+  rho = w.block( 2*nbas, 0, 2*nbas, 2*nbas).conjugate()*w.block( 2*nbas, 0, 2*nbas, 2*nbas).transpose() ;
+  kappa = w.block( 2*nbas, 0, 2*nbas, 2*nbas).conjugate()*w.block( 0, 0, 2*nbas, 2*nbas).transpose() ;
+
+/*
+  std::cout << " rho " << std::endl ;
+  print_mat( rho) ;
+
+  std::cout << " kappa " << std::endl ;
+  print_mat( kappa) ;
+
+  std::cout << " Particle Number " << rho.trace() << std::endl ;
+
+  std::cout << " p*p - p " << std::endl ;
+  std::cout << rho*rho - rho << std::endl ;
+
+  std::cout << " -kappa*kappa^{t} " << std::endl ;
+  std::cout << -kappa*kappa.adjoint() << std::endl ;
+
+  std::cout << " p*p - kappa*kappa^{*} " << std::endl ;
+  std::cout << -kappa*kappa.conjugate() + rho*rho  << std::endl ; 
+*/
+
 
   do {
     /*
       Loop over the number projection grid
     */
+    tmp = w.block( 0, 0, 2*nbas, 2*nbas).adjoint()*w.block( 0, 0, 2*nbas, 2*nbas) ;
+    vac_nrm = std::sqrt(tmp.determinant()) ;
     for ( in = 0; in < inmb; in++){
-      std::cout << " in : " << in << std::endl ;
       fnx = static_cast<cd>( ngrid->q()) ;
-      std::cout << " a " << std::endl ;
-      fnw = ngrid->w()*std::exp( -zi*fnx) ;
-      std::cout << " b " << std::endl ;
+      fnw = ngrid->w()*std::exp( -zi*fnx*static_cast<cd>(d2)) ;
       /*
         Generate the rotation matrix for particle number
       */
@@ -279,38 +374,45 @@ void cgHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
       C_theta = tmp.inverse() ;
       r_theta = nX*rho*C_theta*rho ;
       k_theta = nX*rho*C_theta*kappa ;
+      std::cout << " R_theta " << std::endl ;
+      print_mat( r_theta) ;
       /*
         Get the energy for this state.
       */
-      std::cout << " r_theta " << std::endl ;
-      std::cout << r_theta << std::endl ;
-      std::cout << " k_theta " << std::endl ;
-      std::cout << k_theta << std::endl ;
       ctr2eg( intarr, r_theta, G, nbas) ;
       ctrPairg( intarr, k_theta, D, nbas) ;
       t = (h + G/d2)*r_theta ;
-      std::cout << " (h + G)*r_theta " << std::endl ;
-      std::cout << t.trace() << std::endl ;
       e_theta = t.trace() ;
-      std::cout << " k " << std::endl ;
       t = k_theta.conjugate()*D ;
-      std::cout << " l " << std::endl ;
       e_theta += t.trace()/d4 ;
-      std::cout << " energy " << std::endl ;
+      std::cout << " Energy " << std::endl ;
       std::cout << e_theta << std::endl ;
+      /*
+        Get the overlap 
+      */
+      Rp.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
+      Rp.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
+      tmp = kappa.inverse() ;
+      Rp.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = rho.conjugate()*tmp ;
+      tmp = nX*kappa ;
+      C_theta = tmp.inverse() ;
+      tmp = -nX*rho ;
+      Rp.block( 0, 0, 2*nbas, 2*nbas) = tmp*C_theta.conjugate() ;
+      s_theta = vac_nrm*pfaffian( Rp) ;
+      std::cout << "<0|0> from density" << std::endl ;
+      std::cout << s_theta << std::endl ;
     }
 
     ngrid->set_s() ;
 
-    std::cout << " integral " << std::endl ;
-    std::cout << energy << std::endl ;
     /*
       Check for convergence
     */
     t = Rp - R ;
     energy = (t*t.adjoint()).norm() ;
     std::cout << "  rms difference in the densities: " << energy << std::endl ;
-    if ( std::real(energy) < d1) { break ;}
+//    if ( std::real(energy) < d1) { break ;}
+    if ( true ) { break ;}
     } while ( ++iter <= maxit ) ;
 
   cgHFB_projection_time.end() ;

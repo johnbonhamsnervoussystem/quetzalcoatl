@@ -13,6 +13,7 @@
 #include <string>
 #include "tei.h"
 #include "time_dbg.h"
+#include <unordered_map>
 #include <vector>
 
 /*
@@ -24,6 +25,8 @@
 
 */
 
+/* Routines to swtich between string options */
+
 void read_input( common& com, const std::string& inpfile){
  /* Read the input file and save the information into common. */
   int i_junk ;
@@ -32,17 +35,23 @@ void read_input( common& com, const std::string& inpfile){
   double d_junk ;
   size_t pos = 0 ;
   std::string line ;
-  std::string s_junk ;
+  std::string s_junk, s_j1, s_j2 ;
   std::string delim = "," ;
-  std::string::iterator end_pos ;
+  std::string::size_type first, last ;
   std::ifstream jobfile ;
   std::vector<double> atnum ;
   std::vector<std::vector<double>> t_c ;
+  std::unordered_map< std::string, int> prjcase ( { {"n", 1}, {"s", 2}, {"t", 3}, {"k", 4}} ) ;
   time_dbg read_input_time = time_dbg("read_input") ;
 
   jobfile.open( inpfile, std::ifstream::in ) ;
 
   while( getline( jobfile, line)){
+/*
+  Skip exclamation points
+*/
+    if ( line.substr(0,1) == "!" ){ continue ;}
+
     if ( line.substr(0,7) == "hamilt " ){
       s_junk = line.substr(9) ;
       strip_lower( s_junk) ;
@@ -83,24 +92,100 @@ void read_input( common& com, const std::string& inpfile){
         }
     } else if ( line.substr( 0, 7) == "method " ){
 /*
-        real/r
-        complex/c
+  List of options :
 
-        restricted/r
-        unrestricted/u
-        genralized/g
+    Projection methods
+      P{..}|...>
+        The options in the brakets {} are the types of projections
+          N - Number projection
+          T - Time Reversal
+          S - Electron Spin
+          K - COmplex COnjugation
 
-	Hartree-Fock/HF
-        Hartree-Fock-Bogliubov/HFB
+        The options in the ket will contain the type of reference 
+        determinant to use listed below.
+
+    Single Reference Wavefunction
+      This should be a string containing the possible symmetries to break
+      and takes the form ABC where
+        A - whether the wavefuntion is real or complex
+          real/r
+          complex/c
+
+        B - how the spin symmetry should be treated
+          restricted/r
+          unrestricted/u
+          genralized/g
+
+        C - the type of wavefunction
+          Hartree-Fock/HF
+          Hartree-Fock-Bogliubov/HFB
 */
       s_junk = line.substr(9) ;
       strip_lower( s_junk) ;
+/*
+  Check for projection
+*/
+      if ( s_junk.substr(0, 1) == "p" ){
+/*
+  Get the projection options
+    The various combinations are stored as bitwise
+
+    N  - 0001 -> 1
+    S  - 0010 -> 2
+    K  - 0100 -> 4
+    T  - 1000 -> 8
+*/
+        /* Add 20 here to generate an initial guess */
+        com.methd(20) ;
+        s_junk.pop_back() ;
+        first = s_junk.find("{") ;
+        last = s_junk.find("}") ;
+        s_j1 = s_junk.substr( first+1, last-2) ;
+        s_junk.erase( 0, last+2) ;
+        do {
+          pos = s_j1.find(delim) ;
+          s_j2 = s_j1.substr(0, pos) ;
+          s_j1.erase( 0, pos + delim.length()) ;
+          i_junk = 0 ;
+          switch ( prjcase[s_j2]) {
+            case 1 : /* number projection */
+              i_junk |= 1 ;
+              break ;
+            case 2 : /* spin projection */
+              i_junk |= 2 ;
+              break ;
+            case 3 : /* time reversal projection */
+              i_junk |= 4 ;
+              break ;
+            case 4 : /* complex conjugation projection */
+              i_junk |= 8 ;
+              break ;
+            default :
+              qtzcntrl::shutdown( "Unrecognized Projection Symmetry") ;
+            } // End switch
+          } while ( pos != std::string::npos) ; // End While
+        
+          com.methd( i_junk*100) ;
+        getline( jobfile, line) ;
+        while( line.substr(0,5) != " end" ){
+          if ( line.substr( 0, 7) == " ngrid " ) { 
+            // Size of the number projection grid
+            i_junk = stoi(line.substr(9)) ;
+            com.ngrid(i_junk) ;
+            }
+          getline( jobfile, line) ;
+          } // End Project parameter parsing
+
+        } // End projection parsing
+
       if ( s_junk.substr( 0, 2) == "rr" ) { com.methd(1) ;}
       else if ( s_junk.substr(0,2) == "cr" ) { com.methd(2) ;}
       else if ( s_junk.substr(0,2) == "ru" ) { com.methd(3) ;}
       else if ( s_junk.substr(0,2) == "cu" ) { com.methd(4) ;}
       else if ( s_junk.substr(0,2) == "rg" ) { com.methd(5) ;}
-      else if ( s_junk.substr(0,2) == "cg" ) { com.methd(6) ;}
+      else if ( s_junk.substr(0,2) == "cg" ) { com.methd(6) ;} // End Symmetry parsing
+
       if ( s_junk.substr(2) == "hf" ) { com.methd(10) ;}
       else if ( s_junk.substr( 2) == "hfb" ) {
         getline( jobfile, line) ;
@@ -113,7 +198,8 @@ void read_input( common& com, const std::string& inpfile){
 	  }
         d_junk = stod(line.substr(9)) ;
         com.mu( d_junk) ;
-        }
+        } // End HF/HFB parsing
+
     } else if ( line.substr(0,7) == "basis  " ){
       s_junk = line.substr(9) ;
       com.bnam( s_junk) ;
@@ -166,7 +252,7 @@ void read_input( common& com, const std::string& inpfile){
 
   return ;
 
-} 
+}  ;
 
 bool open_binary( std::ofstream& F_OUT, int cntl) {
 /*

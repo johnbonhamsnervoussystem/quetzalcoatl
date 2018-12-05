@@ -20,3 +20,5 @@
 
   /* Useful physical quantities */
   extern const double bh2an = 0.5291772086 ;
+  /* Boltzmann's Constatn in Hartree/Kelvin */
+  extern const double kb = 3.1668114e-6 ;

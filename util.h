@@ -39,4 +39,6 @@ double pfaffian( Eigen::Ref<Eigen::MatrixXd> m) ;
 
 cd pfaffian( Eigen::Ref<Eigen::MatrixXcd> m) ;
 
+void rand_unitary( Eigen::Ref<Eigen::MatrixXcd> u) ;
+
 #endif

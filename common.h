@@ -5,8 +5,16 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+/*
+
+  At some point I'd like not to intialize values I won't use.  For
+  now things are small enough that it is likely not an issue.
+
+*/
+
 class common {
-/* Job Information
+/* 
+  Job Information
     hamiltonian - Indiacates the type of matrix elements we are computing
     method - What type of job are we doing.
 
@@ -26,13 +34,15 @@ class common {
     scf_convergence_threshold - the threshold at which we consider the wavefunction
       converged.
 
- * Stored Matrices
+  Stored Matrices
    s - overlap matrix
    h - core hamiltonian
    a - atomic number
    coord - coordinates matrix
 
- */
+  Projection Data
+    ngrid - particle number projection grid
+*/
 
 private :
 
@@ -57,6 +67,8 @@ private :
   Eigen::VectorXd a_c ;
   Eigen::MatrixXd coord ;
 
+  int nbr_g ;
+
 public :
 /* Initializers to set default values */
   common( void) ;
@@ -73,6 +85,7 @@ public :
   void mu( int n) ;
   void nrep( double f) ;
   void bnam( std::string n) ;
+  void ngrid( int n) ;
 
 /* Algorithm control*/
   void mxscfit( int n) ;
@@ -100,6 +113,8 @@ public :
   double mu( void) ;
   double nrep( void) ;
   std::string bnam( void) ;
+/* Projection Data */
+  int ngrid( void) ;
 
 /* Algorithm control*/
   int mxscfit( void) ;
@@ -111,6 +126,7 @@ public :
   Eigen::MatrixXd getH( void) ;
   Eigen::VectorXd getA( void) ;
   Eigen::MatrixXd getC( void) ;
+
 
 } ;
 #endif

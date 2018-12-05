@@ -2,15 +2,16 @@
 #include <cmath>
 #include "constants.h"
 #include <Eigen/Dense>
-#include <Eigen/LU>
-#include <gsl/gsl_permutation.h>
-#include <gsl/gsl_sf_gamma.h>
+#include <gsl/gsl_rng.h>
 #include <gsl/gsl_sf_hyperg.h>
 #include "hfwfn.h"
 #include "integr.h"
 #include <iostream>
+#include <Eigen/LU>
+#include <Eigen/QR>
 #include "solver.h"
 #include "tei.h"
+#include <time.h>
 #include "time_dbg.h"
 #include "util.h"
 #include <vector>
@@ -437,100 +438,123 @@ Let's not mess around.  Just compute this
   
   } ;
 
-double pfaffian( Eigen::Ref<Eigen::MatrixXd> m){
+double pfaffian( Eigen::Ref<Eigen::MatrixXd> A) {
 
-  /* Currently just double.  Templated version working below. */
-  Eigen::MatrixXd::Index i = m.rows() ;
-  Eigen::MatrixXd::Index j = m.cols() ;
-  int k, h ;
-  const size_t N = i ;
-  double sgn, pf ;
-  double x = 0.0 ;
+/*
+  Calculate the pfaffian using the LDL^{T} algorithm.
+  There is lots of room for improvement here but this will
+  do for now.
+*/
 
-  /* Do some error handling */
+  int r, i ;
+  double pf = d1 ;
+  Eigen::MatrixXd::Index n = A.rows() ;
+  Eigen::MatrixXd L ( n, n) ;
+  Eigen::MatrixXd P ( n, n) ;
+  Eigen::MatrixXd S ( 2, 2) ;
 
-  if ( i != j ){
-    std::cout << " Non square matrix passed to pfaffian: " << std::endl ;
-    std::cout << " 1.0 returned " << std::endl ;
-    return 1.0 ;
+  L.setIdentity() ;
+
+  for ( i = 0; i < n ; i+=2) {
+    r = n - i - 2 ;
+    S = A.block( i, i, 2, 2) ;
+    pf *= S( i, i+1) ;
+    if ( i == n - 2){ break ;}
+    P.setZero() ;
+    P.block( 0, 0, r, r) = Eigen::MatrixXd::Identity ( r, r) ;
+    P.block( r, r, i + 2, i + 2) = Eigen::MatrixXd::Identity ( i + 2, i + 2) ;
+    P.block( i+2, i, r, 2) = A.block( i+2, i, r, 2)*S.inverse() ;
+    L = L*P ;
+    A.block( i+2, i+2, r, r) = A.block( i+2, i+2, r, r) + A.block( i+2, i, r, 2)*S.inverse()*A.block( i+2, i, r, 2).transpose() ;
     }
 
-  if ( i > GSL_SF_FACT_NMAX ){
-    std::cout << " GSL factorial is limited to values <= " << GSL_SF_FACT_NMAX << std::endl ;
-    std::cout << " Tell Kyle to add gamma functionality for larger systems. " << std::endl ;
-    std::cout << " 1.0 returned " << std::endl ;
-    return 1.0 ;
-    }
-
-  h = i/2 ;
-
-  gsl_permutation* p = gsl_permutation_alloc(N) ;
-  gsl_permutation_init(p) ;
-
-  do {
-    sgn = pow( -1.0, gsl_permutation_inversions( p)) ;
-    pf = 1.0 ;
-    for( k=1; k <= h; k++){
-      pf *= m( p->data[2*k-2], p->data[2*k-1]) ;
-      }
-    x += sgn*pf ;
-    }
-  while( gsl_permutation_next(p) == GSL_SUCCESS) ;
-
-  gsl_permutation_free(p) ;
-
-  sgn = pow( 2.0, h)*gsl_sf_fact( h) ;
-  pf = x/sgn ;
+  pf = L.determinant()*pf ;
 
   return pf ;
 
 } ;
 
-cd pfaffian( Eigen::Ref<Eigen::MatrixXcd> m){
+cd pfaffian( Eigen::Ref<Eigen::MatrixXcd> A) {
 
-  Eigen::MatrixXcd::Index i = m.rows() ;
-  Eigen::MatrixXcd::Index j = m.cols() ;
-  int k, h ;
-  const size_t N = i ;
-  cd sgn, pf ;
-  cd x = z0 ;
+  int r, i ;
+  cd pf = z1 ;
+  Eigen::MatrixXcd::Index n = A.rows() ;
+  Eigen::MatrixXcd L ( n, n) ;
+  Eigen::MatrixXcd P ( n, n) ;
+  Eigen::MatrixXcd S ( 2, 2) ;
 
-  /* Do some error handling */
+  L.setIdentity() ;
 
-  if ( i != j ){
-    std::cout << " Non square matrix passed to pfaffian: " << std::endl ;
-    std::cout << " 1.0 returned " << std::endl ;
-    return 1.0 ;
+  for ( i = 0; i < n ; i+=2) {
+    r = n - i - 2 ;
+    S = A.block( i, i, 2, 2) ;
+    pf *= S( 0, 1) ;
+    if ( i == n - 2){ break ;}
+    P.setZero() ;
+    P.block( 0, 0, r, r) = Eigen::MatrixXcd::Identity ( r, r) ;
+    P.block( r, r, i + 2, i + 2) = Eigen::MatrixXcd::Identity ( i + 2, i + 2) ;
+    P.block( i+2, i, r, 2) = A.block( i+2, i, r, 2)*S.inverse() ;
+    L = L*P ;
+    A.block( i+2, i+2, r, r) = A.block( i+2, i+2, r, r) + A.block( i+2, i, r, 2)*S.inverse()*A.block( i+2, i, r, 2).transpose() ;
     }
 
-  if ( i > GSL_SF_FACT_NMAX ){
-    std::cout << " GSL factorial is limited to values <= " << GSL_SF_FACT_NMAX << std::endl ;
-    std::cout << " Tell Kyle to add gamma functionality for larger systems. " << std::endl ;
-    std::cout << " 1.0 returned " << std::endl ;
-    return 1.0 ;
-    }
-
-  h = i/2 ;
-
-  gsl_permutation* p = gsl_permutation_alloc(N) ;
-  gsl_permutation_init(p) ;
-
-  do {
-    sgn = z1*pow( -1.0, gsl_permutation_inversions( p)) ;
-    pf = z1 ;
-    for( k=1; k <= h; k++){
-      pf *= m( p->data[2*k-2], p->data[2*k-1]) ;
-      }
-    x += sgn*pf ;
-    }
-  while( gsl_permutation_next(p) == GSL_SUCCESS) ;
-
-  gsl_permutation_free(p) ;
-
-  sgn = z1*pow( 2.0, h)*gsl_sf_fact( h) ;
-  pf = x/sgn ;
+  pf = L.determinant()*pf ;
 
   return pf ;
 
 } ;
 
+void rand_unitary( Eigen::Ref<Eigen::MatrixXcd> u) {
+/*
+  Generate a random unitary matrix with Haar distribution
+*/
+  int ur, uc ;
+  double rl, im ;
+  unsigned long int seed = 7652413 ;
+  time_t clock ;
+  cd val ;
+  const gsl_rng_type* T ;
+  gsl_rng* r ;
+  seed *= static_cast<unsigned long int>(time(&clock) % 100) ;
+  Eigen::MatrixXcd::Index cols = u.cols(), rows = u.rows() ;
+  Eigen::VectorXcd v( rows) ;
+  Eigen::MatrixXcd Q( rows, cols), R( rows, cols), L( rows, cols) ;
+  Eigen::HouseholderQR<Eigen::MatrixXcd> qr ;
+
+  gsl_rng_env_setup() ;
+
+  T = gsl_rng_ranlxs0 ;
+  r = gsl_rng_alloc( T) ;
+  gsl_rng_set( r, seed) ;
+
+  for( ur = 0; ur < rows; ur++){
+    for( uc = 0; uc < cols; uc++){
+      rl = d2*gsl_rng_uniform_pos(r) - d1 ;
+      im = d2*gsl_rng_uniform_pos(r) - d1 ;
+      val = std::complex<double> ( rl, im) ;
+      u( ur, uc) = val ;
+      }
+    }
+
+  qr.compute( u) ;
+
+  Q = qr.householderQ() ;
+  R = qr.matrixQR() ;
+  v = R.diagonal() ;
+  for ( ur = 0; ur < rows; ur++){
+    v(ur) = v(ur)/abs(v(ur)) ;
+    }
+  L = v.asDiagonal() ;
+
+  u = Q*L ;
+
+  gsl_rng_free( r) ;
+  Q.resize( 0, 0) ;
+  R.resize( 0, 0) ;
+  L.resize( 0, 0) ;
+  v.resize( 0) ;
+  
+
+  return ;
+
+}

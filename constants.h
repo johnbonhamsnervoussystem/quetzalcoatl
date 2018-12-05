@@ -23,5 +23,6 @@
 
   /* Useful physical quantities */
   extern const double bh2an ;
+  extern const double kb ;
 
 #endif
