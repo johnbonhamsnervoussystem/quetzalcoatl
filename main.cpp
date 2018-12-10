@@ -46,7 +46,7 @@
     email :: ktthross@gmail.com
 */
 
-void quetzalcoatl( bool& im){
+void quetzalcoatl( int im){
 /* Title Card */
   std::cout << std::endl ;
   std::cout << "________                 __                 .__                      __  .__   " << std::endl ;
@@ -57,11 +57,9 @@ void quetzalcoatl( bool& im){
   std::cout << "       \\__>           \\/           \\/     \\/          \\/          \\/           " << std::endl ;
   std::cout << std::endl ;
   std::cout << " Quetzalcoatl  Copyright (C) 2018  Kyle Throssell " << std::endl ;
-  std::cout << " This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'. " << std::endl ;
-  std::cout << " This is free software, and you are welcome to redistribute it" << std::endl ;
-  std::cout << " under certain conditions; type `show c' for details." << std::endl ;
+  std::cout << " This program comes with ABSOLUTELY NO WARRANTY " << std::endl ;
   std::cout << std::endl ;
-  if ( im){
+  if ( im == 1){
     std::cout << "        ooo+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl ;
     std::cout << "       o/`s++++++++++++++++++++++++++o++++++++++++oo+++//++o++++++++++++++" << std::endl ;
     std::cout << "      s:  o++++++++++++++++++++++++++oo+++++++++++o//.`    `/yo+++++++++++" << std::endl ;
@@ -107,6 +105,8 @@ void quetzalcoatl( bool& im){
     std::cout << "        o+ss+-`..`-/+osooooooooosys+-:+oo/:-.-:-----.```....:--/ooooo+++++" << std::endl ;
     std::cout << "       ohsy++osso++//:::---:///++ooss+ossooossoo/://::---:+ohdNmyosso+++++" << std::endl ;
     std::cout << "            ++++++++ooooo+++++++++++++++++++oosooosssssssoo+++++++++++++++" << std::endl ;
+  } else if ( im == 2){
+  } else if ( im == 3){
     }
   return ;
 }
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
   std::vector<tei> trnint ;
 
   int nbas, natm ;
-  bool quetz_image = false ;
+  int quetz_image = 0 ;
   double cx = 0.0e0 ;
   double cy = 0.0e0 ;
   double cz = 0.0e0 ;
@@ -173,11 +173,16 @@ int main(int argc, char *argv[]) {
   ss << argv[1] ;
   ss >> inpfile ;
   if ( inpfile == "Q" ){ 
-    quetz_image = true ;
+    quetz_image = 1 ;
     ss.clear() ;
     ss << argv[2] ;
     ss >> inpfile ;
+  } else if ( inpfile == "w" ){
+    quetz_image = 2 ;
+  } else if ( inpfile == "c" ){
+    quetz_image = 3 ;
     }
+
 
   quetzalcoatl( quetz_image) ;
 

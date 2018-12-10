@@ -122,14 +122,9 @@ void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
   time_dbg proj_HFB_cplx_time = time_dbg("proj_HFB_cplx") ;
   srand(time(NULL)) ;
 //
-  unsigned long int seed = 7652413 ;
   double tmp, dlt_occ ;
-  time_t clock ;
   std::vector<double> rl ;
   cd Uval, Vval ;
-  const gsl_rng_type* T ;
-  gsl_rng* r ;
-  seed *= static_cast<unsigned long int>(time(&clock) % 100) ;
 //
 
   rtmp.resize( nbas, nbas) ;
@@ -186,16 +181,25 @@ void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
   U.setZero() ;
   V.setZero() ;
 
-  dlt_occ = d6*1.0e-1/static_cast<double>(nbas) ;
+  dlt_occ = d4*1.0e-1/static_cast<double>(nbas) ;
 
   for( int qtz=0; qtz < nbas; qtz++){
     tmp = 0.8e0 - static_cast<double>(qtz)*dlt_occ ;
     rl.push_back( tmp) ;
     }
 
-  for( int qtz=0; qtz<2*nbas; qtz+=2){
-    Vval = rl[qtz/2]*z1 ;
-    Uval = (std::sqrt( d1 - std::pow( rl[qtz/2], 2)))*z1 ;
+  for( int qtz = 0; qtz < 2*nbas; qtz+=4){
+    Vval = rl[qtz/4]*z1 ;
+    Uval = (std::sqrt( z1 - std::pow( rl[qtz/4], 2)))*z1 ;
+    U( qtz, qtz) = Uval ;
+    U( qtz + 1, qtz + 1) = Uval ;
+    V( qtz, qtz + 1) = Vval ;
+    V( qtz + 1, qtz) = -Vval ;
+    }
+
+  for( int qtz = 2; qtz < 2*nbas; qtz+=4){
+    Vval = rl[qtz/4 + nbas/2]*z1 ;
+    Uval = (std::sqrt( z1 - std::pow( rl[qtz/4 + nbas/2], 2)))*z1 ;
     U( qtz, qtz) = Uval ;
     U( qtz + 1, qtz + 1) = Uval ;
     V( qtz, qtz + 1) = Vval ;
@@ -207,7 +211,7 @@ void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
   w.moc.block( 0, 2*nbas, 2*nbas, 2*nbas) = V ;
   w.moc.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = U ;
 
-/*  rand_unitary( U) ;
+  rand_unitary( U) ;
   Xsc.setZero() ;
   Xsc.block( 0, 0, 2*nbas, 2*nbas) = U ;
   Xsc.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = U.conjugate() ;
@@ -220,12 +224,14 @@ void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
   Tmp = Xsc*w.moc ;
   w.moc = Tmp ; 
 
-
+/*
+  U = w.moc.block( 0, 0, 2*nbas, 2*nbas) ;
+  V = w.moc.block( 2*nbas, 0, 2*nbas, 2*nbas) ;
   std::cout << " U " << std::endl ;
   std::cout << U << std::endl ;
   std::cout << " V " << std::endl ;
   std::cout << V << std::endl ;
-*/
+
 
   std::cout << " U^{t}*U + V^{t}*V " << std::endl ;
   R = U.adjoint()*U + V.adjoint()*V ;
@@ -233,7 +239,7 @@ void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
   std::cout << " sqrt(det(U^{t}*U + V^{t}*V)) " << std::endl ;
   std::cout << std::sqrt(R.determinant()) << std::endl ;
 
-/*  
+  
   std::cout << " U^{T}*V + V^{T}*U " << std::endl ;
   std::cout << U.transpose()*V + V.transpose()*U << std::endl ;
   std::cout << " U^{T}*V + V^{T}*U " << std::endl ;
@@ -291,38 +297,80 @@ void cgHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
   int inmb = ngrid->ns() ;
   double energy = d0 ;
   cd vac_nrm ; /* This is the vacuum normalization */
-  cd e_theta, fnw, fnx, s_theta ;
+  cd blah2 = z0,blah = z0, e_theta, fnw, fnx, s_theta, intx_g = z0, x_g ;
   Eigen::MatrixXcd t ;
   Eigen::MatrixXcd nX ;
   Eigen::MatrixXcd Rp ;
-  Eigen::MatrixXcd R ;
+  Eigen::MatrixXcd Heff ;
+  Eigen::MatrixXcd Sdotrho ;
+  Eigen::MatrixXcd SdotrhoE ;
+  Eigen::MatrixXcd SdotrhoO ;
+  Eigen::MatrixXcd Sdotkappa ;
+  Eigen::MatrixXcd SdotkappaE ;
+  Eigen::MatrixXcd SdotkappaO ;
+  Eigen::MatrixXcd Hdotrho ;
+  Eigen::MatrixXcd Hdotkappa ;
+  Eigen::MatrixXcd f_theta ;
   Eigen::MatrixXcd rho ;
   Eigen::MatrixXcd kappa ;
+  Eigen::MatrixXcd Rrho ;
+  Eigen::MatrixXcd Rkappa ;
+  Eigen::MatrixXcd rho_i ;
+  Eigen::MatrixXcd kappa_i ;
+  Eigen::MatrixXcd Rrho_i ;
+  Eigen::MatrixXcd Rkappa_i ;
   Eigen::MatrixXcd tmp ;
 /*
   Rotated Densities
 */
   Eigen::MatrixXcd r_theta ;
   Eigen::MatrixXcd k_theta ;
-  Eigen::MatrixXcd I ;
-  Eigen::MatrixXcd G ;
-  Eigen::MatrixXcd D ;
+  Eigen::MatrixXcd I, G, D ;
+  Eigen::MatrixXcd M11_i, M22_i ;
+/*
+  Eigen Vectors to accumulate quantities
+*/
+  Eigen::VectorXcd OHg( inmb), OSg( inmb), d_g( inmb) ;
 /*
   C_theta = [-kappa*R^{*}kappa^{*} + rho*R*rho]^{-1}
 */
   Eigen::MatrixXcd C_theta ;
+  Eigen::MatrixXcd C_theta_i ;
   time_dbg cgHFB_projection_time = time_dbg("cgHFB_projection") ;
 
+  f_theta.resize( 2*nbas, 2*nbas) ;
+  r_theta.resize( 2*nbas, 2*nbas) ;
+  k_theta.resize( 2*nbas, 2*nbas) ;
   tmp.resize( 2*nbas, 2*nbas) ;
+/* Normal rho and kappa */
   kappa.resize( 2*nbas, 2*nbas) ;
   rho.resize( 2*nbas, 2*nbas) ;
+/* Rotated rho and kappa */
+  Rkappa.resize( 2*nbas, 2*nbas) ;
+  Rrho.resize( 2*nbas, 2*nbas) ;
+/* Inverse Rho and kappa  */
+  kappa_i.resize( 2*nbas, 2*nbas) ;
+  rho_i.resize( 2*nbas, 2*nbas) ;
+/* Rotated Inverse  */
+  Rkappa_i.resize( 2*nbas, 2*nbas) ;
+  Rrho_i.resize( 2*nbas, 2*nbas) ;
+
   C_theta.resize( 2*nbas, 2*nbas) ;
+  C_theta_i.resize( 2*nbas, 2*nbas) ;
+  Sdotrho.resize( 2*nbas, 2*nbas) ;
+  SdotrhoE.resize( 2*nbas, 2*nbas) ;
+  SdotrhoO.resize( 2*nbas, 2*nbas) ;
+  Sdotkappa.resize( 2*nbas, 2*nbas) ;
+  SdotkappaE.resize( 2*nbas, 2*nbas) ;
+  SdotkappaO.resize( 2*nbas, 2*nbas) ;
+  Hdotrho.resize( 2*nbas, 2*nbas) ;
+  Hdotkappa.resize( 2*nbas, 2*nbas) ;
   Rp.resize( 4*nbas, 4*nbas) ;
-  R.resize( 4*nbas, 4*nbas) ;
+  Heff.resize( 4*nbas, 4*nbas) ;
   nX.resize( 2*nbas, 2*nbas) ;
   I.resize( 2*nbas, 2*nbas) ;
   I.setIdentity() ;
-  R.setZero() ;
+  Heff.setZero() ;
   Rp.setZero() ;
   G.resize( 2*nbas, 2*nbas) ;
   D.resize( 2*nbas, 2*nbas) ;
@@ -333,8 +381,10 @@ void cgHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
   
   rho = w.block( 2*nbas, 0, 2*nbas, 2*nbas).conjugate()*w.block( 2*nbas, 0, 2*nbas, 2*nbas).transpose() ;
   kappa = w.block( 2*nbas, 0, 2*nbas, 2*nbas).conjugate()*w.block( 0, 0, 2*nbas, 2*nbas).transpose() ;
+  rho_i = rho.inverse() ;
+  kappa_i = kappa.inverse() ;
 
-/*
+
   std::cout << " rho " << std::endl ;
   print_mat( rho) ;
 
@@ -343,6 +393,7 @@ void cgHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
 
   std::cout << " Particle Number " << rho.trace() << std::endl ;
 
+/*
   std::cout << " p*p - p " << std::endl ;
   std::cout << rho*rho - rho << std::endl ;
 
@@ -356,61 +407,182 @@ void cgHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
 
   do {
     /*
-      Loop over the number projection grid
+      Loop over the number projection grid and accumulate quantities
     */
     tmp = w.block( 0, 0, 2*nbas, 2*nbas).adjoint()*w.block( 0, 0, 2*nbas, 2*nbas) ;
     vac_nrm = std::sqrt(tmp.determinant()) ;
+    Sdotrho.setZero() ;
+    SdotrhoE.setZero() ;
+    SdotrhoO.setZero() ;
+    Hdotrho.setZero() ;
+    Hdotkappa.setZero() ;
     for ( in = 0; in < inmb; in++){
       fnx = static_cast<cd>( ngrid->q()) ;
-      fnw = ngrid->w()*std::exp( -zi*fnx*static_cast<cd>(d2)) ;
+      d_g(in) = ngrid->w()*std::exp( -zi*fnx*static_cast<cd>(d2)) ;
+      std::cout << " weight " << d_g( in) << std::endl ;
       /*
-        Generate the rotation matrix for particle number
+        Generate our Rotated quantities we will need.  This is memory hungry right now
+        but one step at a time plz.
       */
       nX = I*std::exp( zi*fnx) ;
-      /*
-        Generate our Rotated quantities
-      */
-      tmp = rho*nX*rho - kappa*nX.conjugate()*kappa.conjugate() ;
+      Rrho = nX*rho ;
+      Rkappa = nX*kappa ;
+      Rrho_i = Rrho.inverse() ;
+      Rkappa_i = Rkappa.inverse() ;
+      C_theta_i = rho*Rrho - kappa*Rkappa.conjugate() ;
       C_theta = tmp.inverse() ;
-      r_theta = nX*rho*C_theta*rho ;
-      k_theta = nX*rho*C_theta*kappa ;
-      std::cout << " R_theta " << std::endl ;
+      r_theta = Rrho*C_theta*rho ;
+      k_theta = Rrho*C_theta*kappa ;
+
+      std::cout << " rotation angle " << fnx << std::endl ;
+      std::cout << " Rrho " << std::endl ;
+      print_mat( Rrho) ;
+      std::cout << " Rkappa " << std::endl ;
+      print_mat( Rkappa) ;
+      std::cout << " Rrho_i " << std::endl ;
+      print_mat( Rrho_i) ;
+      std::cout << " Rkappa_i " << std::endl ;
+      print_mat( Rkappa_i) ;
+      std::cout << " C_theta_i " << std::endl ;
+      print_mat( C_theta_i) ;
+      std::cout << " det(C_theta_i) " << std::endl ;
+      std::cout << C_theta_i.determinant() << std::endl ;
+      std::cout << " C_theta " << std::endl ;
+      print_mat( C_theta) ;
+      std::cout << " r_theta " << std::endl ;
       print_mat( r_theta) ;
-      /*
-        Get the energy for this state.
-      */
+      std::cout << " k_theta " << std::endl ;
+      print_mat( k_theta) ;
+
+//      /* Get the energy expression */
       ctr2eg( intarr, r_theta, G, nbas) ;
       ctrPairg( intarr, k_theta, D, nbas) ;
-      t = (h + G/d2)*r_theta ;
-      e_theta = t.trace() ;
+      f_theta = h + G/d2 ;
+      std::cout << " E, G " << std::endl ;
+      print_mat( G) ;
+      std::cout << " f_theta " << std::endl ;
+      print_mat( f_theta) ;
+      t = f_theta*r_theta ;
+      OHg( in) = t.trace() ;
       t = k_theta.conjugate()*D ;
-      e_theta += t.trace()/d4 ;
-      std::cout << " Energy " << std::endl ;
-      std::cout << e_theta << std::endl ;
-      /*
-        Get the overlap 
-      */
+      OHg( in) += t.trace()/d4 ;
+//
+//      /* Get the overlap */
       Rp.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
       Rp.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
-      tmp = kappa.inverse() ;
-      Rp.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = rho.conjugate()*tmp ;
-      tmp = nX*kappa ;
-      C_theta = tmp.inverse() ;
-      tmp = -nX*rho ;
-      Rp.block( 0, 0, 2*nbas, 2*nbas) = tmp*C_theta.conjugate() ;
-      s_theta = vac_nrm*pfaffian( Rp) ;
-      std::cout << "<0|0> from density" << std::endl ;
-      std::cout << s_theta << std::endl ;
+      Rp.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = rho.conjugate()*kappa_i ;
+      M22_i = Rp.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas).inverse() ;
+      Rp.block( 0, 0, 2*nbas, 2*nbas) = -Rrho*Rkappa_i.conjugate() ;
+      M11_i = Rp.block( 0, 0, 2*nbas, 2*nbas).inverse() ;
+      OSg( in) = vac_nrm*pfaffian( Rp) ;
+      /* Scale the energy by the overlap */
+      OHg( in) = OHg( in) ;
+      x_g = d_g( in)*OSg( in) ;
+/*      std::cout << " M22_i " << std::endl ;
+      print_mat( M22_i) ;
+      std::cout << " M11_i " << std::endl ;
+      print_mat( M11_i) ; 
+*/
+//      /* Accumulate the overlap derivative for later*/
+      Sdotrho = OSg( in)*( kappa_i*M22_i - Rkappa_i.conjugate()*M11_i*nX)/d2 ;
+/*      std::cout << " Sdotrho " << std::endl ;
+      print_mat( Sdotrho) ; 
+*/
+      SdotrhoO += d_g( in)*Sdotrho ;
+      Sdotkappa =  OSg( in)*(kappa_i.conjugate()*nX.transpose()*M11_i*Rrho*kappa_i.conjugate() - kappa_i*M22_i*rho.conjugate()*kappa_i)/d2 ;
+/*      std::cout << " Sdotkappa " << std::endl ;
+      print_mat( Sdotkappa) ; 
+*/
+      SdotkappaO += d_g( in)*Sdotkappa ;
+      /* 
+        Get the hamiltonian derivatives accumulated wrt rho and kappa
+      */
+      std::cout << " G " << std::endl ;
+      print_mat( G) ;
+      f_theta += G/d2 ;
+      std::cout << " f_theta " << std::endl ;
+      print_mat( f_theta) ;
+      Hdotrho += x_g*C_theta*rho*f_theta*nX ;
+      Hdotrho += x_g*f_theta*Rrho*C_theta ;
+      Hdotrho += -x_g*Rrho*C_theta_i*rho*f_theta*Rrho*C_theta_i ;
+      Hdotrho += -x_g*C_theta_i*rho*f_theta*Rrho*C_theta_i*rho*nX ;
+      tmp = x_g*C_theta*kappa*D.conjugate()*nX - x_g*Rrho*C_theta_i*kappa*D.conjugate()*Rrho*C_theta_i ;
+      tmp += -C_theta_i*kappa*D.conjugate()*Rrho*C_theta_i*rho*nX ;
+      Hdotrho -= x_g*(tmp + tmp.conjugate())/d4 ;
+      /*
+      */
+      Hdotkappa += -x_g*Rkappa.conjugate()*C_theta_i*rho*f_theta*Rrho*C_theta_i ;
+      Hdotkappa += -x_g*C_theta_i*rho*f_theta*Rrho*C_theta_i*kappa*nX.conjugate() ;
+      tmp += -Rkappa.conjugate()*C_theta_i*kappa*D.conjugate()*Rrho*C_theta_i ;
+      tmp += -C_theta_i*kappa*D.conjugate()*Rrho*C_theta_i*kappa*nX.conjugate() ;
+      tmp += D.conjugate()*Rrho*C_theta ;
+      Hdotkappa += x_g*(tmp + tmp.conjugate())/d8 ;
+
+      /* 
+        Accumulate the overlap and weight 
+        int dg <0|R(g)|0>w(g)
+        Scale the enregy by the overlap to genreate <0|H|g>
+      */
+      intx_g += OSg( in)*d_g( in) ;
     }
 
+    std::cout << "intx_g " << intx_g << std::endl ;
+    std::cout << " SdotkappaO " << std::endl ;
+    print_mat( SdotkappaO) ;
+    std::cout << " SdotrhoO " << std::endl ;
+    print_mat( SdotrhoO) ;
+    std::cout << " Hdotrho " << std::endl ;
+    print_mat(  Hdotrho) ;
+    std::cout << " Hdotkappa " << std::endl ;
+    print_mat(  Hdotkappa) ;
     ngrid->set_s() ;
 
+//    for ( in = 0; in < inmb; in++){
+//      fnx = static_cast<cd>( ngrid->q()) ;
+//      /*
+//        Generate the rotation matrix for particle number
+//      */
+//      nX = I*std::exp( zi*fnx) ;
+//      Rrho = nX*rho ;
+//      Rkappa = nX*kappa ;
+//      Rrho_i = Rrho.inverse() ;
+//      Rkappa_i = Rkappa.inverse() ;
+//      /*
+//        Generate our Rotated quantities we will need.  This is memory hungry right now
+//        but one step at a time plz.
+//      */
+//      C_theta_i = rho*Rrho - kappa*Rkappa.conjugate() ;
+//      C_theta = tmp.inverse() ;
+//      r_theta = Rrho*C_theta*rho ;
+//      k_theta = Rrho*C_theta*kappa ;
+//
+//      /* Get the overlap */
+//      Rp.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
+//      Rp.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
+//      Rp.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = rho.conjugate()*kappa_i ;
+//      M22_i = Rp.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas).inverse() ;
+//      Rp.block( 0, 0, 2*nbas, 2*nbas) = -Rrho*Rkappa_i.conjugate() ;
+//      M11_i = Rp.block( 0, 0, 2*nbas, 2*nbas).inverse() ;
+//      /* Get the Overlap derivative accumulated */
+//      x_g = d_g( in)*OSg( in) ;
+//      Sdotrho = (kappa_i*M22_i - Rkappa_i*M11_i*nX)/d2 ;
+//      SdotrhoE += d_g( in)*(Sdotrho - OSg( in)*SdotrhoO/intx_g)*OHg( in) ;
+//      Sdotkappa = kappa_i.conjugate()*nX.transpose()*M11_i*Rrho*kappa_i.conjugate() - kappa_i*M22_i*rho.conjugate()*kappa_i ;
+//      SdotkappaE += d_g( in)*(Sdotkappa - OSg( in)*SdotkappaO/intx_g)*OHg( in) ;
+//    } 
+//
+//    Heff.block( 0, 0, 2*nbas, 2*nbas) = Hdotrho + SdotrhoE/intx_g ;
+//    Heff.block( 0, 2*nbas, 2*nbas, 2*nbas) = Hdotkappa + SdotkappaE/intx_g ;
+//    Heff.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -Heff.block( 0, 0, 2*nbas, 2*nbas).conjugate() ;
+//    Heff.block( 2*nbas, 0, 2*nbas, 2*nbas) = -Heff.block( 0, 2*nbas, 2*nbas, 2*nbas).conjugate() ;
+//
+//    print_mat( Heff) ;
     /*
       Check for convergence
-    */
+    
     t = Rp - R ;
     energy = (t*t.adjoint()).norm() ;
-    std::cout << "  rms difference in the densities: " << energy << std::endl ;
+    std::cout << "  rms difference in the densities: " << energy << std::endl ;*/
 //    if ( std::real(energy) < d1) { break ;}
     if ( true ) { break ;}
     } while ( ++iter <= maxit ) ;

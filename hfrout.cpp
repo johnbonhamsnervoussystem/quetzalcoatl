@@ -1050,7 +1050,7 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
   std::cout << "    Particle Number: " << N.real() << std::endl ;
   t = (h.block( 0, 0, 2*nbasis, 2*nbasis) + G/d2)*p ;
   energy = t.trace() ;
-  t = k.conjugate()*D ;
+  t = -k.conjugate()*D ;
   energy += t.trace()/d4 ;
   std::cout << "    Electronic Energy: " << energy.real() << std::endl ;
 

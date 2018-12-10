@@ -13,3 +13,14 @@ void qtzcntrl::shutdown( std::string s) {
     return ;
 
   } 
+
+void qtzcntrl::end( std::string s) {
+/*
+  Super basic shutdown function.
+*/
+    std::cout << s << std::endl ;
+    exit(EXIT_SUCCESS) ;
+
+    return ;
+
+  } 

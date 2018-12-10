@@ -24,10 +24,9 @@ class integration_grid {
     /*
       Allocate space for n points plus n = 0
     */
-    steps = n ;
-    points.reserve(n+1) ;
-    weights.reserve(n+1) ;
-    set_s() ;
+    steps = n + 1 ;
+    points.reserve(n+2) ;
+    weights.reserve(n+2) ;
     }
 /*
   Access while iterating through a loop
@@ -53,19 +52,21 @@ class trapezoid : public integration_grid {
   Set up a trapezoid integration grid
 */
       double pt, wt ;
-      double seg = (uv - lv)/static_cast<double>(n) ;
+      double seg = ( uv - lv)/static_cast<double>(n) ;
   
+      wt = seg/2.0e0 ;
       for ( auto i = 0; i <= n; i++){
         pt = seg*static_cast<double>(i) + lv ;
         if( i == 0 || i == n){
-          wt = seg/2.0e0  ;
+          weights.push_back(wt) ;
         } else {
-          wt = seg  ;
+          weights.push_back(seg) ;
           }
         points.push_back(pt) ;
-        weights.push_back(wt) ;
         }
-
+      weights.push_back(d0) ;
+      points.push_back(d0) ;
+      set_s() ;
       }
 } ;
 
@@ -121,6 +122,9 @@ class gauleg : public integration_grid {
         weights[i-1] = 2.0*xl/((1.0 - z*z)*dpy*dpy) ;
         weights[n-i] = weights[i-1] ;
       }
+      weights.push_back(d0) ;
+      points.push_back(d0) ;
+      set_s() ;
     }
   } ; 
 
