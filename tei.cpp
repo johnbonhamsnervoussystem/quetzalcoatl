@@ -1,4 +1,5 @@
 #include "constants.h"
+#include <iostream>
 #include "tei.h"
 
   void tei::set(int a, int b, int c, int d, float integral ){
@@ -14,5 +15,9 @@
   int tei::r_j ( void) { return j ;}
   int tei::r_k ( void) { return k ;}
   int tei::r_l ( void) { return l ;}
-  void tei::attract( void){ val *= -d1 ;} 
+  void tei::print( void){ 
+    std::cout << " i, j, k, l : " << i << " " << j << " " << k << " " << l << std::endl ;
+    std::cout << " val = " << val << std::endl ;
+    return ;
+    } 
 

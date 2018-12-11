@@ -6,6 +6,7 @@
 namespace qtzcntrl {
 
   void shutdown( std::string s) ;
+  void end( std::string s) ;
 
 }
 

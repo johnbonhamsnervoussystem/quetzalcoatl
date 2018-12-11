@@ -16,8 +16,8 @@ class tei {
     int r_j ( void) ; 
     int r_k ( void) ; 
     int r_l ( void) ; 
-    /* Make integrals attractive */
-    void attract( void) ;
+    /* Print out the value and indexes */
+    void print( void) ;
 
 } ;
 #endif
