@@ -1,4 +1,5 @@
 #include "basis.h"
+#include "common.h"
 #include "constants.h"
 #include <Eigen/Dense>
 #include <iostream>
@@ -357,6 +358,113 @@
 
         default :
           std::cout << "Atomic number " << AtN(a) ; 
+          std::cout << " not currently supported."  << std::endl ;
+          break ;
+
+        }
+      }
+
+  return basis ;
+
+ } ;
+
+  basis_set load_cc_pVDZ ( Eigen::VectorXd AtN, Eigen::MatrixXd c) {
+/*
+  cc-pVDZ  EMSL  Basis Set Exchange Library   12/16/18 2:18 PM
+  Elements                             References
+  --------                             ----------
+  H      : T.H. Dunning, Jr. J. Chem. Phys. 90, 1007 (1989).
+  He     : D.E. Woon and T.H. Dunning, Jr. J. Chem. Phys. 100, 2975 (1994).
+  Li - Ne: T.H. Dunning, Jr. J. Chem. Phys. 90, 1007 (1989).
+  Na - Mg: D.E. Woon and T.H. Dunning, Jr.  (to be published)
+  Al - Ar: D.E. Woon and T.H. Dunning, Jr.  J. Chem. Phys. 98, 1358 (1993).
+  Sc - Zn: N.B. Balabanov and K.A. Peterson, J. Chem. Phys. 123, 064107 (2005),
+  N.B. Balabanov and K.A. Peterson, J. Chem. Phys. 125, 074110 (2006)
+  Ca     : J. Koput and K.A. Peterson, J. Phys. Chem. A, 106, 9595 (2002).
+*/
+    gau_prm g ;
+    sto s ;
+    atm_basis bf ;
+    basis_set basis ;
+    basis.nbas = 0 ;
+
+
+    for( int a=0; a<AtN.size(); a++) {
+
+      switch ( static_cast<int>(AtN(a)+0.5)) {
+
+        case 2: // Z=2: Helium
+          /* 1s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          bf.s.clear() ;
+          g.x = 38.36e0 ;
+          g.c = 0.0238090*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 5.77e0 ;
+          g.c = 0.1548910*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 1.24 ;
+          g.c = 0.4699870*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+
+          basis.nbas++ ;
+
+          /* 1s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          g.x = 0.2976 ;
+          g.c = d1*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 1 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          /* 2px orbital */
+          s.g.clear() ;
+          s.l << 1,0,0 ;
+          g.x = 1.275 ;
+          g.c = d1*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 1 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          /* 2py orbital */
+          s.g.clear() ;
+          s.l << 0,1,0 ;
+          g.x = 1.275 ;
+          g.c = d1*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 1 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          /* 2pz orbital */
+          s.g.clear() ;
+          s.l << 0,0,1 ;
+          g.x = 1.275 ;
+          g.c = d1*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 1 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          bf.c( 0) = c( a, 0) ;
+          bf.c( 1) = c( a, 1) ;
+          bf.c( 2) = c( a, 2) ;
+          bf.nshl = 5 ;
+          basis.b.push_back(bf) ;
+          break ;
+
+        default :
+          std::cout << "Atomic number " << AtN(a) ; 
           std::cout << " not currently supported."<< std::endl ;
           break ;
 
@@ -367,8 +475,124 @@
 
  } ;
 
-  basis_set build_basis ( std::string bas_name, Eigen::Ref<Eigen::VectorXd> AtN, Eigen::Ref<Eigen::MatrixXd> coord) {
+  basis_set load_6_31g ( Eigen::VectorXd AtN, Eigen::MatrixXd c) {
+/*
+  6-31G  EMSL  Basis Set Exchange Library   12/16/18 3:19 PM
+  Elements                             References
+  --------                             ----------
+  H - He: W.J. Hehre, R. Ditchfield and J.A. Pople, J. Chem. Phys. 56,
+  Li - Ne: 2257 (1972).  Note: Li and B come from J.D. Dill and J.A.
+  Pople, J. Chem. Phys. 62, 2921 (1975).
+  Na - Ar: M.M. Francl, W.J. Petro, W.J. Hehre, J.S. Binkley, M.S. Gordon,
+  D.J. DeFrees and J.A. Pople, J. Chem. Phys. 77, 3654 (1982)
+  K  - Zn: V. Rassolov, J.A. Pople, M. Ratner and T.L. Windus, J. Chem. Phys.
+  109, 1223 (1998)
+  Note: He and Ne are unpublished basis sets taken from the Gaussian
+  program
+*/
+    gau_prm g ;
+    sto s ;
+    atm_basis bf ;
+    basis_set basis ;
+    basis.nbas = 0 ;
+
+
+    for( int a=0; a<AtN.size(); a++) {
+
+      switch ( static_cast<int>(AtN(a)+0.5)) {
+
+        case 1: // Z=1: Hydrogen
+          /* 1s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          bf.s.clear() ;
+          g.x = 18.7311370e0 ;
+          g.c = 0.03349460*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 2.8253937e0 ;
+          g.c = 0.23472695*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.6401217e0 ;
+          g.c = 0.81375733*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+
+          basis.nbas++ ;
+
+          /* 1s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          g.x = 0.1612778e0 ;
+          g.c = d1*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 1 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          bf.c( 0) = c( a, 0) ;
+          bf.c( 1) = c( a, 1) ;
+          bf.c( 2) = c( a, 2) ;
+          bf.nshl = 2 ;
+          basis.b.push_back(bf) ;
+          break ;
+
+        case 2: // Z=2: Helium
+          /* 1s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          bf.s.clear() ;
+          g.x = 38.4216340 ;
+          g.c = 0.04013973935*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 5.7780300 ;
+          g.c = 0.2612460970*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 1.2417740 ;
+          g.c = 0.7931846246*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+
+          basis.nbas++ ;
+
+          /* 1s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          g.x = 0.2979640 ;
+          g.c = d1*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 1 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          bf.c( 0) = c( a, 0) ;
+          bf.c( 1) = c( a, 1) ;
+          bf.c( 2) = c( a, 2) ;
+          bf.nshl = 2 ;
+          basis.b.push_back(bf) ;
+          break ;
+
+        default :
+          std::cout << "Atomic number " << AtN(a) ; 
+          std::cout << " not currently supported."<< std::endl ;
+          break ;
+
+        }
+      }
+
+  return basis ;
+
+ } ;
+
+  basis_set build_basis ( common& com, Eigen::Ref<Eigen::VectorXd> AtN, Eigen::Ref<Eigen::MatrixXd> coord) {
+  int print = com.prt() ;
+  std::string bas_name = com.bnam() ;
   /* Load a basis set */
+  const std::string b_cc_pvdz = "cc-pvdz" ;
+  const std::string b_6_31g = "6-31g" ;
   const std::string b_sto3g = "sto-3g" ;
   const std::string b_sto1g = "sto-1g" ;
   basis_set basis ;
@@ -377,9 +601,17 @@
     basis = load_sto3g( AtN, coord) ;
   } else if ( bas_name == b_sto1g ){
     basis = load_sto1g( AtN, coord) ;
+  } else if ( bas_name == b_cc_pvdz ){
+    basis = load_cc_pVDZ( AtN, coord) ;
+  } else if ( bas_name == b_6_31g ){
+    basis = load_6_31g( AtN, coord) ;
     }
 
   norm_basis ( AtN.size(), basis) ;
+
+  if ( print > 0 ){
+    print_basis ( AtN.size(), basis) ;
+    }
 
   return basis ;
 

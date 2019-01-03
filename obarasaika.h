@@ -26,7 +26,7 @@
 
   void ao_kinetic( int n, basis_set& b, Eigen::Ref<Eigen::MatrixXd> T) ;
 
-  void ao_eN_V( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> n_c, Eigen::Ref<Eigen::VectorXd> q, Eigen::Ref<Eigen::MatrixXd> V ) ; 
+  void ao_eN_V( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> n_c, Eigen::Ref<Eigen::VectorXd> q, Eigen::Ref<Eigen::MatrixXd> V) ; 
 
 /*  Eigen::Tensor< double, 4> ao_tei( int natm, basis_set& b ) ;
   void ao_tei( int nbas, int natm, basis_set& b, Eigen::Ref<Eigen::Tensor< double, nbas>> eri ) ; */

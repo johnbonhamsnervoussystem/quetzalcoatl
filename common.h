@@ -31,8 +31,10 @@ class common {
 
   Algorithm Control :
     max_scf_iter - the maximum number of scf iterations
+    max_pn_iter - the maximum number of particle number iterations for HFB
     scf_convergence_threshold - the threshold at which we consider the wavefunction
       converged.
+    print - whether to do debug print or not
 
   Stored Matrices
    s - overlap matrix
@@ -41,7 +43,7 @@ class common {
    coord - coordinates matrix
 
   Projection Data
-    ngrid - particle number projection grid
+    nbr_g - particle number projection grid
 */
 
 private :
@@ -59,6 +61,8 @@ private :
   std::string basis_name ;
 
   int max_scf_iter ;
+  int max_pn_iter ;
+  int print ;
   double scf_convergence_threshold ;
 
   Eigen::MatrixXd s_c ;
@@ -89,6 +93,8 @@ public :
 
 /* Algorithm control*/
   void mxscfit( int n) ;
+  void mxpnit( int n) ;
+  void prt( int n) ;
   void scfthresh( double d) ;
 
 /* Coordinates */
@@ -118,6 +124,8 @@ public :
 
 /* Algorithm control*/
   int mxscfit( void) ;
+  int mxpnit( void) ;
+  int prt( void) ;
   double scfthresh( void) ;
 
 /* Retrieve a matrix */

@@ -1,3 +1,4 @@
+#include "common.h"
 #include <Eigen/Dense>
 #include <vector>
 #include <string>
@@ -46,7 +47,11 @@
 
   basis_set load_sto3g ( Eigen::VectorXd A, Eigen::MatrixXd c) ;
 
-  basis_set build_basis ( std::string n, Eigen::Ref<Eigen::VectorXd> A, Eigen::Ref<Eigen::MatrixXd> c) ;
+  basis_set load_cc_pvdz ( Eigen::VectorXd A, Eigen::MatrixXd c) ;
+
+  basis_set load_6_31g ( Eigen::VectorXd AtN, Eigen::MatrixXd c) ;
+
+  basis_set build_basis ( common& com, Eigen::Ref<Eigen::VectorXd> A, Eigen::Ref<Eigen::MatrixXd> c) ;
 
   void norm_basis ( int n, basis_set& b) ;
 

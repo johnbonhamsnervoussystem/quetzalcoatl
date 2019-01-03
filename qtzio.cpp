@@ -100,7 +100,7 @@ void read_input( common& com, const std::string& inpfile){
           N - Number projection
           T - Time Reversal
           S - Electron Spin
-          K - COmplex COnjugation
+          K - Complex Conjugation
 
         The options in the ket will contain the type of reference 
         determinant to use listed below.
@@ -235,6 +235,12 @@ void read_input( common& com, const std::string& inpfile){
         if ( line.substr(0,7) == "mxscfit" ) {
           i_junk = stoi(line.substr(9)) ;
           com.mxscfit(i_junk) ;
+        } else if ( line.substr(0,7) == "mxpnit" ) {
+          i_junk = stoi(line.substr(9)) ;
+          com.mxpnit(i_junk) ;
+        } else if ( line.substr(0,7) == "print  " ) {
+          i_junk = stoi(line.substr(9)) ;
+          com.prt(i_junk) ;
           }
         getline( jobfile, line) ;
         }

@@ -19,7 +19,7 @@
   */
 
     double thresh = 1.0e-13 ;
-    double d1_5 = 3.0e0/2.0e0 ;
+    double d1_5 = d3/d2 ;
     double s, o ;
     double zeta, xi, rab2 ;
     Eigen::MatrixXd otmp ;
@@ -85,7 +85,7 @@
   */
 
     double thresh = 1.0e-13 ;
-    double d1_5 = 3.0e0/2.0e0 ;
+    double d1_5 = d3/d2 ;
     double k, o, t ;
     double zeta, xi, rab2 ;
     Eigen::MatrixXd otmp, ttmp ;
@@ -102,7 +102,7 @@
 
 /* <s|s> */
     o = pow(pi/zeta, d1_5) * exp(-xi*rab2) ;
-    t = xi*(3.0e0 - 2.0e0*xi*rab2)*o ;
+    t = xi*(d3 - d2*xi*rab2)*o ;
 
     if ( o < thresh) {
       return d0 ;
@@ -161,7 +161,7 @@
   */
 
     double thresh = 1.0e-13 ;
-    double d1_5 = 3.0e0/2.0e0 ;
+    double d1_5 = d3/d2 ;
     double v, o, u ;
     double zeta, xi, rab2 ;
     Eigen::VectorXd vmp ;
@@ -250,7 +250,7 @@
     int na, nb, nc, nd, ltot ;
     int ia, ib, ic, id, m, i, xx ;
     double thresh = 1.0e-13 ;
-    double d1_5 = 3.0e0/2.0e0 ;
+    double d1_5 = d3/d2 ;
     double rab2, rcd2, rpq2, t, er12 ;
     double zeta, eta, rho, oab, ocd ;
     Eigen::Vector3i lt ;
@@ -395,7 +395,7 @@
     } ;
 
   double kinetic_sto( sto& a, Eigen::Ref<Eigen::Vector3d> ca, sto& b, Eigen::Ref<Eigen::Vector3d> cb) {
-  /* Given two Slater-type Orbitals, return the kinetic energy. */
+    /* Given two Slater-type Orbitals, return the kinetic energy. */
     int npa = a.nprm ;
     int npb = b.nprm ;
     double t = 0.0 ;
@@ -411,7 +411,7 @@
     } ;
 
   double nucelecV_sto( sto& a, Eigen::Ref<Eigen::Vector3d> ca, sto& b, Eigen::Ref<Eigen::Vector3d> cb, Eigen::Ref<Eigen::MatrixXd> n_c, Eigen::Ref<Eigen::VectorXd> q) {
-  /* Given two Slater-type Orbitals, return the kinetic energy. */
+    /* Given two Slater-type Orbitals, return the Potential energy. */
     int npa = a.nprm ;
     int npb = b.nprm ;
     double v = 0.0 ;

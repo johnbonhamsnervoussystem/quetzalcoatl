@@ -200,6 +200,9 @@ int main(int argc, char *argv[]) {
     a.resize( natm) ;
     c = com.getC() ;
     a = com.getA() ;
+/*
+  Get the nuclear-nuclear repulsion
+*/
     for (int i=0; i < natm; i++){
       for (int j=i+1; j < natm; j++){
         cx = c( j, 0) - c( i, 0) ;
@@ -212,7 +215,7 @@ int main(int argc, char *argv[]) {
  
     com.nrep( n_rep ) ;
 
-    b = build_basis( com.bnam(), a, c) ;
+    b = build_basis( com, a, c) ;
     nbas = b.nbas ;
     com.nbas( nbas) ;
     S.resize( nbas, nbas) ;
@@ -225,6 +228,8 @@ int main(int argc, char *argv[]) {
     canort( S, cV, nbas) ;
     T = -cV.real() ;
     com.setXS( T) ;
+    T.setZero() ;
+    V.setZero() ;
     ao_kinetic( com.natm(), b, T) ;
     ao_eN_V( com.natm(), b, c, a, V) ;
     S = T + V ;
@@ -248,13 +253,12 @@ int main(int argc, char *argv[]) {
      real/complex reastricted
                   unrestricted
                   generalized  */
-  
+  int cghfxx = 16 ;
+  scf_drv( com, intarr, cghfxx) ;
   scf_drv( com, intarr, com.methd()) ;
-  std::cout << com.methd() << std::endl ;
-  std::cout << com.methd() / 100 << std::endl ;
-  if ( com.methd() / 100 != 0 ){
+/*  if ( com.methd() / 100 != 0 ){
     prj_drv( com, intarr, 1) ;
-    }
+    } */
 
 
   intarr.clear() ;

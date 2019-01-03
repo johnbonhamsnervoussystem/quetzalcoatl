@@ -120,6 +120,7 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
     Eigen::MatrixXd h ;
     Eigen::MatrixXd s ;
     wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
+    std::srand((unsigned int) time(0)) ;
     time_dbg real_scf_time = time_dbg("real_scf") ;
 
     if ( (opt+1)/2 == 1 ) {
@@ -128,7 +129,7 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       h = com.getH() ;
       s = com.getS() ;
       w.moc.resize( nbas, nbas) ;
-      w.moc.setZero() ;
+      w.moc.setRandom() ;
       w.eig.resize( nbas) ;
       w.e_scf = rrhfdia( h, s, intarr, nbas, nele, w.moc, w.eig, maxit, thresh) ;
       std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
@@ -193,13 +194,15 @@ void cplx_HFB( common& com, std::vector<tei>& intarr, int opt) {
     /* Do the general HFB first. */
     int nbas = com.nbas() ;
     int nele = com.nele() ;
-    int maxit = com.mxscfit() ;
+    int maxit_scf = com.mxscfit() ;
+    int maxit_pn = com.mxpnit() ;
     int wt = opt % 10 ;
     double thresh = com.scfthresh() ;
     double lambda = com.mu() ;
     Eigen::MatrixXcd h ;
     Eigen::MatrixXcd s ;
     wfn< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
+    std::srand((unsigned int) time(0)) ;
     time_dbg cplx_HFB_time = time_dbg("cplx_HFB") ;
 
     if ( wt/2 == 1 ) {
@@ -210,7 +213,9 @@ void cplx_HFB( common& com, std::vector<tei>& intarr, int opt) {
       h.resize( 4*nbas, 4*nbas) ;
       s.resize( 4*nbas, 4*nbas) ;
       w.moc.resize( 4*nbas, 4*nbas) ;
-      w.moc.setZero() ;
+//      w.moc.setZero() ;
+      w.moc.setRandom() ;
+      w.moc *= 0.1e0 ;
       w.eig.resize( 4*nbas) ;
       h.setZero() ;
       h.block( 0, 0, nbas, nbas).real() = com.getH() ;
@@ -220,13 +225,11 @@ void cplx_HFB( common& com, std::vector<tei>& intarr, int opt) {
       s.block( 0, 0, nbas, nbas).real() = com.getS() ;
       s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
       s.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
-      w.e_scf = cghfbdia( h, s, intarr, nbas, nele, w.moc, w.eig, lambda, maxit, thresh) ;
+      w.e_scf = cghfbdia( h, s, intarr, nbas, nele, w.moc, w.eig, lambda, maxit_scf, maxit_pn, thresh) ;
       com.mu( lambda) ;
       std::cout << "Mean Field Energy + NN : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "Eigenvalues : " << std::endl << std::endl ;
       std::cout << w.eig << std::endl ;
-      std::cout << "Quasi-particle coefficients : " << std::endl << std::endl ;
-      std::cout << w.moc << std::endl ;
     } else {
       qtzcntrl::shutdown("Unrecognized option in cplx_HFB") ;
       }
@@ -301,7 +304,8 @@ void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       s.resize( 2*nbas, 2*nbas) ;
       s.setZero() ;
       w.moc.resize( 2*nbas, 2*nbas) ;
-      w.moc.setZero() ;
+      w.moc.setRandom() ;
+      w.moc *= 0.1 ;
       h.block( 0, 0, nbas, nbas) = com.getH() ;
       h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
       s.block( 0, 0, nbas, nbas) = com.getS() ;
@@ -373,6 +377,8 @@ double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, st
     if ( iter > 5 && e_dif < thresh ) { break ;}
   }
 
+  std::cout << " Number of iterations : " << iter << std::endl ;
+
   eig = f_diag.eigenvalues() ;
   p.resize( 0, 0) ;
   g.resize( 0, 0) ;
@@ -427,6 +433,8 @@ double crhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
   }
+
+  std::cout << " Number of iterations : " << iter << std::endl ;
 
   eig = f_diag.eigenvalues().real() ;
   p.resize( 0, 0) ;
@@ -503,6 +511,8 @@ double ruhfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
     }
+
+  std::cout << " Number of iterations : " << iter << std::endl ;
 
   f_diag.compute( f_a, s) ;
   eig.head(nbasis) = f_diag.eigenvalues() ;
@@ -587,6 +597,8 @@ double cuhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
     ene_p = energy ;
     if ( iter > 5 && e_dif < thresh ) { break ;}
     }
+
+  std::cout << " Number of iterations : " << iter << std::endl ;
 
   f_diag.compute( f_a, s) ;
   eig.head(nbasis) = f_diag.eigenvalues().real() ;
@@ -859,7 +871,7 @@ double rghfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
 
 } ;
 
-double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, int& maxit, double& thresh) {
+double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, int& maxit_scf, int& maxit_pn, double& thresh) {
 /* 
   Complex Generalized Hartree-Fock Bogoliubov
 
@@ -965,25 +977,55 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
     W.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = -G.conjugate() ;
     H = h + W + lambda*mu ;
 
-  while ( iter_d++ < maxit) {
+  while ( iter_d++ < maxit_scf) {
     std::cout << std::endl << std::endl << "Self-Consistency iteration number: " << iter_d << std::endl << std::endl ;
     iter_N = 0 ;
+
 /*
    Set and initial guess for the limits of the chemical potential
 */
-    b_ul = lambda + 5.0e0 ;
-    b_ll = lambda - 5.0e0 ;
-    while ( iter_N++ < maxit) {
-      std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
-      std::cout << "    chemical potential: " << lambda << std::endl ;
+    b_ul = lambda ;
+    b_ll = lambda ;
+
+/*
+   Set some initial limits
+*/
+    do {
+      b_ll -= d5 ;
+      H = h + W + b_ll*mu ;
       H_diag.compute( H, s) ;
       c = H_diag.eigenvectors() ;
       R.block( 0, 0, 2*nbasis, 2*nbasis) = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
       R.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 0, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
       No = R.block( 0, 0, 2*nbasis, 2*nbasis)*s.block( 0, 0, 2*nbasis, 2*nbasis) ;
       N = No.trace() ;
-      std::cout << "    Particle Number: " << N.real() << std::endl ;
-      if  ( abs(static_cast<double>(N.real()) - static_cast<double>(nele)) < 0.00001){
+      } while ( static_cast<double>(N.real()) > static_cast<double>(nele)) ;
+
+    do {
+      b_ul += d5 ;
+      H = h + W + b_ul*mu ;
+      H_diag.compute( H, s) ;
+      c = H_diag.eigenvectors() ;
+      R.block( 0, 0, 2*nbasis, 2*nbasis) = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
+      R.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 0, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
+      No = R.block( 0, 0, 2*nbasis, 2*nbasis)*s.block( 0, 0, 2*nbasis, 2*nbasis) ;
+      N = No.trace() ;
+      } while ( static_cast<double>(N.real()) < static_cast<double>(nele)) ;
+
+    lambda = (b_ul + b_ll)/d2 ;
+    H = h + W + lambda*mu ;
+
+    while ( iter_N++ < maxit_pn) {
+      H_diag.compute( H, s) ;
+      c = H_diag.eigenvectors() ;
+      R.block( 0, 0, 2*nbasis, 2*nbasis) = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
+      R.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 0, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
+      No = R.block( 0, 0, 2*nbasis, 2*nbasis)*s.block( 0, 0, 2*nbasis, 2*nbasis) ;
+      N = No.trace() ;
+      if  ( std::abs(static_cast<double>(N.real()) - static_cast<double>(nele)) < 1.0e-4){
+        std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
+        std::cout << "    chemical potential: " << lambda << std::endl ;
+        std::cout << "    Particle Number : " << N.real() << std::endl << std::endl ;
         break ;
       } else {
 /*
@@ -1005,6 +1047,10 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
 /*
   Now compare densities to check convergence.
 */
+    std::cout << " Density " << std::endl ;
+    print_mat( p) ;
+    std::cout << " Abnormal Density " << std::endl ;
+    print_mat( k) ;
     t = p - R.block(0, 0, 2*nbasis, 2*nbasis) ;
     energy = (t*t.adjoint()).norm() ;
     t = k - R.block(0, 2*nbasis, 2*nbasis, 2*nbasis) ;
@@ -1026,7 +1072,7 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
 /*
     Check that the particle number has converged
 */
-      if ( abs(real(N) - N_p) < 0.000001 ) {
+      if ( std::abs(N - N_p) < 0.0001 ) {
         break ;
       } else {
         N_p = N ;
@@ -1042,15 +1088,18 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
     W.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) = D/d2 ;
     W.block( 2*nbasis, 0, 2*nbasis, 2*nbasis) = -(D.conjugate())/d2 ;
     W.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = -G.adjoint() ;
-    H = h + W + lambda*mu ;
   }
 
   No = R.block( 0, 0, 2*nbasis, 2*nbasis)*s.block( 0, 0, 2*nbasis, 2*nbasis) ;
   N = No.trace() ;
   std::cout << "    Particle Number: " << N.real() << std::endl ;
+  std::cout << " Density " << std::endl ;
+  print_mat( p) ;
+  std::cout << " Abnormal Density " << std::endl ;
+  print_mat( k) ;
   t = (h.block( 0, 0, 2*nbasis, 2*nbasis) + G/d2)*p ;
   energy = t.trace() ;
-  t = -k.conjugate()*D ;
+  t = k.conjugate()*D ;
   energy += t.trace()/d4 ;
   std::cout << "    Electronic Energy: " << energy.real() << std::endl ;
 
@@ -1128,6 +1177,8 @@ double cghfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
     ene_p = energy ;
     if ( iter > 3 && e_dif < thresh ) { break ;}
     }
+
+  std::cout << " Number of iterations : " << iter << std::endl ;
 
   eig = f_diag.eigenvalues().real() ;
   p.resize( 0, 0) ;
