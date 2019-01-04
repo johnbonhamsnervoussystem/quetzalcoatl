@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
     T.resize( 0, 0) ;
     V.resize( 0, 0) ;
     S.resize( 0, 0) ;
-    list_ao_tei( com.natm(), b, intarr) ;
+    list_ao_tei( com, b, intarr) ;
 
   } else if ( com.hamil() == 3 ){
 /*
@@ -253,13 +253,11 @@ int main(int argc, char *argv[]) {
      real/complex reastricted
                   unrestricted
                   generalized  */
-  int cghfxx = 16 ;
+  int cghfxx = 26 ;
   scf_drv( com, intarr, cghfxx) ;
-  scf_drv( com, intarr, com.methd()) ;
 /*  if ( com.methd() / 100 != 0 ){
     prj_drv( com, intarr, 1) ;
-    } */
-
+    }  */
 
   intarr.clear() ;
   V.resize( 0, 0) ;

@@ -197,6 +197,7 @@ void cplx_HFB( common& com, std::vector<tei>& intarr, int opt) {
     int maxit_scf = com.mxscfit() ;
     int maxit_pn = com.mxpnit() ;
     int wt = opt % 10 ;
+    int rep ;
     double thresh = com.scfthresh() ;
     double lambda = com.mu() ;
     Eigen::MatrixXcd h ;
@@ -225,7 +226,8 @@ void cplx_HFB( common& com, std::vector<tei>& intarr, int opt) {
       s.block( 0, 0, nbas, nbas).real() = com.getS() ;
       s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
       s.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = s.block( 0, 0, 2*nbas, 2*nbas) ;
-      w.e_scf = cghfbdia( h, s, intarr, nbas, nele, w.moc, w.eig, lambda, maxit_scf, maxit_pn, thresh) ;
+      rep = 1 ;
+      w.e_scf = cghfbdia( h, s, intarr, nbas, nele, rep, w.moc, w.eig, lambda, maxit_scf, maxit_pn, thresh) ;
       com.mu( lambda) ;
       std::cout << "Mean Field Energy + NN : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "Eigenvalues : " << std::endl << std::endl ;
@@ -304,6 +306,12 @@ void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       s.resize( 2*nbas, 2*nbas) ;
       s.setZero() ;
       w.moc.resize( 2*nbas, 2*nbas) ;
+/* 
+      w.moc.col(0).real() << 0.592081, 0.513586, d0, d0 ;
+      w.moc.col(1).real() << d0, d0, 0.592081, 0.513586 ;
+      w.moc.col(2).real() << d0, d0, -1.14982, 1.18696 ;
+      w.moc.col(3).real() << -1.14982, 1.18696, d0, d0 ;
+*/
       w.moc.setRandom() ;
       w.moc *= 0.1 ;
       h.block( 0, 0, nbas, nbas) = com.getH() ;
@@ -871,7 +879,7 @@ double rghfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
 
 } ;
 
-double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, int& maxit_scf, int& maxit_pn, double& thresh) {
+double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, const int& rep, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, int& maxit_scf, int& maxit_pn, double& thresh) {
 /* 
   Complex Generalized Hartree-Fock Bogoliubov
 
@@ -970,6 +978,9 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
     k = R.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) ;
     ctr2eg( intarr, p, G, nbasis) ;
     ctrPairg( intarr, k, D, nbasis) ;
+    if ( rep == 1 ) {
+      D *= -d8 ;
+      }
     W.setZero() ;
     W.block( 0, 0, 2*nbasis, 2*nbasis) = G ;
     W.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) = D/d2 ;
@@ -1083,6 +1094,9 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
 */
     ctr2eg( intarr, p, G, nbasis) ;
     ctrPairg( intarr, k, D, nbasis) ;
+    if ( rep == 1 ) {
+      D *= -d8 ;
+      }
     W.setZero() ;
     W.block( 0, 0, 2*nbasis, 2*nbasis) = G ;
     W.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) = D/d2 ;
@@ -1158,6 +1172,7 @@ double cghfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
     f = h ;
   } else {
     p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
+    print_mat( p) ;
     ctr2eg( intarr, p, g, nbasis) ;
     f = h + g ;
   } 

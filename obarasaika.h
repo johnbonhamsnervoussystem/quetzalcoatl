@@ -1,4 +1,5 @@
 #include "basis.h"
+#include "common.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <iostream>
@@ -31,6 +32,6 @@
 /*  Eigen::Tensor< double, 4> ao_tei( int natm, basis_set& b ) ;
   void ao_tei( int nbas, int natm, basis_set& b, Eigen::Ref<Eigen::Tensor< double, nbas>> eri ) ; */
 
-  void list_ao_tei( int natm, basis_set& b, std::vector<tei>& intarr) ;
+  void list_ao_tei( common& com, basis_set& b, std::vector<tei>& intarr) ;
 
 #endif

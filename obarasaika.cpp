@@ -1,5 +1,6 @@
 #include "basis.h"
 #include <cmath>
+#include "common.h"
 #include "constants.h"
 #include <Eigen/Dense>
 #include <Eigen/CXX11/Tensor>
@@ -601,7 +602,7 @@
 
     } ; */
 
-  void list_ao_tei( int natm, basis_set& b, std::vector<tei>& intarr) {
+  void list_ao_tei( common& com, basis_set& b, std::vector<tei>& intarr) {
     /* Given a Slater-type Orbital basis and the nuclear information, return
     the two electron repulsion integrals over Muliken ao indexes 
 
@@ -610,7 +611,7 @@
     int i, j, k, l, m, n, o, p ;
     int i_v, k_v, m_v, o_v ;
     int nst1, nst2, nst3, nst4 ;
-    int lto ;
+    int lto, natm = com.natm(), print = com.prt() ;
     double int_v ;
     tei tmp_tei ;
     time_dbg list_ao_tei_time = time_dbg("list_ao_tei_time") ;
@@ -649,7 +650,7 @@
                   if ( i != m && o == m) {
                     nst4 = n + 1 ;
                   } else if ( i == m && k == o ) {
-                    nst4 = l + 1 ;
+                    nst4 = std::min( l + 1, n + 1) ;
                   } else {
                     nst4 = b.b[o].nshl ;
                     }
@@ -657,6 +658,9 @@
 	            o_v++ ;
                     int_v = r12_sto( b.b[i].s[j], b.b[i].c, b.b[k].s[l], b.b[k].c, b.b[m].s[n], b.b[m].c, b.b[o].s[p], b.b[o].c) ;
                     tmp_tei.set( i_v, k_v, m_v, o_v, int_v) ;
+                    if ( print > 0){
+                      tmp_tei.print() ;
+                      }
                     intarr.push_back(tmp_tei) ;
                     }
                   }
