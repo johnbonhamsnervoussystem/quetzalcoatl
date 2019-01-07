@@ -438,12 +438,14 @@ Let's not mess around.  Just compute this
   
   } ;
 
-double pfaffian( Eigen::Ref<Eigen::MatrixXd> A) {
+double pfaffian_A( Eigen::Ref<Eigen::MatrixXd> A) {
 
 /*
-  Calculate the pfaffian using the LDL^{T} algorithm.
-  There is lots of room for improvement here but this will
-  do for now.
+  Compute the pfaffian using the Aitken block diagonalization ( LDL^{T}) algorithm.
+  CAUTION :: This does not use pivoting to enure a numerically stable
+  calculation.  This means that the matrix that is passed in must be well
+  conditioned until I can write the algorithm to include pivoting.  Use
+  the Householder implementation until then.
 */
 
   int r, i ;
@@ -474,7 +476,15 @@ double pfaffian( Eigen::Ref<Eigen::MatrixXd> A) {
 
 } ;
 
-cd pfaffian( Eigen::Ref<Eigen::MatrixXcd> A) {
+cd pfaffian_A( Eigen::Ref<Eigen::MatrixXcd> A) {
+
+/*
+  Compute the pfaffian using the Aitken block diagonalization algorithm.
+  CAUTION :: This does not use pivoting to enure a numerically stable
+  calculation.  This means that the matrix that is passed in must be well
+  conditioned until I can write the algorithm to include pivoting.  Use
+  the Householder implementation until then.
+*/
 
   int r, i ;
   cd pf = z1 ;
@@ -489,7 +499,7 @@ cd pfaffian( Eigen::Ref<Eigen::MatrixXcd> A) {
     r = n - i - 2 ;
     S = A.block( i, i, 2, 2) ;
     pf *= S( 0, 1) ;
-    if ( i == n - 2){ break ;}
+    if ( i == (n - 2)){ break ;}
     P.setZero() ;
     P.block( 0, 0, r, r) = Eigen::MatrixXcd::Identity ( r, r) ;
     P.block( r, r, i + 2, i + 2) = Eigen::MatrixXcd::Identity ( i + 2, i + 2) ;
@@ -499,6 +509,80 @@ cd pfaffian( Eigen::Ref<Eigen::MatrixXcd> A) {
     }
 
   pf = L.determinant()*pf ;
+
+  return pf ;
+
+} ;
+
+double pfaffian_H( Eigen::Ref<Eigen::MatrixXd> A) {
+
+  int i ;
+  double pf = d1, alp, r ;
+  Eigen::MatrixXd::Index n = A.rows() ;
+  Eigen::MatrixXd P ( n, n) ;
+  Eigen::VectorXd x ( n) ;
+
+  x.setZero() ;
+
+  if ( n % 2 == 1){
+    return d0 ;
+    }
+
+  for ( i = 1; i < n-1; i+=2){
+    x.tail( n - i) = A.col( i-1).tail( n - i) ;
+    alp = -(x.tail( n - i)).norm() ;
+    r = std::sqrt( ( std::pow( alp, d2) - A( i, i-1)*alp)/d2) ;
+    x( i) -= alp ;
+    x /= d2*r ;
+    P.setIdentity() ;
+    P -= d2*x*x.adjoint() ;
+    A = P*A*P.transpose() ;
+    x( i) = d0 ;
+    x( i+1) = d0 ;
+    pf *= A( i-1, i) ;
+    }
+
+  pf *= A( n-2, n-1)*std::pow( -d1, (n-2)/2 ) ;
+
+  x.resize( 0) ;
+  P.resize( 0, 0) ;
+
+  return pf ;
+
+} ;
+
+cd pfaffian_H( Eigen::Ref<Eigen::MatrixXcd> A) {
+
+  int i ;
+  cd pf = z1, alp, r ;
+  Eigen::MatrixXcd::Index n = A.rows() ;
+  Eigen::MatrixXcd P ( n, n) ;
+  Eigen::VectorXcd x ( n) ;
+
+  x.setZero() ;
+
+  if ( n % 2 == 1){
+    return z0 ;
+    }
+
+  for ( i = 1; i < n-1; i+=2){
+    x.tail( n - i) = A.col( i-1).tail( n - i) ;
+    alp = -std::exp( cd( 0.0e0, std::arg( A(i, i-1))))*(x.tail( n - i)).norm() ;
+    r = std::sqrt( ( std::pow( alp, d2) - A( i, i-1)*alp)/z2) ;
+    x( i) -= alp ;
+    x /= z2*r ;
+    P.setIdentity() ;
+    P -= z2*x*x.adjoint() ;
+    A = P*A*P.transpose() ;
+    x( i) = z0 ;
+    x( i+1) = z0 ;
+    pf *= A( i-1, i) ;
+    }
+
+  pf *= A( n-2, n-1)*std::pow( -z1, (n-2)/2 ) ;
+
+  x.resize( 0) ;
+  P.resize( 0, 0) ;
 
   return pf ;
 

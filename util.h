@@ -35,9 +35,13 @@ void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, int b ) ;
 
 void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, int b ) ;
 
-double pfaffian( Eigen::Ref<Eigen::MatrixXd> m) ;
+double pfaffian_A( Eigen::Ref<Eigen::MatrixXd> m) ;
 
-cd pfaffian( Eigen::Ref<Eigen::MatrixXcd> m) ;
+cd pfaffian_A( Eigen::Ref<Eigen::MatrixXcd> m) ;
+
+double pfaffian_H( Eigen::Ref<Eigen::MatrixXd> m) ;
+
+cd pfaffian_H( Eigen::Ref<Eigen::MatrixXcd> m) ;
 
 void rand_unitary( Eigen::Ref<Eigen::MatrixXcd> u) ;
 
