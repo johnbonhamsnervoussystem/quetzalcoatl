@@ -5,7 +5,6 @@
 #include <Eigen/Dense>
 #include "binio.h"
 #include "evalm.h"
-#include "hfwfn.h"
 #include "tei.h"
 
 /* 
@@ -1707,145 +1706,145 @@ cd tranden2 ( int& ne1, int& ne2, int& nbasis, Eigen::Ref<Eigen::MatrixXcd> wfna
 
 } ;
 
-double obop ( common& com, Eigen::Ref<Eigen::MatrixXd> ouv, hfwfn& a, hfwfn& b) {
-
-/*
- * One body operator.  Return <A|O|B> = sum_{ l k}<k|O|l> = sum{ u v} <u|O|v>C_{vl}D(k|l)C_{ku}^{*}
- * Passed two Slater determinants and matrix elements in an orthogonal basis, return the evaluated operator. */
-
-  double aob ;
-  Eigen::MatrixXd pvu ;
-  Eigen::MatrixXd omega ;
-
-  /* Build pvu */
- 
-  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
-  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
-  pvu.setZero() ;
-
- // tranden1( com, a, b, pvu) ;
-
-  omega = ouv*pvu ;
-  aob = omega.trace() ;
-
-  pvu.resize( 0, 0) ;
-  omega.resize( 0, 0) ;
-
-  return aob ;
-
-} ;
-
- cd obop ( common& com, Eigen::Ref<Eigen::MatrixXcd> ouv, hfwfn& a, hfwfn& b) {
-
-/*
- * Overloaded for complex functions.
- */
-
-  cd aob ;
-  Eigen::MatrixXcd pvu ;
-  Eigen::MatrixXcd omega ;
-
-  /* Build pvu */
-
-  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
-  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
-  pvu.setZero() ;
-
-  //tranden ( com, a, b, pvu) ;
-
-  omega = ouv*pvu ;
-  aob = omega.trace() ;
-
-  return aob ;
-
-} ;
-
-template<typename >
-double fockop ( common& com, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& intarr, hfwfn& a,
-               hfwfn& b, double& ovl) { 
-
-/*
- * Given a density matrix return 
- * */
-
-  double aob ;
-  Eigen::MatrixXd pvu ;
-  Eigen::MatrixXd omega ;
-  Eigen::MatrixXd f ;
-  Eigen::MatrixXd g ;
-
-  /* Build pvu */
-
-  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
-  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
-  f.resize( 2*com.nbas(), 2*com.nbas()) ;
-  g.resize( 2*com.nbas(), 2*com.nbas()) ;
-  pvu.setZero() ;
-  f.setZero() ;
-
-//  ovl = tranden ( com, a, b, pvu) ;
-
-  ctr2eg( intarr, pvu, g, com.nbas()) ;
-
-  f =  h + g ;
-  g = h + f ;
-  omega = g*pvu ;
-  aob = 0.5*omega.trace() ;
-
-  g.resize( 0, 0) ;
-  f.resize( 0, 0) ;
-  pvu.resize( 0, 0) ;
-  omega.resize( 0, 0) ;
-
-  return aob ;
-
-} ;
-
- cd fockop ( common& com, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, 
-                             hfwfn& b, cd& ovl) {
-
-/*
-  While the fock operator is one body, it requires that we contract the two electron
-  integrals with the density to build it.  This wraps up that procedure.  This routine assumes
- 
-   - Everything has been put into an orthogonal ao basis.
-   - Regardless of the flavor of hf wfn, this treats everything as ghf meaning 2*nbas dimensions.
-*/
-
-  cd aob ;
-  cd pt5 = cd (0.5,0.0) ;
-  Eigen::MatrixXcd pvu ;
-  Eigen::MatrixXcd omega ;
-  Eigen::MatrixXcd f ;
-  Eigen::MatrixXcd g ;
-  Eigen::MatrixXcd mos ;
-
-  /* Build pvu */
-
-  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
-  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
-  f.resize( 2*com.nbas(), 2*com.nbas()) ;
-  g.resize( 2*com.nbas(), 2*com.nbas()) ;
-  mos.resize( 2*com.nbas(), 2*com.nbas()) ;
-  pvu.setZero() ;
-  f.setZero() ;
-  a.get_mos( mos) ;
-
-//  ovl = tranden ( com, a, b, pvu) ;
-
-  ctr2eg( intarr, pvu, g, com.nbas()) ;
-
-  f =  h + g ;
-  g = h + f ;
-  omega = g*pvu ;
-  aob = pt5*omega.trace() ;
-
-  g.resize( 0, 0) ;
-  f.resize( 0, 0) ;
-  pvu.resize( 0, 0) ;
-  omega.resize( 0, 0) ;
-
-  return aob ;
-
-} ;
-
+//double obop ( common& com, Eigen::Ref<Eigen::MatrixXd> ouv, hfwfn& a, hfwfn& b) {
+//
+///*
+// * One body operator.  Return <A|O|B> = sum_{ l k}<k|O|l> = sum{ u v} <u|O|v>C_{vl}D(k|l)C_{ku}^{*}
+// * Passed two Slater determinants and matrix elements in an orthogonal basis, return the evaluated operator. */
+//
+//  double aob ;
+//  Eigen::MatrixXd pvu ;
+//  Eigen::MatrixXd omega ;
+//
+//  /* Build pvu */
+// 
+//  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  pvu.setZero() ;
+//
+// // tranden1( com, a, b, pvu) ;
+//
+//  omega = ouv*pvu ;
+//  aob = omega.trace() ;
+//
+//  pvu.resize( 0, 0) ;
+//  omega.resize( 0, 0) ;
+//
+//  return aob ;
+//
+//} ;
+//
+// cd obop ( common& com, Eigen::Ref<Eigen::MatrixXcd> ouv, hfwfn& a, hfwfn& b) {
+//
+///*
+// * Overloaded for complex functions.
+// */
+//
+//  cd aob ;
+//  Eigen::MatrixXcd pvu ;
+//  Eigen::MatrixXcd omega ;
+//
+//  /* Build pvu */
+//
+//  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  pvu.setZero() ;
+//
+//  //tranden ( com, a, b, pvu) ;
+//
+//  omega = ouv*pvu ;
+//  aob = omega.trace() ;
+//
+//  return aob ;
+//
+//} ;
+//
+//template<typename >
+//double fockop ( common& com, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& intarr, hfwfn& a,
+//               hfwfn& b, double& ovl) { 
+//
+///*
+// * Given a density matrix return 
+// * */
+//
+//  double aob ;
+//  Eigen::MatrixXd pvu ;
+//  Eigen::MatrixXd omega ;
+//  Eigen::MatrixXd f ;
+//  Eigen::MatrixXd g ;
+//
+//  /* Build pvu */
+//
+//  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  f.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  g.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  pvu.setZero() ;
+//  f.setZero() ;
+//
+////  ovl = tranden ( com, a, b, pvu) ;
+//
+//  ctr2eg( intarr, pvu, g, com.nbas()) ;
+//
+//  f =  h + g ;
+//  g = h + f ;
+//  omega = g*pvu ;
+//  aob = 0.5*omega.trace() ;
+//
+//  g.resize( 0, 0) ;
+//  f.resize( 0, 0) ;
+//  pvu.resize( 0, 0) ;
+//  omega.resize( 0, 0) ;
+//
+//  return aob ;
+//
+//} ;
+//
+// cd fockop ( common& com, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, 
+//                             hfwfn& b, cd& ovl) {
+//
+///*
+//  While the fock operator is one body, it requires that we contract the two electron
+//  integrals with the density to build it.  This wraps up that procedure.  This routine assumes
+// 
+//   - Everything has been put into an orthogonal ao basis.
+//   - Regardless of the flavor of hf wfn, this treats everything as ghf meaning 2*nbas dimensions.
+//*/
+//
+//  cd aob ;
+//  cd pt5 = cd (0.5,0.0) ;
+//  Eigen::MatrixXcd pvu ;
+//  Eigen::MatrixXcd omega ;
+//  Eigen::MatrixXcd f ;
+//  Eigen::MatrixXcd g ;
+//  Eigen::MatrixXcd mos ;
+//
+//  /* Build pvu */
+//
+//  omega.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  pvu.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  f.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  g.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  mos.resize( 2*com.nbas(), 2*com.nbas()) ;
+//  pvu.setZero() ;
+//  f.setZero() ;
+//  a.get_mos( mos) ;
+//
+////  ovl = tranden ( com, a, b, pvu) ;
+//
+//  ctr2eg( intarr, pvu, g, com.nbas()) ;
+//
+//  f =  h + g ;
+//  g = h + f ;
+//  omega = g*pvu ;
+//  aob = pt5*omega.trace() ;
+//
+//  g.resize( 0, 0) ;
+//  f.resize( 0, 0) ;
+//  pvu.resize( 0, 0) ;
+//  omega.resize( 0, 0) ;
+//
+//  return aob ;
+//
+//} ;
+//

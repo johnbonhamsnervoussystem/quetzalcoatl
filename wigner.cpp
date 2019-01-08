@@ -4,7 +4,6 @@
 #include <complex>
 #include <math.h>
 #include "wigner.h"
-#include "hfwfn.h"
 #include "common.h"
 #include "util.h"
 
@@ -201,132 +200,132 @@ std::complex<double> wigner_D ( double j, double m, double k, double alpha, doub
 
 } ;
 
-void R_s ( common& c, hfwfn& a, hfwfn& b, double alpha, double beta, double gamma) {
+//void R_s ( common& c, hfwfn& a, hfwfn& b, double alpha, double beta, double gamma) {
+//
+///* This routine does a spin rotation on a determinant using Euler angles
+// * alpha, beta and gamma 
+// *
+// * Exp[-alpha S_{z}]*Exp[-beta S_{y}]*Exp[-gamma S_{z}]|det>
+// *
+// * a - input hartree-fock wavefunction
+// * b - output hartree-fock wavefunction
+// * alpha - angle of the S_{z} rotation
+// * beta - angle of the S_{x} rotation
+// * gamma - angle of the S_{z} rotation
+// *
+// * */
+//
+//  int nbas ;
+//  cd Cga ;
+//  cd zega ;
+//  cd b_cos ;
+//  cd b_sin ;
+//  const cd di(0.0, 1.0) ;
+//  Eigen::MatrixXcd moa ;
+//  Eigen::MatrixXcd mob ;
+//
+//  nbas = c.nbas() ;
+//
+//  moa.resize( 2*nbas, 2*nbas) ;
+//  mob.resize( 2*nbas, 2*nbas) ;
+//  mob.setZero() ;
+//
+//  a.get_mos( moa) ;
+//  /* Gamma rotation of the alpha block */
+//  zega = -cd( d0, gamma/2.0) ;
+//  Cga = std::exp( zega) ;
+//  moa.block( 0, 0, nbas, 2*nbas) = Cga*moa.block( 0, 0, nbas, 2*nbas) ;
+// 
+//  /* Gamma rotation of the beta block */
+//  zega = cd( d0, gamma/2.0) ;
+//  Cga = std::exp( zega) ;
+//  moa.block( nbas, 0, nbas, 2*nbas) = Cga*moa.block( nbas, 0, nbas, 2*nbas) ;
+//
+//  /* beta rotation mixing */
+//  b_cos = cd( cos(beta/2.0), d0) ;
+//  b_sin = cd( sin(beta/2.0), d0) ;
+//  // Alpha Block
+//  mob.block( 0, 0, nbas, 2*nbas) = b_cos*moa.block( 0, 0, nbas, 2*nbas) - b_sin*moa.block( nbas, 0, nbas, 2*nbas) ;
+// // Beta Block
+//  mob.block( nbas, 0, nbas, 2*nbas) = b_cos*moa.block( nbas, 0, nbas, 2*nbas) + b_sin*moa.block( 0, 0, nbas, 2*nbas) ;
+//
+//  /* Alpha rotation of the alpha block */
+//  zega = -cd( d0, alpha/2.0) ;
+//  Cga = std::exp( zega) ;
+//  mob.block( 0, 0, nbas, 2*nbas) = Cga*mob.block( 0, 0, nbas, 2*nbas) ;
+//
+//  /* Alpha rotation of the beta block */
+//  zega = cd( d0, alpha/2.0) ;
+//  Cga = std::exp( zega) ;
+//  mob.block( nbas, 0, nbas, 2*nbas) = Cga*mob.block( nbas, 0, nbas, 2*nbas) ;
+//
+//  b.set_mos( mob) ;
+//  mob.resize( 0, 0) ;
+//  moa.resize( 0, 0) ;
+//
+//  return ;
+//
+//} ;
 
-/* This routine does a spin rotation on a determinant using Euler angles
- * alpha, beta and gamma 
- *
- * Exp[-alpha S_{z}]*Exp[-beta S_{y}]*Exp[-gamma S_{z}]|det>
- *
- * a - input hartree-fock wavefunction
- * b - output hartree-fock wavefunction
- * alpha - angle of the S_{z} rotation
- * beta - angle of the S_{x} rotation
- * gamma - angle of the S_{z} rotation
- *
- * */
-
-  int nbas ;
-  cd Cga ;
-  cd zega ;
-  cd b_cos ;
-  cd b_sin ;
-  const cd di(0.0, 1.0) ;
-  Eigen::MatrixXcd moa ;
-  Eigen::MatrixXcd mob ;
-
-  nbas = c.nbas() ;
-
-  moa.resize( 2*nbas, 2*nbas) ;
-  mob.resize( 2*nbas, 2*nbas) ;
-  mob.setZero() ;
-
-  a.get_mos( moa) ;
-  /* Gamma rotation of the alpha block */
-  zega = -cd( d0, gamma/2.0) ;
-  Cga = std::exp( zega) ;
-  moa.block( 0, 0, nbas, 2*nbas) = Cga*moa.block( 0, 0, nbas, 2*nbas) ;
- 
-  /* Gamma rotation of the beta block */
-  zega = cd( d0, gamma/2.0) ;
-  Cga = std::exp( zega) ;
-  moa.block( nbas, 0, nbas, 2*nbas) = Cga*moa.block( nbas, 0, nbas, 2*nbas) ;
-
-  /* beta rotation mixing */
-  b_cos = cd( cos(beta/2.0), d0) ;
-  b_sin = cd( sin(beta/2.0), d0) ;
-  // Alpha Block
-  mob.block( 0, 0, nbas, 2*nbas) = b_cos*moa.block( 0, 0, nbas, 2*nbas) - b_sin*moa.block( nbas, 0, nbas, 2*nbas) ;
- // Beta Block
-  mob.block( nbas, 0, nbas, 2*nbas) = b_cos*moa.block( nbas, 0, nbas, 2*nbas) + b_sin*moa.block( 0, 0, nbas, 2*nbas) ;
-
-  /* Alpha rotation of the alpha block */
-  zega = -cd( d0, alpha/2.0) ;
-  Cga = std::exp( zega) ;
-  mob.block( 0, 0, nbas, 2*nbas) = Cga*mob.block( 0, 0, nbas, 2*nbas) ;
-
-  /* Alpha rotation of the beta block */
-  zega = cd( d0, alpha/2.0) ;
-  Cga = std::exp( zega) ;
-  mob.block( nbas, 0, nbas, 2*nbas) = Cga*mob.block( nbas, 0, nbas, 2*nbas) ;
-
-  b.set_mos( mob) ;
-  mob.resize( 0, 0) ;
-  moa.resize( 0, 0) ;
-
-  return ;
-
-} ;
-
-void R_s ( int nbas, hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mob, double alpha, double beta, double gamma) {
-
-/* This routine does a spin rotation on a determinant using Euler angles
- * alpha, beta and gamma 
- *
- * Exp[-alpha S_{z}]*Exp[-beta S_{y}]*Exp[-gamma S_{z}]|det>
- *
- * a - input hartree-fock wavefunction
- * b - output hartree-fock wavefunction
- * alpha - angle of the S_{z} rotation
- * beta - angle of the S_{x} rotation
- * gamma - angle of the S_{z} rotation
- *
- * */
-
-  cd Cga ;
-  cd zega ;
-  cd b_cos ;
-  cd b_sin ;
-  const cd di(0.0, 1.0) ;
-  Eigen::MatrixXcd moa ;
-
-  moa.resize( 2*nbas, 2*nbas) ;
-  mob.setZero() ;
-
-  a.get_mos( moa) ;
-  /* Gamma rotation of the alpha block */
-  zega = -cd( d0, gamma/2.0) ;
-  Cga = std::exp( zega) ;
-  moa.block( 0, 0, nbas, 2*nbas) = Cga*moa.block( 0, 0, nbas, 2*nbas) ;
- 
-  /* Gamma rotation of the beta block */
-  zega = cd( d0, gamma/2.0) ;
-  Cga = std::exp( zega) ;
-  moa.block( nbas, 0, nbas, 2*nbas) = Cga*moa.block( nbas, 0, nbas, 2*nbas) ;
-
-  /* beta rotation mixing */
-  b_cos = cd( cos(beta/2.0), d0) ;
-  b_sin = cd( sin(beta/2.0), d0) ;
-  // Alpha Block
-  mob.block( 0, 0, nbas, 2*nbas) = b_cos*moa.block( 0, 0, nbas, 2*nbas) - b_sin*moa.block( nbas, 0, nbas, 2*nbas) ;
- // Beta Block
-  mob.block( nbas, 0, nbas, 2*nbas) = b_cos*moa.block( nbas, 0, nbas, 2*nbas) + b_sin*moa.block( 0, 0, nbas, 2*nbas) ;
-
-  /* Alpha rotation of the alpha block */
-  zega = -cd( d0, alpha/2.0) ;
-  Cga = std::exp( zega) ;
-  mob.block( 0, 0, nbas, 2*nbas) = Cga*mob.block( 0, 0, nbas, 2*nbas) ;
-
-  /* Alpha rotation of the beta block */
-  zega = cd( d0, alpha/2.0) ;
-  Cga = std::exp( zega) ;
-  mob.block( nbas, 0, nbas, 2*nbas) = Cga*mob.block( nbas, 0, nbas, 2*nbas) ;
-
-  moa.resize( 0, 0) ;
-
-  return ;
-
-} ;
+//void R_s ( int nbas, hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mob, double alpha, double beta, double gamma) {
+//
+///* This routine does a spin rotation on a determinant using Euler angles
+// * alpha, beta and gamma 
+// *
+// * Exp[-alpha S_{z}]*Exp[-beta S_{y}]*Exp[-gamma S_{z}]|det>
+// *
+// * a - input hartree-fock wavefunction
+// * b - output hartree-fock wavefunction
+// * alpha - angle of the S_{z} rotation
+// * beta - angle of the S_{x} rotation
+// * gamma - angle of the S_{z} rotation
+// *
+// * */
+//
+//  cd Cga ;
+//  cd zega ;
+//  cd b_cos ;
+//  cd b_sin ;
+//  const cd di(0.0, 1.0) ;
+//  Eigen::MatrixXcd moa ;
+//
+//  moa.resize( 2*nbas, 2*nbas) ;
+//  mob.setZero() ;
+//
+//  a.get_mos( moa) ;
+//  /* Gamma rotation of the alpha block */
+//  zega = -cd( d0, gamma/2.0) ;
+//  Cga = std::exp( zega) ;
+//  moa.block( 0, 0, nbas, 2*nbas) = Cga*moa.block( 0, 0, nbas, 2*nbas) ;
+// 
+//  /* Gamma rotation of the beta block */
+//  zega = cd( d0, gamma/2.0) ;
+//  Cga = std::exp( zega) ;
+//  moa.block( nbas, 0, nbas, 2*nbas) = Cga*moa.block( nbas, 0, nbas, 2*nbas) ;
+//
+//  /* beta rotation mixing */
+//  b_cos = cd( cos(beta/2.0), d0) ;
+//  b_sin = cd( sin(beta/2.0), d0) ;
+//  // Alpha Block
+//  mob.block( 0, 0, nbas, 2*nbas) = b_cos*moa.block( 0, 0, nbas, 2*nbas) - b_sin*moa.block( nbas, 0, nbas, 2*nbas) ;
+// // Beta Block
+//  mob.block( nbas, 0, nbas, 2*nbas) = b_cos*moa.block( nbas, 0, nbas, 2*nbas) + b_sin*moa.block( 0, 0, nbas, 2*nbas) ;
+//
+//  /* Alpha rotation of the alpha block */
+//  zega = -cd( d0, alpha/2.0) ;
+//  Cga = std::exp( zega) ;
+//  mob.block( 0, 0, nbas, 2*nbas) = Cga*mob.block( 0, 0, nbas, 2*nbas) ;
+//
+//  /* Alpha rotation of the beta block */
+//  zega = cd( d0, alpha/2.0) ;
+//  Cga = std::exp( zega) ;
+//  mob.block( nbas, 0, nbas, 2*nbas) = Cga*mob.block( nbas, 0, nbas, 2*nbas) ;
+//
+//  moa.resize( 0, 0) ;
+//
+//  return ;
+//
+//} ;
 
 void R_s ( int nbas, Eigen::Ref<Eigen::MatrixXcd> moa, Eigen::Ref<Eigen::MatrixXcd> mob, double alpha, double beta, double gamma) {
 

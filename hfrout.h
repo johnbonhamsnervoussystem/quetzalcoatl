@@ -2,7 +2,6 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <string>
-#include "hfwfn.h"
 #include "tei.h"
 
 #ifndef HFROUT_H

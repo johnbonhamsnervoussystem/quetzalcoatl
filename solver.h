@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include "common.h"
-#include "hfwfn.h"
 #include "tei.h"
 
 #ifndef SOLVER_H
@@ -17,9 +16,9 @@ void scfdia ( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd>
 
 void ahm_exp( Eigen::Ref<Eigen::MatrixXcd> x, Eigen::Ref<Eigen::MatrixXcd> u, int dim, int opt = 0) ;
 
-void trci( common& c, std::vector<hfwfn>& d, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr) ;
+//void trci( common& c, std::vector<hfwfn>& d, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr) ;
 
-void trci( common& com, std::vector<hfwfn>& det, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr, std::string& trd, std::string& fop) ;
+//void trci( common& com, std::vector<hfwfn>& det, Eigen::Ref<Eigen::MatrixXcd> H, std::vector<tei>& intarr, std::string& trd, std::string& fop) ;
 
 #endif
 

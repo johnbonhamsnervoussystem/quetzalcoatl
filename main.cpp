@@ -255,9 +255,9 @@ int main(int argc, char *argv[]) {
                   generalized  */
   int cghfxx = 26 ;
   scf_drv( com, intarr, cghfxx) ;
-/*  if ( com.methd() / 100 != 0 ){
+  if ( com.methd() / 100 != 0 ){
     prj_drv( com, intarr, 1) ;
-    }  */
+    }  
 
   intarr.clear() ;
   V.resize( 0, 0) ;

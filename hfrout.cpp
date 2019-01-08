@@ -1126,7 +1126,6 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
 /*
   Clean up the memory
 */
-
   t.resize( 0, 0) ;
   No.resize( 0, 0) ;
   mu.resize( 0, 0) ;

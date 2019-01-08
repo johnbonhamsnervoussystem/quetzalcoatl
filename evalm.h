@@ -4,7 +4,6 @@
 #include <fstream>
 #include <vector>
 #include "common.h"
-#include "hfwfn.h"
 #include "tei.h"
 
 #ifndef EVALM_H
@@ -66,14 +65,14 @@ double tranden2 ( int& ne1, int& ne2, int& nbasis, Eigen::Ref<Eigen::MatrixXd> w
 
 cd tranden2 ( int& nele, int& nbasis, Eigen::Ref<Eigen::MatrixXcd> wfna, Eigen::Ref<Eigen::MatrixXcd> wfnb, Eigen::Ref<Eigen::MatrixXcd> dabmat, Eigen::Ref<Eigen::MatrixXcd> scr) ;
 
-double obop ( common& c, Eigen::Ref<Eigen::MatrixXd> o, hfwfn& a, hfwfn& b) ;
+//double obop ( common& c, Eigen::Ref<Eigen::MatrixXd> o, hfwfn& a, hfwfn& b) ;
 
-cd obop ( common& c, Eigen::Ref<Eigen::MatrixXcd> o, hfwfn& a, hfwfn& b) ;
+//cd obop ( common& c, Eigen::Ref<Eigen::MatrixXcd> o, hfwfn& a, hfwfn& b) ;
 
-double fockop ( common& c, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, double& O) ;
+//double fockop ( common& c, Eigen::Ref<Eigen::MatrixXd> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, double& O) ;
 
-cd fockop ( common& c, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, cd& O) ;
+//cd fockop ( common& c, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, cd& O) ;
 
-cd fockop ( common& com, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, cd& ovl, std::ofstream& tfile, std::ofstream& ffile) ;
+//cd fockop ( common& com, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, hfwfn& a, hfwfn& b, cd& ovl, std::ofstream& tfile, std::ofstream& ffile) ;
 
 #endif

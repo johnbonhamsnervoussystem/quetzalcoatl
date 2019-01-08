@@ -8,7 +8,6 @@
 #include <Eigen/Eigenvalues>
 #include "binio.h"
 #include "common.h"
-#include "hfwfn.h"
 #include "solver.h"
 #include "tei.h"
 #include "util.h"

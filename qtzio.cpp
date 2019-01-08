@@ -382,10 +382,15 @@ template void read_eigen_bin(const Eigen::MatrixXd&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::MatrixXcd&, std::ifstream&) ;
 
 template <class matrix>
-void print_mat( const matrix& o){
+void print_mat( const matrix& o, std::string h){
   int i = 0 ;
   typename matrix::Index cols = o.cols(), rows = o.rows() ;
   Eigen::IOFormat matprt(5, 0, "  ", "\n", "| ", "|", "") ;
+
+  if ( ! h.empty()){
+    std::cout << h << std::endl ;
+    std::cout << "---- ---- ----" << std::endl ;
+    }
 
   if ( cols <= 5){
       std::cout << o.format( matprt) << std::endl ;
@@ -402,12 +407,12 @@ void print_mat( const matrix& o){
 
 }
 
-template void print_mat(const Eigen::VectorXd&) ;
-template void print_mat(const Eigen::VectorXcd&) ;
-template void print_mat(const Eigen::MatrixXd&) ;
-template void print_mat(const Eigen::MatrixXcd&) ;
-template void print_mat(const Eigen::Ref<Eigen::VectorXd>&) ;
-template void print_mat(const Eigen::Ref<Eigen::VectorXcd>&) ;
-template void print_mat(const Eigen::Ref<Eigen::MatrixXd>&) ;
-template void print_mat(const Eigen::Ref<Eigen::MatrixXcd>&) ;
+template void print_mat(const Eigen::VectorXd& , std::string) ;
+template void print_mat(const Eigen::VectorXcd& , std::string) ;
+template void print_mat(const Eigen::MatrixXd& , std::string) ;
+template void print_mat(const Eigen::MatrixXcd& , std::string) ;
+template void print_mat(const Eigen::Ref<Eigen::VectorXd>& , std::string) ;
+template void print_mat(const Eigen::Ref<Eigen::VectorXcd>& , std::string) ;
+template void print_mat(const Eigen::Ref<Eigen::MatrixXd>& , std::string) ;
+template void print_mat(const Eigen::Ref<Eigen::MatrixXcd>& , std::string) ;
 

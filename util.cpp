@@ -4,7 +4,6 @@
 #include <Eigen/Dense>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_sf_hyperg.h>
-#include "hfwfn.h"
 #include "integr.h"
 #include <iostream>
 #include <Eigen/LU>
@@ -375,68 +374,68 @@ Let's not mess around.  Just compute this
   
   } ; */
        
-  void K_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mo, int nb ){
-  /* 
-   * Apply the complex conjugation operator to the molecular orbitals. 
-   * Return the determinant to be used in the calling routine.
-   * 
-   * It is assumed mo has been dimensioned correctly already.
-   * */
-  
-    Eigen::MatrixXcd tmp ;
-  
-    tmp.resize( 2*nb, 2*nb) ;
-  
-    a.get_mos( tmp) ;
-  
-    mo = tmp.conjugate() ;
-  
-    tmp.resize( 0, 0) ;
-  
-    return  ;
-  
-  } ;
-  
-  void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mo, int nb ){
-  /* 
-   * Apply the complex conjugation operator to the molecular orbitals. 
-   * Return the determinant to be used in the calling routine.
-   * 
-   * It is assumed mo has been dimensioned correctly already.
-   * */
-  
-    double Nnty ;
-  
-    Nnty = pi/2.0e0 ;
-  
-    R_s ( nb, a, mo, d0, Nnty, d0) ;
-  
-    return  ;
-  
-  } ;
-  
-  void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mo, int nb ){
-  /* 
-   * Apply the complex conjugation operator to the molecular orbitals. 
-   * Return the determinant to be used in the calling routine.
-   * 
-   * It is assumed mo has been dimensioned correctly already.
-   * */
-  
-    Eigen::MatrixXcd tmp ;
-    double Nnty ;
-  
-    tmp.resize( 2*nb, 2*nb) ;
-    Nnty = pi/2.0e0 ;
-  
-    a.get_mos( mo) ;
-    tmp = mo.conjugate() ;
-    R_s ( nb, tmp, mo, d0, Nnty, d0) ;
-    tmp.resize( 0, 0) ;
-  
-    return  ;
-  
-  } ;
+//  void K_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mo, int nb ){
+//  /* 
+//   * Apply the complex conjugation operator to the molecular orbitals. 
+//   * Return the determinant to be used in the calling routine.
+//   * 
+//   * It is assumed mo has been dimensioned correctly already.
+//   * */
+//  
+//    Eigen::MatrixXcd tmp ;
+//  
+//    tmp.resize( 2*nb, 2*nb) ;
+//  
+//    a.get_mos( tmp) ;
+//  
+//    mo = tmp.conjugate() ;
+//  
+//    tmp.resize( 0, 0) ;
+//  
+//    return  ;
+//  
+//  } ;
+//  
+//  void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mo, int nb ){
+//  /* 
+//   * Apply the complex conjugation operator to the molecular orbitals. 
+//   * Return the determinant to be used in the calling routine.
+//   * 
+//   * It is assumed mo has been dimensioned correctly already.
+//   * */
+//  
+//    double Nnty ;
+//  
+//    Nnty = pi/2.0e0 ;
+//  
+//    R_s ( nb, a, mo, d0, Nnty, d0) ;
+//  
+//    return  ;
+//  
+//  } ;
+//  
+//  void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> mo, int nb ){
+//  /* 
+//   * Apply the complex conjugation operator to the molecular orbitals. 
+//   * Return the determinant to be used in the calling routine.
+//   * 
+//   * It is assumed mo has been dimensioned correctly already.
+//   * */
+//  
+//    Eigen::MatrixXcd tmp ;
+//    double Nnty ;
+//  
+//    tmp.resize( 2*nb, 2*nb) ;
+//    Nnty = pi/2.0e0 ;
+//  
+//    a.get_mos( mo) ;
+//    tmp = mo.conjugate() ;
+//    R_s ( nb, tmp, mo, d0, Nnty, d0) ;
+//    tmp.resize( 0, 0) ;
+//  
+//    return  ;
+//  
+//  } ;
 
 double pfaffian_A( Eigen::Ref<Eigen::MatrixXd> A) {
 
@@ -552,7 +551,14 @@ double pfaffian_H( Eigen::Ref<Eigen::MatrixXd> A) {
 } ;
 
 cd pfaffian_H( Eigen::Ref<Eigen::MatrixXcd> A) {
+/*
+  "Numeric and symbolic evaluation of the pfaffian of general skew-symmetric matrices "
+  C. Gonzalez-Ballestero; l.M. Robledo; G. F. Bertsch ;
+  Comp. Phys. Comm. 188, 10 2011
+  doi:10.1016/j.cpc.2011.04.025
 
+  Numerical Analysis, Burden and Faires, 8th edition
+*/
   int i ;
   cd pf = z1, alp, r ;
   Eigen::MatrixXcd::Index n = A.rows() ;

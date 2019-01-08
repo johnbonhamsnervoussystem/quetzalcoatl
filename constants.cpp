@@ -16,6 +16,7 @@
   const double d9 = 9.0e0 ;
   const cd z0 = cd( 0.0e0, 0.0e0) ;
   const cd z1 = cd( 1.0e0, 0.0e0) ;
+  const cd z2 = cd( 2.0e0, 0.0e0) ;
   const cd zi = cd( 0.0e0, 1.0e0) ;
 
   /* Useful physical quantities */

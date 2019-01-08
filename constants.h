@@ -19,6 +19,7 @@
   extern const double d9 ;
   extern const cd z0 ;
   extern const cd z1 ;
+  extern const cd z2 ;
   extern const cd zi ;
 
   /* Useful physical quantities */

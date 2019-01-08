@@ -2,7 +2,6 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <fstream>
-#include "hfwfn.h"
 #include <string>
 #include "tei.h"
 #include <vector>
@@ -25,6 +24,6 @@ template <class matrix>
 void read_eigen_bin (const matrix& m, std::ifstream& F_IN) ;
 
 template <class matrix>
-void print_mat( const matrix& o) ;
+void print_mat( const matrix& o, std::string h = "") ;
 
 #endif

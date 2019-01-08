@@ -2,7 +2,6 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <vector>
-#include "hfwfn.h"
 #include "tei.h"
 
 #ifndef UTIL_H
@@ -29,11 +28,11 @@ void eulrgrd ( int n_ps, int n_t, int n_ph, std::vector<double>& w_ps, std::vect
      std::vector<double>& w_ph, std::vector<double>& x_ps, std::vector<double>& x_t, 
      std::vector<double>& x_ph, int S) ;
 
-void K_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, int b ) ;
-
-void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, int b ) ;
-
-void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, int b ) ;
+//void K_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, int b ) ;
+//
+//void F_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, int b ) ;
+//
+//void T_op( hfwfn& a, Eigen::Ref<Eigen::MatrixXcd> m, int b ) ;
 
 double pfaffian_A( Eigen::Ref<Eigen::MatrixXd> m) ;
 
