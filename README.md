@@ -9,7 +9,7 @@ Any code you find here should absolutely be publicaly availible for anyone who w
 of this material I am copying the structure from other pieces of code I have found or long established algorithms.  
 Since it is generally easier to read your own code rather than other people's code and other code is often wrapped up
 in datastructures I am adapting for myself.  Hopefully my implementation is straightforward to understand with minimal
-study and can be quickly used to start your own project. Any routine for which I would like credit will be explcitly 
+study and can be quickly used to start your own project. Any routine for which I would like credit will be explicitly 
 included in that routine.  Otherwise, please please please borrow, copy, distribute, modify and refine anything you find
 and make availible for public use.  Don't let others waste their time on routines here.
 
