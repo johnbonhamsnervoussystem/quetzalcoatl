@@ -130,6 +130,7 @@ void real_SlaDet( common& com, std::vector<tei>& intarr, int opt){
       s = com.getS() ;
       w.moc.resize( nbas, nbas) ;
       w.moc.setRandom() ;
+      w.moc *= 0.1e0 ;
       w.eig.resize( nbas) ;
       w.e_scf = rrhfdia( h, s, intarr, nbas, nele, w.moc, w.eig, maxit, thresh) ;
       std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
@@ -344,21 +345,19 @@ void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
 double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, int nbasis, int nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh){
 
   /* Real restricted Hartree-Fock solved by repeated diagonalization. */
-  Eigen::MatrixXd f ;
-  Eigen::MatrixXd g ;
-  Eigen::MatrixXd p ;
+  Eigen::MatrixXd f, g, p, p_prev ;
   Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> f_diag ;
   int iter=0 ;
   int occ ;
-  double energy ;
-  double ene_p=d0 ;
-  double e_dif=1e0 ;
+  double energy, t_f ;
   time_dbg rrhfdia_time = time_dbg("rrhfdia") ;
 
   occ = nele/2 ;
   f.resize( nbasis, nbasis) ;
   g.resize( nbasis, nbasis) ;
   p.resize( nbasis, nbasis) ;
+  p_prev.resize( nbasis, nbasis) ;
+  p_prev.setZero() ;
 
   /* If c has something in it use it as the initial guess. */
   if( c.isZero(0) ) {
@@ -369,8 +368,8 @@ double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, st
     f = h + g ;
   } 
 
-  while ( iter < maxit ) {
-    iter += 1 ;
+  while ( iter++ < maxit ) {
+    p_prev = p ;
     f_diag.compute( f, s) ;
     c = f_diag.eigenvectors().real() ;
     p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
@@ -380,9 +379,10 @@ double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, st
 
     energy = g.trace() ;
 
-    e_dif = std::abs(ene_p - energy) ;
-    ene_p = energy ;
-    if ( iter > 5 && e_dif < thresh ) { break ;}
+    g = p - p_prev ;
+    t_f = (g*g.adjoint()).norm() ;
+    std::cout << "  rms difference in the densities: " << t_f << std::endl ;
+    if ( iter > 3 && t_f <= thresh ) { break ;}
   }
 
   std::cout << " Number of iterations : " << iter << std::endl ;
@@ -979,7 +979,7 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
     ctr2eg( intarr, p, G, nbasis) ;
     ctrPairg( intarr, k, D, nbasis) ;
     if ( rep == 1 ) {
-      D *= -d8 ;
+      D *= -10.0e0 ;
       }
     W.setZero() ;
     W.block( 0, 0, 2*nbasis, 2*nbasis) = G ;
@@ -1083,7 +1083,7 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
 /*
     Check that the particle number has converged
 */
-      if ( std::abs(N - N_p) < 0.0001 ) {
+      if ( std::abs(N - N_p) < 0.00001 ) {
         break ;
       } else {
         N_p = N ;
@@ -1095,7 +1095,7 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
     ctr2eg( intarr, p, G, nbasis) ;
     ctrPairg( intarr, k, D, nbasis) ;
     if ( rep == 1 ) {
-      D *= -d8 ;
+      D *= -10.e0 ;
       }
     W.setZero() ;
     W.block( 0, 0, 2*nbasis, 2*nbasis) = G ;
@@ -1146,38 +1146,35 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
 
 double cghfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh){
 
-  /* Compelx restricted Hartree-Fock solved by repeated diagonalization.
-     This may be eventually reduces to a single block diagonalization
-     but for now the electron contraction routines are handled by differnt
-     algorithms.  */
-  Eigen::MatrixXcd f ;
-  Eigen::MatrixXcd g ;
-  Eigen::MatrixXcd p ;
+  /* 
+    Complex generalized Hartree-Fock solved by repeated diagonalization.
+  */
+  Eigen::MatrixXcd f, g, p, p_prev, t ;
   Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> f_diag ;
   int iter=0 ;
   int nbas ;
-  double energy=d0 ;
+  cd energy = z0 ;
   cd t_f ;
-  double ene_p=d0 ;
-  double e_dif=1e0 ;
   time_dbg cghfdia_time = time_dbg("cghfdia") ;
 
   nbas = nbasis*2 ;
   f.resize( nbas, nbas) ;
   g.resize( nbas, nbas) ;
   p.resize( nbas, nbas) ;
+  p_prev.resize( nbas, nbas) ;
+  t.resize( nbas, nbas) ;
+  p_prev.setZero() ;
 
   if ( c.isZero(0) ) {
     f = h ;
   } else {
     p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
-    print_mat( p) ;
     ctr2eg( intarr, p, g, nbasis) ;
     f = h + g ;
   } 
 
-  while ( iter < maxit ) {
-    iter += 1 ;
+  while ( iter++ < maxit ) {
+    p_prev = p ;
     f_diag.compute( f, s) ;
     c = f_diag.eigenvectors() ;
     p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
@@ -1185,11 +1182,12 @@ double cghfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
     f = h + g ;
     g = p*( h + f) ;
     t_f = g.trace() ;
-    energy = t_f.real()/d2 ;
+    energy = t_f/z2 ;
 
-    e_dif = std::abs(ene_p - energy) ;
-    ene_p = energy ;
-    if ( iter > 3 && e_dif < thresh ) { break ;}
+    t = p - p_prev ;
+    t_f = (t*t.adjoint()).norm() ;
+    std::cout << "  rms difference in the densities: " << t_f << std::endl ;
+    if ( iter > 3 && t_f.real() <= thresh ) { break ;}
     }
 
   std::cout << " Number of iterations : " << iter << std::endl ;
@@ -1201,7 +1199,7 @@ double cghfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXc
 
   cghfdia_time.end() ;
 
-  return energy ;
+  return energy.real() ;
 
 } ;
 
