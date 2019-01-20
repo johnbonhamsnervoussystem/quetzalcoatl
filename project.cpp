@@ -20,6 +20,7 @@
 #include "time_dbg.h"
 #include "util.h"
 #include <vector>
+#include "diis.h"
 #include "wigner.h"
 #include "wfn.h"
 #include <gsl/gsl_rng.h>
@@ -503,7 +504,7 @@ void rrHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
 */
 
   int iter = 0 ;
-  int in, n_diis=0 ;
+  int in ;
   int inmb = ngrid->ns() ;
   double rd, id ;
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> H_diag ;
@@ -511,9 +512,7 @@ void rrHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
   cd vac_nrm, energy = z0 ; /* This is the vacuum normalization */
   cd blah3, blah2 = z0, blah = z0, e_theta, fnw, fnx, s_theta, intE_g = z0, intx_g = z0, x_g, p_energy=z0 ;
   std::vector<cd> cnv_den ;
-  std::deque<Eigen::VectorXcd> DIIS ;
-  Eigen::VectorXcd disv, tdiis ;
-  Eigen::MatrixXcd t, B ;
+  Eigen::MatrixXcd t ;
   Eigen::MatrixXcd nX ;
   Eigen::MatrixXcd Rp ;
   Eigen::MatrixXcd Heff ;
@@ -551,6 +550,7 @@ void rrHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
   Eigen::MatrixXcd C_theta ;
   Eigen::MatrixXcd C_theta_i ;
   time_dbg cgHFB_projection_time = time_dbg("rrHFB_projection") ;
+  diis<cd> dis = diis<cd>( 16*nbas*nbas, 5) ;
 
   Rp_i.resize( 4*nbas, 4*nbas) ;
   t.resize( 2*nbas, 2*nbas) ;
@@ -583,8 +583,6 @@ void rrHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
   Heff.resize( 4*nbas, 4*nbas) ;
   nX.resize( 2*nbas, 2*nbas) ;
   I.resize( 2*nbas, 2*nbas) ;
-  disv.resize( 16*nbas*nbas) ;
-  tdiis.resize( 4*nbas) ;
   I.setIdentity() ;
   Heff.setZero() ;
   Rp.setZero() ;
@@ -764,30 +762,46 @@ void rrHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
 
     H_diag.compute( Heff) ;
     Vv = H_diag.eigenvectors() ;
-    std::cout << "Eigenvlaues" << std::endl ;
+    std::cout << "Eigenvalues" << std::endl ;
     std::cout << H_diag.eigenvalues() << std::endl ;
-    Rp = Vv.adjoint()*Vv ;
-/*    for( int ja=0; ja < 4*nbas; ja++){
-      for( int ia=0; ia < 4*nbas; ia++){
-        rd = Vv( ja, ia).real() ;
-        id = Vv( ja, ia).imag() ;
-        if ( rd < 1.0e-14){
-          Vv( ja, ia) = cd( d0, id) ;
-          rd = d0 ;
-          }
-        if ( id < 1.0e-14){
-          Vv( ja, ia) = cd( rd, d0) ;
-          }
+/*
+    for( int yu=0; yu < 4*nbas; yu++){
+      std::cout << "( " ;
+      if ( Vv( yu, 0).real() > 1.0e-10){
+        std::cout << Vv( yu, 0).real() ;
+      } else {
+        std::cout << d0 ;
         }
+      std::cout << ", " ;
+      if ( Vv( yu, 0).imag() > 1.0e-10){
+        std::cout << Vv( yu, 0).imag() ;
+      } else {
+        std::cout << d0 ;
+        }
+      std::cout << ")   ( " ;
+      if ( Vv( yu, 1).real() > 1.0e-10){
+        std::cout << Vv( yu, 1).real() ;
+      } else {
+        std::cout << d0 ;
+        }
+      std::cout << ", " ;
+      if ( Vv( yu, 1).imag() > 1.0e-10){
+        std::cout << Vv( yu, 1).imag() ;
+      } else {
+        std::cout << d0 ;
+        }
+      std::cout << ")" << std::endl ;
       }
-    print_mat( Vv, " Eigenvectors ") ;
-*/    rho = Vv.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas).conjugate()*Vv.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas).transpose() ;
+*/
+    rho = Vv.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas).conjugate()*Vv.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas).transpose() ;
     tmp = (rho + rho.adjoint())/z2 ;
     rho.setZero() ;
     rho.block( 0, 0, nbas, nbas) = tmp.block( 0, 0, nbas, nbas) ;
     rho.block( nbas, nbas, nbas, nbas) = tmp.block( nbas, nbas, nbas, nbas) ;
-    print_mat( rho, " rho") ;
-    kappa = Vv.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas).conjugate()*Vv.block( 0, 2*nbas, 2*nbas, 2*nbas).transpose() ;
+//    print_mat( rho, " rho") ;
+    std::cout << "Particle Number" << std::endl ;
+    std::cout << rho.trace() << std::endl ;
+    kappa = Vv.block(  2*nbas, 2*nbas, 2*nbas, 2*nbas).conjugate()*Vv.block( 0, 2*nbas, 2*nbas, 2*nbas).transpose() ;
     tmp = (kappa - kappa.transpose())/z2 ;
     kappa.setZero() ;
     kappa.block( nbas, 0, nbas, nbas) = tmp.block( nbas, 0, nbas, nbas) ;
@@ -796,10 +810,19 @@ void rrHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
     vac_nrm = std::sqrt( tmp.determinant()) ;
     std::cout << " vac_nrm " << std::endl ;
     std::cout << vac_nrm << std::endl ;
-    print_mat( kappa, " kappa projected") ;
+
+//    print_mat( kappa, " kappa projected") ;
+    Rp.block( 0, 0, 2*nbas, 2*nbas) = rho ;
+    Rp.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = I - rho.conjugate() ;
+    Rp.block( 0, 2*nbas, 2*nbas, 2*nbas) = kappa ;
+    Rp.block( 2*nbas, 0, 2*nbas, 2*nbas) = -kappa.conjugate() ;
+    int dodiis = 1 ;
+    dis.update( Rp, dodiis) ;
 /*
   Check for convergence
 */  
+    rho = Rp.block( 0, 0, 2*nbas, 2*nbas) ;
+    kappa = Rp.block( 0, 2*nbas, 2*nbas, 2*nbas) ;
     intx_g = z0 ;
     energy = z0 ;
     kappa_i = kappa.inverse() ;
@@ -848,40 +871,14 @@ void rrHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<te
    energy = energy/intx_g ;
    std::cout << "PHF Energy" << std::endl ;
    std::cout << energy << std::endl ;
-
-/*
-  Use DIIS
-*/
-   if( DIIS.size() > 4) {
-     DIIS.pop_back() ;
-   }
-   n_diis = DIIS.size() ;
    
    t = rho - p_rho ;
    energy = ( t*t.adjoint()).norm() ;
-// Add to DIIS
-   tdiis( t.data(), t.size()) ;
-   disv.head( 4*nbas) = tdiis ;
-
    t = kappa - p_kappa ;
-   tdiis( t.data(), t.size()) ;
-   disv.tail( 4*nbas) = tdiis ;
    energy += ( t*t.adjoint()).norm() ;
    cnv_den.push_back( energy) ;
-   if ( energy.real() < 0.00001 ) { break ;}
-   if( n_diis == 5) {
-     B.resize( 6, 6) ;
-     }
-   if( n_diis < 5) {
-     B.resize( n_diis+1, n_diis+1) ;
-     }
-   if( n_diis > 1) {
-     B.setConstant(-z1) ;
-     B( n_diis - 1, n_diis - 1) = d0 ; ;
-     diis_c = B.inverse()*
-   }
-   
-   } while ( ++iter <= 100) ;
+//   if ( energy.real() < 0.00001 ) { break ;}
+   } while ( ++iter <= 80) ;
 
   for( unsigned int xq=0; xq < cnv_den.size(); xq++){
     std::cout << cnv_den[xq] << std::endl ;
