@@ -46,7 +46,7 @@
     email :: ktthross@gmail.com
 */
 
-void quetzalcoatl( bool& im){
+void quetzalcoatl( int im){
 /* Title Card */
   std::cout << std::endl ;
   std::cout << "________                 __                 .__                      __  .__   " << std::endl ;
@@ -57,11 +57,9 @@ void quetzalcoatl( bool& im){
   std::cout << "       \\__>           \\/           \\/     \\/          \\/          \\/           " << std::endl ;
   std::cout << std::endl ;
   std::cout << " Quetzalcoatl  Copyright (C) 2018  Kyle Throssell " << std::endl ;
-  std::cout << " This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'. " << std::endl ;
-  std::cout << " This is free software, and you are welcome to redistribute it" << std::endl ;
-  std::cout << " under certain conditions; type `show c' for details." << std::endl ;
+  std::cout << " This program comes with ABSOLUTELY NO WARRANTY " << std::endl ;
   std::cout << std::endl ;
-  if ( im){
+  if ( im == 1){
     std::cout << "        ooo+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl ;
     std::cout << "       o/`s++++++++++++++++++++++++++o++++++++++++oo+++//++o++++++++++++++" << std::endl ;
     std::cout << "      s:  o++++++++++++++++++++++++++oo+++++++++++o//.`    `/yo+++++++++++" << std::endl ;
@@ -107,6 +105,8 @@ void quetzalcoatl( bool& im){
     std::cout << "        o+ss+-`..`-/+osooooooooosys+-:+oo/:-.-:-----.```....:--/ooooo+++++" << std::endl ;
     std::cout << "       ohsy++osso++//:::---:///++ooss+ossooossoo/://::---:+ohdNmyosso+++++" << std::endl ;
     std::cout << "            ++++++++ooooo+++++++++++++++++++oosooosssssssoo+++++++++++++++" << std::endl ;
+  } else if ( im == 2){
+  } else if ( im == 3){
     }
   return ;
 }
@@ -144,8 +144,9 @@ int main(int argc, char *argv[]) {
   std::vector<tei> intarr ;
   std::vector<tei> trnint ;
 
-  int nbas, natm ;
-  bool quetz_image = false ;
+  int nbas, natm, ntt, n2ei ;
+  int quetz_image = 0 ;
+  int i, j, k, l ;
   double cx = 0.0e0 ;
   double cy = 0.0e0 ;
   double cz = 0.0e0 ;
@@ -160,6 +161,7 @@ int main(int argc, char *argv[]) {
   Eigen::MatrixXd T ;
   Eigen::MatrixXd V ;
   Eigen::MatrixXcd cV ;
+  Eigen::Tensor<double,4> tei_tensor ( 4, 4, 4, 4) ;
   basis_set b ;
   wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
   std::ofstream tstfile ; 
@@ -173,11 +175,16 @@ int main(int argc, char *argv[]) {
   ss << argv[1] ;
   ss >> inpfile ;
   if ( inpfile == "Q" ){ 
-    quetz_image = true ;
+    quetz_image = 1 ;
     ss.clear() ;
     ss << argv[2] ;
     ss >> inpfile ;
+  } else if ( inpfile == "w" ){
+    quetz_image = 2 ;
+  } else if ( inpfile == "c" ){
+    quetz_image = 3 ;
     }
+
 
   quetzalcoatl( quetz_image) ;
 
@@ -195,8 +202,11 @@ int main(int argc, char *argv[]) {
     a.resize( natm) ;
     c = com.getC() ;
     a = com.getA() ;
-    for (int i=0; i < natm; i++){
-      for (int j=i+1; j < natm; j++){
+/*
+  Get the nuclear-nuclear repulsion
+*/
+    for ( i=0; i < natm; i++){
+      for ( j=i+1; j < natm; j++){
         cx = c( j, 0) - c( i, 0) ;
         cy = c( j, 1) - c( i, 1) ;
         cz = c( j, 2) - c( i, 2) ;
@@ -206,8 +216,9 @@ int main(int argc, char *argv[]) {
       }
  
     com.nrep( n_rep ) ;
+    std::cout << " Nuclear repulsion is " << n_rep << std::endl ;
 
-    b = build_basis( com.bnam(), a, c) ;
+    b = build_basis( com, a, c) ;
     nbas = b.nbas ;
     com.nbas( nbas) ;
     S.resize( nbas, nbas) ;
@@ -220,6 +231,8 @@ int main(int argc, char *argv[]) {
     canort( S, cV, nbas) ;
     T = -cV.real() ;
     com.setXS( T) ;
+    T.setZero() ;
+    V.setZero() ;
     ao_kinetic( com.natm(), b, T) ;
     ao_eN_V( com.natm(), b, c, a, V) ;
     S = T + V ;
@@ -227,7 +240,7 @@ int main(int argc, char *argv[]) {
     T.resize( 0, 0) ;
     V.resize( 0, 0) ;
     S.resize( 0, 0) ;
-    list_ao_tei( com.natm(), b, intarr) ;
+    list_ao_tei( com, b, intarr) ;
 
   } else if ( com.hamil() == 3 ){
 /*
@@ -237,18 +250,82 @@ int main(int argc, char *argv[]) {
   } else {
     qtzcntrl::shutdown( "Unrecognized Hamiltonian in Main." ) ;
     }
-  /* Step 1 :
+  /* 
+     Step 1 :
      Build the relevant data in memory.
      SCF routines
      real/complex reastricted
                   unrestricted
-                  generalized  */
-  
-  scf_drv( com, intarr, com.methd()) ;
+                  generalized  
+  */
+/*
+  Put the integral list into the tensor
+    ntt = nbas*(nbas + 1)/2 ;
+    n2ei = ntt*(ntt+1)/2 ;
+    std::cout << n2ei << std::endl ;
+    for ( int t = 0; t < n2ei; t++) {
+*/
+      /*  ( 1 1| 2 2)
+       *  ( i j| k l) = val */
+/*
+      std::cout << t << std::endl ;
+      i = intarr[t].r_i() ;
+      j = intarr[t].r_j() ;
+      k = intarr[t].r_k() ;
+      l = intarr[t].r_l() ;
+      std::cout << " i = " << i << " j = " << j << " k = " << k << " l = " << l << std::endl ;
+      std::cout << intarr[t].r_v() << std::endl ;
+      tei_tensor ( i, j, k, l) = intarr[t].r_v() ;
+      tei_tensor ( j, i, k, l) = intarr[t].r_v() ;
+      tei_tensor ( j, i, l, k) = intarr[t].r_v() ;
+      tei_tensor ( i, j, l, k) = intarr[t].r_v() ;
+      tei_tensor ( k, l, i, j) = intarr[t].r_v() ;
+      tei_tensor ( l, k, i, j) = intarr[t].r_v() ;
+      tei_tensor ( l, k, j, i) = intarr[t].r_v() ;
+      tei_tensor ( k, l, j, i) = intarr[t].r_v() ;
+      }
+*/
+  int cghfxx = 11 ;
+  scf_drv( com, intarr, cghfxx) ;
+//  cghfxx = 26 ;
+//  scf_drv( com, intarr, cghfxx) ;
 
-//  prj_drv( com, intarr, 1) ;
 
+  if ( com.methd() / 100 != 0 ){
+    int rrphfb = 121 ;
+    prj_drv( com, intarr, rrphfb) ;
+    }
 
+/*
+  S.resize( 2*nbas, 2*nbas) ;
+  T.resize( 2*nbas, 2*nbas) ;
+  V.resize( 2*nbas, 2*nbas) ;
+  V.setZero() ;
+  S.setRandom() ;
+  T = (S - S.transpose())/2.0e0 ;
+
+  print_mat( T) ;
+  twin_field( intarr, T.block( 0, nbas, nbas, nbas), V.block( 0, nbas, nbas, nbas), nbas) ;
+  print_mat( V, " twin") ;
+  twin_field( intarr, T.block( nbas, 0, nbas, nbas), V.block( nbas, 0, nbas, nbas), nbas) ;
+  print_mat( V, " twin") ;
+
+  V.setZero() ;
+  T = (S - S.transpose())/2.0e0 ;
+  print_mat( T) ;
+  for ( int i=0; i < nbas; i++){
+    for ( int j=0; j < nbas; j++){
+      for ( int k=0; k < nbas; k++){
+        for ( int l=0; l < nbas; l++){
+          V( i, j + nbas) -= T( k, l+nbas)*tei_tensor(i, l, j, k) ;
+          V( i + nbas, j) -= T( k+nbas, l)*tei_tensor(i, l, j, k) ;
+          }
+        }
+      }
+    }
+
+  print_mat( V, " Full sum twin") ;
+*/
   intarr.clear() ;
   V.resize( 0, 0) ;
   T.resize( 0, 0) ;

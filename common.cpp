@@ -1,16 +1,21 @@
 #include "common.h"
 #include <Eigen/Dense>
-#include <vector>
+#include <iostream>
+#include "qtzio.h"
 #include <string>
+#include <vector>
 
 /* Intialize defaults */
   common::common( void) {
     max_scf_iter = 30 ;
+    max_pn_iter = 30 ;
     scf_convergence_threshold = 1.0e-8 ;
     hamiltonian = 0 ;
     method = 0 ;
+    nbr_g = 11 ;
+    print = 0 ;
     return ;
-  } 
+  }
 
 /* This stores information which is needed in most routines.
  Set things --
@@ -23,30 +28,45 @@
   void common::nele( int n) { nel    = n ; return ;}
   void common::nalp( int n) { nal    = n ; return ;}
   void common::nbet( int n) { nbe    = n ; return ;}
-  void common::mu( int n) { chemical_potential = n ; return ;}
+  void common::mu( double n) { chemical_potential = n ; return ;}
   void common::nrep( double f) { nn = f ; return ;}
   void common::bnam( std::string n) { basis_name = n ; return ; }
+  void common::ngrid( int n){ nbr_g = n ;} 
 
 /* Routine/algorithm control options */
   void common::mxscfit( int n) { max_scf_iter = n ; return ;}
+  void common::mxpnit( int n) { max_pn_iter = n ; return ;}
+  void common::prt( int n) { print = n ; return ;}
   void common::scfthresh( double d) { scf_convergence_threshold = d ; return ;}
 
 /* Matrix elements */
   void common::setS ( Eigen::MatrixXd s_in) {
     s_c.resize( nbasis, nbasis) ;
     s_c = s_in ;
+    if ( print > 0 ){ 
+      std::cout << "Overlap Matrix" << std::endl ;
+      print_mat( s_c) ;
+      }
     return ;
   }
 
   void common::setH ( Eigen::MatrixXd h_in) {
     h_c.resize( nbasis, nbasis) ;
     h_c = h_in ;
+    if ( print > 0 ){ 
+      std::cout << "Core Hamiltonian" << std::endl ;
+      print_mat( h_c) ;
+      }
     return ;
   }
 
   void common::setXS ( Eigen::MatrixXd xs_in) {
     xs_c.resize( nbasis, nbasis) ;
     xs_c = xs_in ;
+    if ( print > 0 ){ 
+      std::cout << "Orthonormalization Matrix" << std::endl ;
+      print_mat( xs_c) ;
+      }
     return ;
   }
 
@@ -82,8 +102,11 @@
   double common::mu( void) {return chemical_potential ;}
   double common::nrep( void) {return nn   ;}
   std::string common::bnam( void) {return basis_name ;}
+  int common::ngrid( void){ return nbr_g ;} 
 
   int common::mxscfit( void) {return max_scf_iter ;}
+  int common::mxpnit( void) {return max_pn_iter ;}
+  int common::prt( void) {return print ;}
   double common::scfthresh( void) {return scf_convergence_threshold ;}
 
 /* Retrieve a matrix */

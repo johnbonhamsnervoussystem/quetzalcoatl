@@ -5,8 +5,16 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+/*
+
+  At some point I'd like not to intialize values I won't use.  For
+  now things are small enough that it is likely not an issue.
+
+*/
+
 class common {
-/* Job Information
+/* 
+  Job Information
     hamiltonian - Indiacates the type of matrix elements we are computing
     method - What type of job are we doing.
 
@@ -23,16 +31,20 @@ class common {
 
   Algorithm Control :
     max_scf_iter - the maximum number of scf iterations
+    max_pn_iter - the maximum number of particle number iterations for HFB
     scf_convergence_threshold - the threshold at which we consider the wavefunction
       converged.
+    print - whether to do debug print or not
 
- * Stored Matrices
+  Stored Matrices
    s - overlap matrix
    h - core hamiltonian
    a - atomic number
    coord - coordinates matrix
 
- */
+  Projection Data
+    nbr_g - particle number projection grid
+*/
 
 private :
 
@@ -49,6 +61,8 @@ private :
   std::string basis_name ;
 
   int max_scf_iter ;
+  int max_pn_iter ;
+  int print ;
   double scf_convergence_threshold ;
 
   Eigen::MatrixXd s_c ;
@@ -56,6 +70,8 @@ private :
   Eigen::MatrixXd h_c ;
   Eigen::VectorXd a_c ;
   Eigen::MatrixXd coord ;
+
+  int nbr_g ;
 
 public :
 /* Initializers to set default values */
@@ -70,12 +86,15 @@ public :
   void nele( int n) ;
   void nalp( int n) ;
   void nbet( int n) ;
-  void mu( int n) ;
+  void mu( double n) ;
   void nrep( double f) ;
   void bnam( std::string n) ;
+  void ngrid( int n) ;
 
 /* Algorithm control*/
   void mxscfit( int n) ;
+  void mxpnit( int n) ;
+  void prt( int n) ;
   void scfthresh( double d) ;
 
 /* Coordinates */
@@ -100,9 +119,13 @@ public :
   double mu( void) ;
   double nrep( void) ;
   std::string bnam( void) ;
+/* Projection Data */
+  int ngrid( void) ;
 
 /* Algorithm control*/
   int mxscfit( void) ;
+  int mxpnit( void) ;
+  int prt( void) ;
   double scfthresh( void) ;
 
 /* Retrieve a matrix */
@@ -111,6 +134,7 @@ public :
   Eigen::MatrixXd getH( void) ;
   Eigen::VectorXd getA( void) ;
   Eigen::MatrixXd getC( void) ;
+
 
 } ;
 #endif
