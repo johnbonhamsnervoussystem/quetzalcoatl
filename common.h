@@ -86,7 +86,7 @@ public :
   void nele( int n) ;
   void nalp( int n) ;
   void nbet( int n) ;
-  void mu( int n) ;
+  void mu( double n) ;
   void nrep( double f) ;
   void bnam( std::string n) ;
   void ngrid( int n) ;

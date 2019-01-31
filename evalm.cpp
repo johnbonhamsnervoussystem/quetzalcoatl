@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include "binio.h"
 #include "evalm.h"
+#include "qtzio.h"
 #include "tei.h"
 
 /* 
@@ -50,6 +51,7 @@ void ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> p,
     t_p.resize( 0, 0) ;
 
     return ;
+
 } ;
 
 void ctr2er( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p, 
@@ -310,8 +312,6 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
   *
   */
 
-    Eigen::MatrixXd t_p ;
-
     D.setZero() ;
 
     /* Do the pairing terms for the alpha alpha block */
@@ -337,6 +337,49 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
 
     /* Do the twin terms for the beta alpha block */
     twin_field( intarr, k.block( 0, nb, nb, nb), D.block( nb, 0, nb, nb), nb) ;
+
+    return ;
+
+} ;
+
+void ctrPairr( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> k, Eigen::Ref<Eigen::MatrixXcd> D, const int nb) {
+
+/* 
+  This routine contracts the two electron integrals to build the pairing
+  field for Hartree-Fock-Bogoliubov for the restricted model.
+*/
+
+    Eigen::MatrixXcd t ( nb, nb) ;
+    t = k.transpose() ;
+    D.setZero() ;
+
+    /* Do the pairing terms for the alpha beta block */
+    pairing_field( intarr, k, D, nb) ;
+
+    /* Do the twin terms for the alpha beta block */
+    twin_field( intarr, t, D, nb) ;
+
+    t.resize( 0, 0) ;
+
+    return ;
+
+} ;
+
+void ctrPairr( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> k, Eigen::Ref<Eigen::MatrixXd> D, const int nb) {
+
+/* 
+  This routine contracts the two electron integrals to build the pairing
+  field for Hartree-Fock-Bogoliubov for the restricted model.
+*/
+    Eigen::MatrixXd t ( nb, nb) ;
+    t = -k ;
+    D.setZero() ;
+
+    /* Do the pairing terms for the alpha beta block */
+    pairing_field( intarr, k, D, nb) ;
+
+    /* Do the twin terms for the alpha beta block */
+    twin_field( intarr, t, D, nb) ;
 
     return ;
 
@@ -377,7 +420,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
 
         G( i , i) += p( i, i)*val ;
 
-      } else if ( not ieqj && keql && j == k ){
+      } else if ( ! ieqj && keql && j == k ){
 
         /* ( i j| j j) */
 
@@ -385,7 +428,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( j , i) += p( j, j)*val ;
         G( j , j) += (p( j, i) + p( i, j))*val ;
 
-      } else if ( not ieqj && not keql && i == k && j == l ){
+      } else if ( ! ieqj && ! keql && i == k && j == l ){
 
         /* ( i j| i j) */
 
@@ -399,7 +442,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( i, i) += p( k, k)*val ;
         G( k, k) += p( i, i)*val ;
 
-      } else if ( ieqj && not keql && i == k ){
+      } else if ( ieqj && ! keql && i == k ){
 
         /* ( i i| i l) */
 
@@ -407,7 +450,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( i, l) += p( i, i)*val ;
         G( i, i) += (p( i, l) + p( l, i))*val ;
 
-      } else if ( not ieqj && not keql && j == l && i != k){
+      } else if ( ! ieqj && ! keql && j == l && i != k){
 
         /* ( i j| k j) */
 
@@ -416,7 +459,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( k, j) += (p( i, j) + p( j, i))*val ;
         G( j, k) += (p( i, j) + p( j, i))*val ;
 
-      } else if ( not ieqj && keql && i != k && j != k) {
+      } else if ( ! ieqj && keql && i != k && j != k) {
 
         /* ( i j| k k) */
 
@@ -424,7 +467,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( j, i) += p( k, k)*val ;
         G( k, k) += (p( j, i) + p( i, j))*val ;
 
-      } else if ( not ieqj && not keql && j == k && i != l ) {
+      } else if ( ! ieqj && ! keql && j == k && i != l ) {
 
         /* ( i j| j l) */
 
@@ -433,7 +476,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( j, l)+= (p( i, j) + p( j, i))*val ;
         G( l, j)+= (p( i, j) + p( j, i))*val ;
 
-      } else if ( not ieqj && not keql && i == k && j != l) {
+      } else if ( ! ieqj && ! keql && i == k && j != l) {
 
         /* ( i j| i l) */
 
@@ -442,7 +485,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( i, l)+= (p( i, j) + p( j, i))*val ;
         G( l, i)+= (p( i, j) + p( j, i))*val ;
 
-      } else if ( ieqj && not keql && i != k && i != l) {
+      } else if ( ieqj && ! keql && i != k && i != l) {
 
         /* ( i i| k l) */
 
@@ -506,7 +549,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
 
         G( i, i) += -p( i, i)*val ;
 
-      } else if ( not ieqj && keql && j == k ){
+      } else if ( ! ieqj && keql && j == k ){
 
         /* ( i j| j j) */
 
@@ -514,7 +557,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( j, i) += -p( j, j)*val ;
         G( j, j) += -(p( j, i) + p( i, j))*val ;
 
-      } else if ( not ieqj && not keql && i == k && j == l){
+      } else if ( ! ieqj && ! keql && i == k && j == l){
 
         /* ( i j| i j) */
 
@@ -531,7 +574,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( i, k) += -p( i, k)*val ;
         G( k, i) += -p( k, i)*val ;
 
-      } else if ( ieqj && not keql && i == k) {
+      } else if ( ieqj && ! keql && i == k) {
 
         /* ( i i| i l) */
 
@@ -539,7 +582,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( l, i) += -p( i, i)*val ;
         G( i, l) += -p( i, i)*val ;
 
-      } else if ( not ieqj && not keql && i != k && j == l ) {
+      } else if ( ! ieqj && ! keql && i != k && j == l ) {
 
         /* ( i j| k j) */
 
@@ -551,7 +594,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( j, i) += -p( k, j)*val ;
         G( k, i) += -p( j, j)*val ;
 
-      } else if ( not ieqj && keql && i != k && j != l ) {
+      } else if ( ! ieqj && keql && i != k && j != l ) {
 
         /* ( i j| k k) */
 
@@ -560,7 +603,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( k, j) += -p( k, i)*val ;
         G( k, i) += -p( k, j)*val ;
 
-      } else if ( not ieqj && not keql && i != l && j == k ) {
+      } else if ( ! ieqj && ! keql && i != l && j == k ) {
 
         /* ( i j| j l) */
 
@@ -572,7 +615,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( j, i) += -p( l, j)*val ;
         G( l, i) += -p( j, j)*val ;
 
-      } else if ( not ieqj && not keql && i == k && j != l ) {
+      } else if ( ! ieqj && ! keql && i == k && j != l ) {
 
         /* ( i j| i l) */
 
@@ -584,7 +627,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( l, j) += -p( i, i)*val ;
         G( l, i) += -p( i, j)*val ;
 
-      } else if ( ieqj && not keql && i != k && i != l ) {
+      } else if ( ieqj && ! keql && i != k && i != l ) {
 
         /* ( i i| k l) */
 
@@ -651,7 +694,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
 
         G( i , i) += p( i, i)*val ;
 
-      } else if ( not ieqj && keql && j == k ){
+      } else if ( ! ieqj && keql && j == k ){
 
         /* ( i j| j j) */
 
@@ -659,7 +702,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( j , i) += p( j, j)*val ;
         G( j , j) += (p( j, i) + p( i, j))*val ;
 
-      } else if ( not ieqj && i == k && j == l ){
+      } else if ( ! ieqj && i == k && j == l ){
 
         /* ( i j| i J) */
 
@@ -673,7 +716,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( i, i) += p( k, k)*val ;
         G( k, k) += p( i, i)*val ;
 
-      } else if ( ieqj && not keql && i == k ){
+      } else if ( ieqj && ! keql && i == k ){
 
         /* ( i i| i l) */
 
@@ -681,7 +724,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( l, i) += p( i, i)*val ;
         G( i, l) += p( i, i)*val ;
 
-      } else if ( not ieqj && not keql && j == l && i != k){
+      } else if ( ! ieqj && ! keql && j == l && i != k){
 
         /* ( i j| k j) */
 
@@ -690,7 +733,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( k, j) += (p( i, j) + p( j, i))*val ;
         G( j, k) += (p( i, j) + p( j, i))*val ;
 
-      } else if ( not ieqj && keql && i != k && j != k) {
+      } else if ( ! ieqj && keql && i != k && j != k) {
 
         /* ( i j| k k) */
 
@@ -698,7 +741,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( j, i) += p( k, k)*val ;
         G( k, k) += (p( j, i) + p( i, j))*val ;
 
-      } else if ( ieqj && not keql && i != k && i != l) {
+      } else if ( ieqj && ! keql && i != k && i != l) {
 
         /* ( i i| k l) */
 
@@ -706,7 +749,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( k, l) += p( i, i)*val ;
         G( l, k) += p( i, i)*val ;
 
-      } else if ( not ieqj && not keql && j == k ) {
+      } else if ( ! ieqj && ! keql && j == k ) {
 
         /* ( i j| j l) */
 
@@ -715,7 +758,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         G( j, l)+= (p( i, j) + p( j, i))*val ;
         G( l, j)+= (p( i, j) + p( j, i))*val ;
 
-      } else if ( not ieqj && not keql && i == k && j != l) {
+      } else if ( ! ieqj && ! keql && i == k && j != l) {
 
         /* ( i j| i l) */
 
@@ -1061,13 +1104,13 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
       ieqj = ( ( i == j) ? true : false) ;
       keql = ( ( k == l) ? true : false) ;
 //
-      if ( ieqj && keql and i == k) {
+      if ( ieqj && keql && i == k) {
 
         /* ( i i| i i)*/
 
         D(i,i) += val*p(i,i) ;
 
-      } else if ( not ieqj && keql and j == k) {
+      } else if ( not ieqj && keql && j == k) {
 
         /* ( i j| j j)*/
 
@@ -1075,7 +1118,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(j,i) += val*p(j,j) ;
         D(j,j) += val*(p(i,j) + p(j,i)) ;
 
-      } else if ( not ieqj and not keql and i == k and j ==l) {
+      } else if ( not ieqj && not keql && i == k && j ==l) {
 
         /* ( i j| i j)*/
 
@@ -1084,14 +1127,14 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(i,j) += val*p(j,i) ;
         D(j,i) += val*p(i,j) ;
 
-      } else if ( ieqj and keql and i !=k) {
+      } else if ( ieqj && keql && i !=k) {
 
         /* ( i i| k k) */
 
         D(i,k) += val*p(i,k) ;
         D(k,i) += val*p(k,i) ;
 
-      } else if ( ieqj and not keql and i == k){
+      } else if ( ieqj && not keql && i == k){
 
         /* ( i i| i l) */
 
@@ -1099,7 +1142,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(l,i) += val*p(i,i) ;
         D(i,i) += val*(p(i,l) + p(l,i)) ;
 
-      } else if ( not ieqj and not keql and i != k and j == l){
+      } else if ( not ieqj && not keql && i != k && j == l){
 
         /* ( i j| k j) */
 
@@ -1111,7 +1154,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(k,j) += val*p(j,i) ;
         D(j,j) += val*(p(i,k) + p(k,i)) ;
 
-      } else if ( not ieqj and keql and i != k and j != l) {
+      } else if ( not ieqj && keql && i != k && j != l) {
 
         /* ( i j| k k) */
 
@@ -1120,7 +1163,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(j,k) += val*p(i,k) ;
         D(k,j) += val*p(k,i) ;
 
-      } else if ( not ieqj and not keql and i!=l and j == k) {
+      } else if ( not ieqj && not keql && i!=l && j == k) {
 
         /* ( i j| j l) */
 
@@ -1132,7 +1175,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(l,j) += val*p(j,i) ;
         D(j,j) += val*(p(i,l) + p(l,i)) ;
 
-      } else if ( not ieqj and not keql and i == k and j != l){
+      } else if ( not ieqj && not keql && i == k && j != l){
 
         /* ( i j| i l) */
 
@@ -1144,7 +1187,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(l,i) += val*p(i,j) ;
         D(i,i) += val*(p(j,l) + p(l,j)) ;
 
-      } else if ( ieqj and not keql and i != k and i != l){
+      } else if ( ieqj && not keql && i != k && i != l){
 
         /* ( i i| k l) */
 
@@ -1202,13 +1245,13 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
       ieqj = ( ( i == j) ? true : false) ;
       keql = ( ( k == l) ? true : false) ;
 //
-      if ( ieqj && keql and i == k) {
+      if ( ieqj && keql && i == k) {
 
         /* ( i i| i i)*/
 
         D(i,i) += -val*p(i,i) ;
 
-      } else if ( not ieqj && keql and j == k) {
+      } else if ( not ieqj && keql && j == k) {
 
         /* ( i j| j j)*/
 
@@ -1216,7 +1259,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(j,i) += -val*p(j,j) ;
         D(j,j) += -val*(p(i,j) + p(j,i)) ;
 
-      } else if ( not ieqj and not keql and i == k and j ==l) {
+      } else if ( ! ieqj && ! keql && i == k && j == l) {
 
         /* ( i j| i j)*/
 
@@ -1225,14 +1268,14 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(i,j) += -val*p(i,j) ;
         D(j,i) += -val*p(j,i) ;
 
-      } else if ( ieqj and keql and i !=k) {
+      } else if ( ieqj && keql && i != k) {
 
         /* ( i i| k k) */
 
         D(i,k) += -val*p(k,i) ;
         D(k,i) += -val*p(i,k) ;
 
-      } else if ( ieqj and not keql and i == k){
+      } else if ( ieqj && not keql && i == k){
 
         /* ( i i| i l) */
 
@@ -1240,7 +1283,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(l,i) += -val*p(i,i) ;
         D(i,i) += -val*(p(i,l) + p(l,i)) ;
 
-      } else if ( not ieqj and not keql and i != k and j == l){
+      } else if ( not ieqj && not keql && i != k && j == l){
 
         /* ( i j| k j) */
 
@@ -1252,7 +1295,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(k,j) += -val*p(i,j) ;
         D(j,j) += -val*(p(i,k) + p(k,i)) ;
 
-      } else if ( not ieqj and keql and i != k and j != l) {
+      } else if ( not ieqj && keql && i != k && j != l) {
 
         /* ( i j| k k) */
 
@@ -1261,7 +1304,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(k,i) += -val*p(j,k) ;
         D(k,j) += -val*p(i,k) ;
 
-      } else if ( not ieqj and not keql and i!=l and j == k) {
+      } else if ( not ieqj && not keql && i!=l && j == k) {
 
         /* ( i j| j l) */
 
@@ -1273,7 +1316,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D( l, j) += -val*p( i, j) ;
         D( j, j) += -val*(p( i, l) + p( l, i)) ;
 
-      } else if ( not ieqj and not keql and i == k and j != l){
+      } else if ( not ieqj && not keql && i == k && j != l){
 
         /* ( i j| i l) */
 
@@ -1285,7 +1328,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D( l, j) += -val*p( i, i) ;
         D( i, i) += -val*(p( j, l) + p( l, j)) ;
 
-      } else if ( ieqj and not keql and i != k and i != l){
+      } else if ( ieqj && not keql && i != k && i != l){
 
         /* ( i i| k l) */
 
@@ -1343,13 +1386,13 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
       ieqj = ( ( i == j) ? true : false) ;
       keql = ( ( k == l) ? true : false) ;
 //
-      if ( ieqj && keql and i == k) {
+      if ( ieqj && keql && i == k) {
 
         /* ( i i| i i)*/
 
         D(i,i) += val*p(i,i) ;
 
-      } else if ( not ieqj && keql and j == k) {
+      } else if ( not ieqj && keql && j == k) {
 
         /* ( i j| j j)*/
 
@@ -1357,7 +1400,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(j,i) += val*p(j,j) ;
         D(j,j) += val*(p(i,j) + p(j,i)) ;
 
-      } else if ( not ieqj and not keql and i == k and j ==l) {
+      } else if ( not ieqj && not keql && i == k && j ==l) {
 
         /* ( i j| i j)*/
 
@@ -1366,14 +1409,14 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(i,j) += val*p(j,i) ;
         D(j,i) += val*p(i,j) ;
 
-      } else if ( ieqj and keql and i !=k) {
+      } else if ( ieqj && keql && i !=k) {
 
         /* ( i i| k k) */
 
         D(i,k) += val*p(i,k) ;
         D(k,i) += val*p(k,i) ;
 
-      } else if ( ieqj and not keql and i == k){
+      } else if ( ieqj && not keql && i == k){
 
         /* ( i i| i l) */
 
@@ -1381,7 +1424,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(l,i) += val*p(i,i) ;
         D(i,i) += val*(p(i,l) + p(l,i)) ;
 
-      } else if ( not ieqj and not keql and i != k and j == l){
+      } else if ( not ieqj && not keql && i != k && j == l){
 
         /* ( i j| k j) */
 
@@ -1393,7 +1436,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(k,j) += val*p(j,i) ;
         D(j,j) += val*(p(i,k) + p(k,i)) ;
 
-      } else if ( not ieqj and keql and i != k and j != l) {
+      } else if ( not ieqj && keql && i != k && j != l) {
 
         /* ( i j| k k) */
 
@@ -1402,7 +1445,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(j,k) += val*p(i,k) ;
         D(k,j) += val*p(k,i) ;
 
-      } else if ( not ieqj and not keql and i!=l and j == k) {
+      } else if ( not ieqj && not keql && i!=l && j == k) {
 
         /* ( i j| j l) */
 
@@ -1414,7 +1457,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(l,j) += val*p(j,i) ;
         D(j,j) += val*(p(i,l) + p(l,i)) ;
 
-      } else if ( not ieqj and not keql and i == k and j != l){
+      } else if ( not ieqj && not keql && i == k && j != l){
 
         /* ( i j| i l) */
 
@@ -1426,7 +1469,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(l,i) += val*p(i,j) ;
         D(i,i) += val*(p(j,l) + p(l,j)) ;
 
-      } else if ( ieqj and not keql and i != k and i != l){
+      } else if ( ieqj && not keql && i != k && i != l){
 
         /* ( i i| k l) */
 
@@ -1473,24 +1516,26 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
     n2ei = ntt*(ntt+1)/2 ;
 
     for(int t = 0; t < n2ei; t++ ) {
-      /*  ( 1 1| 2 2)
- *        ( i j| k l) = val */
+      /*
+          ( 1 1| 2 2)
+          ( i j| k l) = val
+      */
       i = intarr[t].r_i() ;
       j = intarr[t].r_j() ;
       k = intarr[t].r_k() ;
       l = intarr[t].r_l() ;
       val = intarr[t].r_v() ;
-//   
+//
       ieqj = ( ( i == j) ? true : false) ;
       keql = ( ( k == l) ? true : false) ;
 //
-      if ( ieqj && keql and i == k) {
+      if ( ieqj && keql && i == k) {
 
         /* ( i i| i i)*/
 
         D(i,i) += -val*p(i,i) ;
 
-      } else if ( not ieqj && keql and j == k) {
+      } else if ( not ieqj && keql && j == k) {
 
         /* ( i j| j j)*/
 
@@ -1498,7 +1543,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(j,i) += -val*p(j,j) ;
         D(j,j) += -val*(p(i,j) + p(j,i)) ;
 
-      } else if ( not ieqj and not keql and i == k and j ==l) {
+      } else if ( not ieqj && not keql && i == k && j ==l) {
 
         /* ( i j| i j)*/
 
@@ -1507,14 +1552,14 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(i,j) += -val*p(i,j) ;
         D(j,i) += -val*p(j,i) ;
 
-      } else if ( ieqj and keql and i !=k) {
+      } else if ( ieqj && keql && i !=k) {
 
         /* ( i i| k k) */
 
         D(i,k) += -val*p(k,i) ;
         D(k,i) += -val*p(i,k) ;
 
-      } else if ( ieqj and not keql and i == k){
+      } else if ( ieqj && not keql && i == k){
 
         /* ( i i| i l) */
 
@@ -1522,7 +1567,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(l,i) += -val*p(i,i) ;
         D(i,i) += -val*(p(i,l) + p(l,i)) ;
 
-      } else if ( not ieqj and not keql and i != k and j == l){
+      } else if ( not ieqj && not keql && i != k && j == l){
 
         /* ( i j| k j) */
 
@@ -1534,7 +1579,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(k,j) += -val*p(i,j) ;
         D(j,j) += -val*(p(i,k) + p(k,i)) ;
 
-      } else if ( not ieqj and keql and i != k and j != l) {
+      } else if ( not ieqj && keql && i != k && j != l) {
 
         /* ( i j| k k) */
 
@@ -1543,7 +1588,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(k,i) += -val*p(j,k) ;
         D(k,j) += -val*p(i,k) ;
 
-      } else if ( not ieqj and not keql and i!=l and j == k) {
+      } else if ( not ieqj && not keql && i!=l && j == k) {
 
         /* ( i j| j l) */
 
@@ -1555,7 +1600,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(l,j) += -val*p(i,j) ;
         D(j,j) += -val*(p(i,l) + p(l,i)) ;
 
-      } else if ( not ieqj and not keql and i == k and j != l){
+      } else if ( not ieqj && not keql && i == k && j != l){
 
         /* ( i j| i l) */
 
@@ -1567,7 +1612,7 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> p,
         D(l,j) += -val*p(i,i) ;
         D(i,i) += -val*(p(j,l) + p(l,j)) ;
 
-      } else if ( ieqj and not keql and i != k and i != l){
+      } else if ( ieqj && not keql && i != k && i != l){
 
         /* ( i i| k l) */
 

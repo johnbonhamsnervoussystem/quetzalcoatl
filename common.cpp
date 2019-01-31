@@ -9,13 +9,13 @@
   common::common( void) {
     max_scf_iter = 30 ;
     max_pn_iter = 30 ;
-    scf_convergence_threshold = 1.0e-8 ;
+    scf_convergence_threshold = 1.0e-6 ;
     hamiltonian = 0 ;
     method = 0 ;
     nbr_g = 11 ;
     print = 0 ;
     return ;
-  } 
+  }
 
 /* This stores information which is needed in most routines.
  Set things --
@@ -28,7 +28,7 @@
   void common::nele( int n) { nel    = n ; return ;}
   void common::nalp( int n) { nal    = n ; return ;}
   void common::nbet( int n) { nbe    = n ; return ;}
-  void common::mu( int n) { chemical_potential = n ; return ;}
+  void common::mu( double n) { chemical_potential = n ; return ;}
   void common::nrep( double f) { nn = f ; return ;}
   void common::bnam( std::string n) { basis_name = n ; return ; }
   void common::ngrid( int n){ nbr_g = n ;} 
