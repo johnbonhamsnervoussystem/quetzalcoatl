@@ -71,7 +71,7 @@ void real_HFB( common& com, std::vector<tei>& intarr, int opt) {
     int maxit_pn = com.mxpnit() ;
     double lambda = com.mu() ;
     double thresh = com.scfthresh() ;
-    Eigen::MatrixXd h, s, p, k ;
+    Eigen::MatrixXd h, s, xs, xsi, p, k ;
     wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
     time_dbg real_HFB_time = time_dbg("real_HFB") ;
 
@@ -80,16 +80,30 @@ void real_HFB( common& com, std::vector<tei>& intarr, int opt) {
       s.resize( 2*nbas, 2*nbas) ;
       p.resize( nbas, nbas) ;
       k.resize( nbas, nbas) ;
+      xs.resize( nbas, nbas) ;
+      xsi.resize( nbas, nbas) ;
       w.moc.resize( 2*nbas, 2*nbas) ;
       w.eig.resize( 2*nbas) ;
+      xs = com.getXS() ;
+      xsi = xs.inverse() ;
       h.setZero() ;
       h.block( 0, 0, nbas, nbas) = com.getH() ;
+      transform( 0, xs, h.block( 0, 0, nbas, nbas)) ;
       h.block( nbas, nbas, nbas, nbas) = -h.block( 0, 0, nbas, nbas) ;
       s.setZero() ;
       s.block( 0, 0, nbas, nbas) = com.getS() ;
       s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
+      std::cout << " xs*xsi  " << std::endl ;
+      std::cout << xs*xsi << std::endl ;
+      std::cout << " s " << std::endl ;
+      print_mat( s, "Overlap") ;
+      std::cout << " xsi^{t}*xsi  " << std::endl ;
+      std::cout << xsi.transpose()*xsi << std::endl ;
+      std::cout << " xs^{t}*s*xs  " << std::endl ;
+      transform( 0, xs, s.block( 0, 0, nbas, nbas)) ;
+      std::cout << s.block( 0, 0, nbas, nbas) << std::endl ;
       thermal_guess( nalp, nbas, p, k) ;
-      w.e_scf = rrhfbdia( h, s, intarr, nbas, nele, p, k, w.moc, w.eig, lambda, maxit_scf, maxit_pn, thresh) ;
+      w.e_scf = rrhfbdia( h, s, xs, xsi, intarr, nbas, nele, p, k, w.moc, w.eig, lambda, maxit_scf, maxit_pn, thresh) ;
       std::cout << "Mean Field Energy + NN : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "Eigenvalues : " << std::endl << std::endl ;
       std::cout << w.eig << std::endl ;
@@ -902,7 +916,7 @@ double rghfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd>
 
 } ;
 
-double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> k, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, int& maxit_scf, int& maxit_pn, double& thresh) {
+double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, Eigen::Ref<Eigen::MatrixXd> xs, Eigen::Ref<Eigen::MatrixXd> xsi, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> k, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, int& maxit_scf, int& maxit_pn, double& thresh) {
 /* 
   Real Restricted Hartree-Fock Bogoliubov
 
@@ -961,7 +975,7 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
   Eigen::MatrixXd I ;
   Eigen::MatrixXd mu ;
   Eigen::MatrixXd No ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> H_diag ;
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> H_diag ;
   Eigen::MatrixXd t ;
   Eigen::VectorXd v ;
 
@@ -993,8 +1007,8 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
   k_prev.setZero() ;
   R.setZero() ;
   mu.setZero() ;
-  mu.block( 0, 0, nbasis, nbasis) = -s.block( 0, 0, nbasis, nbasis) ;
-  mu.block( nbasis, nbasis, nbasis, nbasis) = s.block( 0, 0, nbasis, nbasis) ;
+  mu.block( 0, 0, nbasis, nbasis) = -I ;
+  mu.block( nbasis, nbasis, nbasis, nbasis) = I ;
 
 /*
   If no initial guess is given, use the core Hamiltonian
@@ -1002,15 +1016,21 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
 
   if ( p.isZero(0)) {
     H = h ;
-    H_diag.compute( H, s) ;
+    H_diag.compute( H) ;
     c = H_diag.eigenvectors() ;
     p = c.block( nbasis, nbasis, nbasis, nbasis)*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
     k = c.block( nbasis, nbasis, nbasis, nbasis)*c.block( 0, nbasis, nbasis, nbasis).transpose() ;
+    transform( 1, xs, p) ;
+    transform( 1, xs, k) ;
     }
 
     ctr2er( intarr, p, G, nbasis) ;
     ctrPairr( intarr, k, D, nbasis) ;
     D /= d2 ;
+    transform( 1, xsi, p) ;
+    transform( 1, xsi, k) ;
+    transform( 0, xs, G) ;
+    transform( 0, xs, D) ;
     W.setZero() ;
     W.block( 0, 0, nbasis, nbasis) = G ;
     W.block( 0, nbasis, nbasis, nbasis) = D ;
@@ -1027,9 +1047,11 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
   while ( iter_d++ < maxit_scf ) {
     std::cout << std::endl << std::endl << "Self-Consistency iteration number: " << iter_d << std::endl << std::endl ;
     iter_N = 0 ;
+
 /*
    Set and initial guess for the limits of the chemical potential
 */
+
     b_ul = lambda ;
     b_ll = lambda ;
 
@@ -1040,11 +1062,10 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
     do {
       b_ll -= d3 ;
       H = h + W + lvlshift*R + b_ll*mu ;
-      H_diag.compute( H, s) ;
+      H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( nbasis, nbasis, nbasis, nbasis)*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
-      No = p*s.block( 0, 0, nbasis, nbasis) ;
-      N = d2*No.trace() ;
+      N = d2*p.trace() ;
       } while ( static_cast<double>(N) > static_cast<double>(nele)) ;
 
     std::cout << " Lower limit chemical potential " << b_ll << std::endl ;
@@ -1052,11 +1073,10 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
     do {
       b_ul += d3 ;
       H = h + W + lvlshift*R + b_ul*mu ;
-      H_diag.compute( H, s) ;
+      H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( nbasis, nbasis, nbasis, nbasis)*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
-      No = p*s.block( 0, 0, nbasis, nbasis) ;
-      N = d2*No.trace() ;
+      N = d2*p.trace() ;
       } while ( static_cast<double>(N) < static_cast<double>(nele)) ;
 
     std::cout << " upper limit chemical potential " << b_ul << std::endl ;
@@ -1065,11 +1085,10 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
     H = h + W + lvlshift*R + lambda*mu ;
 
     while ( iter_N++ < maxit_pn) {
-      H_diag.compute( H, s) ;
+      H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( nbasis, nbasis, nbasis, nbasis)*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
-      No = p*s.block( 0, 0, nbasis, nbasis) ;
-      N = d2*No.trace() ;
+      N = d2*p.trace() ;
       if  ( std::abs(static_cast<double>(N) - static_cast<double>(nele)) < 1.0e-5){
         std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
         std::cout << "    chemical potential: " << lambda << std::endl ;
@@ -1098,10 +1117,8 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
   Now compare densities to check convergence.
 */
     t = p_prev - p ;
-    print_mat( t, " Difference between density iterations") ;
     energy = t.norm() ;
     t = k_prev - k ;
-    print_mat( t, " Difference between pairing iterations") ;
     energy += t.norm() ;
     std::cout << " rms difference in the densities: " << energy << std::endl ;
 /*
@@ -1118,9 +1135,13 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
     R.block( nbasis, nbasis, nbasis, nbasis) = I - p ;
     R.block( 0, nbasis, nbasis, nbasis) = k ;
     R.block( nbasis, 0, nbasis, nbasis) = -k ;
+    transform( 1, xs, p) ;
+    transform( 1, xs, k) ;
     ctr2er( intarr, p, G, nbasis) ;
     ctrPairr( intarr, k, D, nbasis) ;
     D /= d2 ;
+    transform( 0, xs, G) ;
+    transform( 0, xs, D) ;
     W.setZero() ;
     W.block( 0, 0, nbasis, nbasis) = G ;
     W.block( 0, nbasis, nbasis, nbasis) = D ;
@@ -1131,11 +1152,6 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
   Save the eigenvalues and vectors
 */
 
-  ctr2er( intarr, p, G, nbasis) ;
-  ctrPairr( intarr, k, D, nbasis) ;
-  D /= d2 ;
-  print_mat( p, " p at final iteration ") ;
-  print_mat( k, " k at final iteration ") ;
   t = (d2*h.block( 0, 0, nbasis, nbasis) + G)*p ;
   energy = t.trace() ;
   std::cout << " HF Energy " << energy << std::endl ;
