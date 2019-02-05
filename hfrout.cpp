@@ -239,8 +239,6 @@ void cplx_HFB( common& com, std::vector<tei>& intarr, int opt) {
       xs.block( 0, 0, nbas, nbas).real() = com.getXS() ;
       xs.block( nbas, nbas, nbas, nbas) = xs.block( 0, 0, nbas, nbas) ;
       xsi = xs.inverse() ;
-      std::cout << "xs*xsi" << std::endl ;
-      std::cout << xs*xsi << std::endl ;
       h.block( 0, 0, nbas, nbas).real() = com.getH() ;
       h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
       transform( 0, xs, h.block( 0, 0, 2*nbas, 2*nbas)) ;
@@ -1033,6 +1031,13 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
     transform( 1, xsi, k) ;
     transform( 0, xs, G) ;
     transform( 0, xs, D) ;
+    t = (d2*h.block( 0, 0, nbasis, nbasis) + G)*p ;
+    energy = t.trace() ;
+    std::cout << " HF Energy " << energy << std::endl ;
+    t = k.transpose()*D ;
+    std::cout << " Pairing Energy " << t.trace() << std::endl ;
+    energy += t.trace() ;
+    std::cout << " Total Electronic Energy " << energy << std::endl ;
     W.setZero() ;
     W.block( 0, 0, nbasis, nbasis) = G ;
     W.block( 0, nbasis, nbasis, nbasis) = D ;
@@ -1355,7 +1360,7 @@ double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixX
 
     H = H_w + static_cast<cd>(lambda)*mu ;
 
-    while ( iter_N++ < 2*maxit_pn) {
+    while ( iter_N++ < maxit_pn) {
       H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
