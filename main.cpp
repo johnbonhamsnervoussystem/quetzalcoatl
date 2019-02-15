@@ -18,12 +18,14 @@
 #include "obarasaika.h"
 #include "postscf.h"
 #include "project.h"
+#include "nbodyint.h"
 #include "qtzio.h"
 #include "qtzcntrl.h"
 #include "solver.h"
 #include "tei.h"
 #include "time_dbg.h"
 #include "util.h"
+#include "r12.h"
 #include "wfn.h"
 
 /*
@@ -144,7 +146,7 @@ int main(int argc, char *argv[]) {
   std::vector<tei> intarr ;
   std::vector<tei> trnint ;
 
-  int nbas, natm, ntt, n2ei ;
+  int nbas, natm ;
   int quetz_image = 0 ;
   int i, j, k, l ;
   double cx = 0.0e0 ;
@@ -227,9 +229,8 @@ int main(int argc, char *argv[]) {
     cV.resize( nbas, nbas) ;
     ao_overlap( com.natm(), b, S) ;
     com.setS( S) ;
-    // Find the orthogonalizing routine
-    canort( S, cV, nbas) ;
-    T = -cV.real() ;
+    symort( S, cV) ;
+    T = cV.real() ;
     com.setXS( T) ;
     T.setZero() ;
     V.setZero() ;
@@ -258,74 +259,36 @@ int main(int argc, char *argv[]) {
                   unrestricted
                   generalized  
   */
+
 /*
-  Put the integral list into the tensor
-    ntt = nbas*(nbas + 1)/2 ;
-    n2ei = ntt*(ntt+1)/2 ;
-    std::cout << n2ei << std::endl ;
-    for ( int t = 0; t < n2ei; t++) {
-*/
-      /*  ( 1 1| 2 2)
-       *  ( i j| k l) = val */
-/*
-      std::cout << t << std::endl ;
-      i = intarr[t].r_i() ;
-      j = intarr[t].r_j() ;
-      k = intarr[t].r_k() ;
-      l = intarr[t].r_l() ;
-      std::cout << " i = " << i << " j = " << j << " k = " << k << " l = " << l << std::endl ;
-      std::cout << intarr[t].r_v() << std::endl ;
-      tei_tensor ( i, j, k, l) = intarr[t].r_v() ;
-      tei_tensor ( j, i, k, l) = intarr[t].r_v() ;
-      tei_tensor ( j, i, l, k) = intarr[t].r_v() ;
-      tei_tensor ( i, j, l, k) = intarr[t].r_v() ;
-      tei_tensor ( k, l, i, j) = intarr[t].r_v() ;
-      tei_tensor ( l, k, i, j) = intarr[t].r_v() ;
-      tei_tensor ( l, k, j, i) = intarr[t].r_v() ;
-      tei_tensor ( k, l, j, i) = intarr[t].r_v() ;
-      }
-*/
   int cghfxx = 11 ;
   scf_drv( com, intarr, cghfxx) ;
   cghfxx = 21 ;
   scf_drv( com, intarr, cghfxx) ;
 
-/*
+
   if ( com.methd() / 100 != 0 ){
     int rrphfb = 121 ;
     prj_drv( com, intarr, rrphfb) ;
     }
+
 */
-/*
-  S.resize( 2*nbas, 2*nbas) ;
-  T.resize( 2*nbas, 2*nbas) ;
-  V.resize( 2*nbas, 2*nbas) ;
-  V.setZero() ;
-  S.setRandom() ;
-  T = (S - S.transpose())/2.0e0 ;
+  nbodyint<double>* W = new r12<double>( intarr, 1, nbas) ;
+  wfn< double, Eigen::Dynamic, Eigen::Dynamic> m ;
+  m.moc.resize( nbas, nbas) ;
+  m.moc.setRandom() ;
+  m.moc *= 0.1 ;
+  m.eig.resize( nbas) ;
+  T.resize( nbas, nbas) ;
+  S.resize( nbas, nbas) ;
+  T = com.getH() ;
+  S = com.getS() ;
+  int maxit = 100 ;
+  double thresh = 1.0e-7 ;
+  int nele = com.nele() ;
+  m.e_scf = rhfdia( T, S, W, nbas, nele, m.moc, m.eig, maxit, thresh) ;
+  std::cout << m.e_scf << std::endl ;
 
-  print_mat( T) ;
-  twin_field( intarr, T.block( 0, nbas, nbas, nbas), V.block( 0, nbas, nbas, nbas), nbas) ;
-  print_mat( V, " twin") ;
-  twin_field( intarr, T.block( nbas, 0, nbas, nbas), V.block( nbas, 0, nbas, nbas), nbas) ;
-  print_mat( V, " twin") ;
-
-  V.setZero() ;
-  T = (S - S.transpose())/2.0e0 ;
-  print_mat( T) ;
-  for ( int i=0; i < nbas; i++){
-    for ( int j=0; j < nbas; j++){
-      for ( int k=0; k < nbas; k++){
-        for ( int l=0; l < nbas; l++){
-          V( i, j + nbas) -= T( k, l+nbas)*tei_tensor(i, l, j, k) ;
-          V( i + nbas, j) -= T( k+nbas, l)*tei_tensor(i, l, j, k) ;
-          }
-        }
-      }
-    }
-
-  print_mat( V, " Full sum twin") ;
-*/
   intarr.clear() ;
   V.resize( 0, 0) ;
   T.resize( 0, 0) ;

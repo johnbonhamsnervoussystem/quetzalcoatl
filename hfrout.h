@@ -2,6 +2,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <string>
+#include "nbodyint.h"
 #include "tei.h"
 
 #ifndef HFROUT_H
@@ -16,6 +17,11 @@ void cplx_HFB( common& com, std::vector<tei>& intarr, int opt) ;
 void real_SlaDet( common& com, std::vector<tei>& intarr, int o) ;
 
 void cplx_SlaDet( common& com, std::vector<tei>& intarr, int o) ;
+
+//template < typename z>
+//double rhfdia( const Eigen::Ref<Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic>> h, const Eigen::Ref<Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic>> s, nbodyint<z>* W, int nbasis, int nele, Eigen::Ref<Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic>> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh) ;
+template < class matrix, class z>
+double rhfdia( const matrix& h, const matrix& s, nbodyint<z>* W, int nbasis, int nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh) ;
 
 double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, int nbasis, int nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
 

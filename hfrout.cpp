@@ -9,6 +9,7 @@
 #include "evalm.h"
 #include "hfrout.h"
 #include "guess.h"
+#include "nbodyint.h"
 #include <iostream>
 #include "qtzcntrl.h"
 #include "qtzio.h"
@@ -370,6 +371,75 @@ void cplx_SlaDet( common& com, std::vector<tei>& intarr, int opt){
     return ;
 
   } ;
+
+//double rhfdia( const Eigen::Ref<Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic>> h, const Eigen::Ref<Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic>> s, nbodyint<z>* W, int nbasis, int nele, Eigen::Ref<Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic>> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh) {
+template < class matrix, class z>
+double rhfdia( const matrix& h, const matrix& s, nbodyint<z>* W, int nbasis, int nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh) {
+
+  /* 
+    Restricted Hartree-Fock solved by repeated diagonalization. 
+  */
+  Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic> f, g, p, p_prev ;
+  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic>> f_diag ;
+  int iter=0 ;
+  int occ ;
+  z energy, t_f ;
+  time_dbg rrhfdia_time = time_dbg("rrhfdia") ;
+
+  occ = nele/2 ;
+  f.resize( nbasis, nbasis) ;
+  g.resize( nbasis, nbasis) ;
+  p.resize( nbasis, nbasis) ;
+  p_prev.resize( nbasis, nbasis) ;
+  p_prev.setZero() ;
+
+  /* If c has something in it use it as the initial guess. */
+  if( c.isZero(0) ) {
+    f = h ;
+  } else {
+    p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
+    W->contract( p) ;
+    g = W->getG() ;
+    f = h + g ;
+  } 
+
+  while ( iter++ < maxit ) {
+    p_prev = p ;
+    f_diag.compute( f, s) ;
+    c = f_diag.eigenvectors().real() ;
+    p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
+    W->contract( p) ;
+    g = W->getG() ;
+    f = h + g ;
+    g = p*( h + f) ;
+
+    energy = g.trace() ;
+    std::cout << " energy " << energy << std::endl ;
+
+    g = p - p_prev ;
+    t_f = g.norm() ;
+    std::cout << "  rms difference in the densities: " << t_f << std::endl ;
+    if ( std::real(t_f) <= thresh ) { break ;}
+  }
+
+  std::cout << " Number of iterations : " << iter << std::endl ;
+  p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
+  print_mat( p, " Final Density") ;
+
+  eig = f_diag.eigenvalues() ;
+  p.resize( 0, 0) ;
+  g.resize( 0, 0) ;
+  f.resize( 0, 0) ;
+
+  rrhfdia_time.end() ;
+
+  return std::real(energy) ;
+
+} ;
+
+template double rhfdia( const Eigen::MatrixXd&, const Eigen::MatrixXd&, nbodyint<double>*, int, int, Eigen::MatrixXd&, Eigen::Ref<Eigen::VectorXd>, int&, double&) ;
+
+template double rhfdia( const Eigen::MatrixXcd&, const Eigen::MatrixXcd&, nbodyint<cd>*, int, int, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, int&, double&) ;
 
 double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, int nbasis, int nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh){
 
@@ -1020,17 +1090,17 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
     c = H_diag.eigenvectors() ;
     p = c.block( nbasis, nbasis, nbasis, nbasis)*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
     k = c.block( nbasis, nbasis, nbasis, nbasis)*c.block( 0, nbasis, nbasis, nbasis).transpose() ;
-    transform( 1, xs, p) ;
-    transform( 1, xs, k) ;
+    transform( 2, xs, p) ;
+    transform( 2, xs, k) ;
     }
 
     ctr2er( intarr, p, G, nbasis) ;
     ctrPairr( intarr, k, D, nbasis) ;
     D /= d2 ;
-    transform( 1, xsi, p) ;
-    transform( 1, xsi, k) ;
-    transform( 0, xs, G) ;
-    transform( 0, xs, D) ;
+    transform( 2, xsi, p) ;
+    transform( 2, xsi, k) ;
+    transform( 2, xs, G) ;
+    transform( 2, xs, D) ;
     t = (d2*h.block( 0, 0, nbasis, nbasis) + G)*p ;
     energy = t.trace() ;
     std::cout << " HF Energy " << energy << std::endl ;
@@ -1141,13 +1211,13 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
     R.block( nbasis, nbasis, nbasis, nbasis) = I - p ;
     R.block( 0, nbasis, nbasis, nbasis) = k ;
     R.block( nbasis, 0, nbasis, nbasis) = -k ;
-    transform( 1, xs, p) ;
-    transform( 1, xs, k) ;
+    transform( 2, xs, p) ;
+    transform( 2, xs, k) ;
     ctr2er( intarr, p, G, nbasis) ;
     ctrPairr( intarr, k, D, nbasis) ;
     D /= d2 ;
-    transform( 0, xs, G) ;
-    transform( 0, xs, D) ;
+    transform( 2, xs, G) ;
+    transform( 2, xs, D) ;
     W.setZero() ;
     W.block( 0, 0, nbasis, nbasis) = G ;
     W.block( 0, nbasis, nbasis, nbasis) = D ;
@@ -1168,6 +1238,8 @@ double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd
   eig = H_diag.eigenvalues().real() ;
   c = H_diag.eigenvectors() ;
 
+  print_mat( p, "rho") ;
+  print_mat( k, "kappa") ;
 /*
   Clean up the memory
 */

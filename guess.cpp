@@ -21,8 +21,7 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXcd> p, Eigen:
   w.moc.resize( nbas, nbas) ;
   w.eig.resize( nbas) ;
   load_wfn( w) ;
-  Ef = -0.06803 ;
-//  Ef = (w.eig( nele - 1) + w.eig( nele))/d2 ;
+  Ef = (w.eig( nele - 1) + w.eig( nele))/d2 ;
   for( int i=0; i < nbas; i++){
     djunk = (w.eig( i) - Ef)/(kb*3.0e4) ;
     A( i, i) = d1/( d1 + std::exp( djunk)) ;
@@ -64,8 +63,7 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXd> p, Eigen::
   w.moc.resize( nbas, nbas) ;
   w.eig.resize( nbas) ;
   load_wfn( w) ;
-  Ef = -0.06803 ;
-//  Ef = (w.eig( nele - 1) + w.eig( nele))/d2 ;
+  Ef = (w.eig( nele - 1) + w.eig( nele))/d2 ;
   for( int i=0; i < nbas; i++){
     djunk = (w.eig( i) - Ef)/(kb*3.0e4) ;
     A( i, i) = d1/( d1 + std::exp( djunk)) ;
@@ -86,3 +84,4 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXd> p, Eigen::
   return ;
 
 }
+

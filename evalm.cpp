@@ -350,7 +350,7 @@ void ctrPairr( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> k, Eigen::
 */
 
     Eigen::MatrixXcd t ( nb, nb) ;
-    t = k.transpose() ;
+    t = -k ;
     D.setZero() ;
 
     /* Do the pairing terms for the alpha beta block */
