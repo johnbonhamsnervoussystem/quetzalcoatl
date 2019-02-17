@@ -7,19 +7,26 @@
 #define R12_H
 
 
-template< typename s>
-class r12: public nbodyint<s> {
+template <class matrix>
+class r12: public nbodyint<matrix> {
   private :
-    using nbodyint<s>::itype ;
-    using nbodyint<s>::dim ;
-    using nbodyint<s>::G ;
-    std::vector<tei> ints ;
+    using nbodyint<matrix>::itype ;
+    using nbodyint<matrix>::dim ;
+    using nbodyint<matrix>::G ;
+    std::vector<tei>* ints ;
+    matrix x ;
+    matrix xi ;
   public :
-    r12( std::vector<tei>& intarr, int i, int n) : nbodyint<s>::nbodyint( i, n){
+    r12( std::vector<tei>* intarr, matrix& xs, int i, int n) : nbodyint<matrix>::nbodyint( i, n){
       ints = intarr ;
+      x.resize( n, n) ;
+      xi.resize( n, n) ;
+      x = xs ;
+      xi = x.inverse() ;
       } ;
     ~r12(){} ;
-    void contract( Eigen::Ref<Eigen::Matrix<s, Eigen::Dynamic, Eigen::Dynamic>> m) ;
+    void contract( matrix& m) ;
+    void contract( matrix& m, matrix& n) ;
 } ;
 
 #endif

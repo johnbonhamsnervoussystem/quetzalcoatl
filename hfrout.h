@@ -8,37 +8,29 @@
 #ifndef HFROUT_H
 #define HFROUT_H
 
-void scf_drv( common& com, std::vector<tei>& intarr, int o) ;
+void scf_drv( common& c) ;
 
-void real_HFB( common& com, std::vector<tei>& intarr, int opt) ;
+void real_HFB( common& c, int& o) ;
 
-void cplx_HFB( common& com, std::vector<tei>& intarr, int opt) ;
+void cplx_HFB( common& c, int& o) ;
 
-void real_SlaDet( common& com, std::vector<tei>& intarr, int o) ;
+void real_SlaDet( common& c, int& o) ;
 
-void cplx_SlaDet( common& com, std::vector<tei>& intarr, int o) ;
+void cplx_SlaDet( common& c, int& o) ;
 
-//template < typename z>
-//double rhfdia( const Eigen::Ref<Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic>> h, const Eigen::Ref<Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic>> s, nbodyint<z>* W, int nbasis, int nele, Eigen::Ref<Eigen::Matrix< z, Eigen::Dynamic, Eigen::Dynamic>> c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh) ;
-template < class matrix, class z>
-double rhfdia( const matrix& h, const matrix& s, nbodyint<z>* W, int nbasis, int nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, int& maxit, double& thresh) ;
+template < class matrix>
+double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const int& nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, const int& maxit, const double& thresh) ;
 
-double rrhfdia( Eigen::Ref<Eigen::MatrixXd> h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, int nbasis, int nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
+template < class matrix>
+double uhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const int& nalp, const int& nbet, matrix& c_a, matrix& c_b, Eigen::Ref<Eigen::VectorXd> eig, const int& maxit, const double& thresh) ;
 
-double crhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
+template < class matrix>
+double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const int& nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, const int& maxit, const double& thresh) ;
 
-double ruhfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, const int& nbasis, const int& nalp, const int& nbet, Eigen::Ref<Eigen::MatrixXd> c_a, Eigen::Ref<Eigen::MatrixXd> c_b, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
+template < class matrix>
+double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, const int& maxit_scf, const int& maxit_pn, const double& thresh) ;
 
-double cuhfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nalp, const int& nbet, Eigen::Ref<Eigen::MatrixXcd> c_a, Eigen::Ref<Eigen::MatrixXcd> c_b, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
+template < class matrix>
+double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, const int& maxit_scf, const int& maxit_pn, const double& thresh) ;
 
-double rghfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
-
-double rghfdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
-
-double rrhfbdia( Eigen::Ref<Eigen::MatrixXd> const h, Eigen::Ref<Eigen::MatrixXd> xs, Eigen::Ref<Eigen::MatrixXd> xsi, std::vector<tei>& intarr, const int& nbas, const int& ne, Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> k, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, int& maxit_scf, int& maxit_pn, double& t) ;
-
-double cghfbdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> xs, Eigen::Ref<Eigen::MatrixXcd> xsi, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> k, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, double& l, int& mis, int& min, double& t) ;
-
-double cghfdia( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> s, std::vector<tei>& intarr, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, int& mi, double& t) ;
-
-#endif 
+#endif

@@ -9,7 +9,7 @@
   common::common( void) {
     max_scf_iter = 30 ;
     max_pn_iter = 30 ;
-    scf_convergence_threshold = 1.0e-6 ;
+    scf_convergence_threshold = 1.0e-7 ;
     hamiltonian = 0 ;
     method = 0 ;
     nbr_g = 11 ;
@@ -68,7 +68,7 @@
       print_mat( xs_c) ;
       }
     return ;
-  }
+    }
 
 /* Atomic Number */
   void common::setA ( std::vector<double> a) {
@@ -78,7 +78,7 @@
       a_c[i] = a[i] ;
     }
     return ;
-  }
+    }
 
 /* Coordinates */
   void common::setC ( std::vector<std::vector<double>> c) {
@@ -88,7 +88,13 @@
       coord.row(i) << c[i][0], c[i][1], c[i][2] ;
     }
     return ;
-  }
+    }
+
+/* pointer to tei */
+  void common::setr12( std::vector<tei>* intarr) { 
+    r12int = intarr ;
+    return ;
+    }
 
 /* Get things */
   int common::hamil( void) { return hamiltonian ;}
@@ -115,4 +121,8 @@
   Eigen::MatrixXd common::getH( void) { return h_c   ;}
   Eigen::VectorXd common::getA( void) { return a_c   ;}
   Eigen::MatrixXd common::getC( void) { return coord ;}
+  void common::getr12( std::vector<tei>* intarr) { 
+    intarr = r12int ;
+    return ;
+    }
 

@@ -16,12 +16,18 @@
   extern const double d7 ;
   extern const double d8 ;
   extern const double d9 ;
+  extern const double d10 ;
   extern const cd z0 ;
   extern const cd z1 ;
   extern const cd z2 ;
+  extern const cd z3 ;
   extern const cd z4 ;
+  extern const cd z5 ;
   extern const cd z6 ;
+  extern const cd z7 ;
   extern const cd z8 ;
+  extern const cd z9 ;
+  extern const cd z10 ;
   extern const cd zi ;
 
   /* Useful physical quantities */

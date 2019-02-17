@@ -27,6 +27,7 @@
 #include "util.h"
 #include "r12.h"
 #include "wfn.h"
+#include "staging.h"
 
 /*
     Quetzalcoatl - electronic structure package
@@ -144,27 +145,11 @@ int main(int argc, char *argv[]) {
   */
   common com = common() ;
   std::vector<tei> intarr ;
-  std::vector<tei> trnint ;
 
-  int nbas, natm ;
   int quetz_image = 0 ;
-  int i, j, k, l ;
-  double cx = 0.0e0 ;
-  double cy = 0.0e0 ;
-  double cz = 0.0e0 ;
-  double r2 = 0.0e0 ;
-  double n_rep = 0.0e0 ;
   cd ejunk ;
   cd ojunk ;
   std::vector<std::string> wfn_vec ;
-  Eigen::MatrixXd c ;
-  Eigen::VectorXd a ;
-  Eigen::MatrixXd S ;
-  Eigen::MatrixXd T ;
-  Eigen::MatrixXd V ;
-  Eigen::MatrixXcd cV ;
-  Eigen::Tensor<double,4> tei_tensor ( 4, 4, 4, 4) ;
-  basis_set b ;
   wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
   std::ofstream tstfile ; 
   std::ifstream tstfe ; 
@@ -193,57 +178,19 @@ int main(int argc, char *argv[]) {
   read_input( com, inpfile) ;
 
 /*
-  What sort of Hamiltonian are we doing
+  Set up the appropriate Hamiltonian
 */
+
   if ( com.hamil() == 1 || com.hamil() == 2 ){
+
 /*
   Molecular Hamiltonian
 */
-    natm = com.natm() ;
-    c.resize( natm, 3) ;
-    a.resize( natm) ;
-    c = com.getC() ;
-    a = com.getA() ;
-/*
-  Get the nuclear-nuclear repulsion
-*/
-    for ( i=0; i < natm; i++){
-      for ( j=i+1; j < natm; j++){
-        cx = c( j, 0) - c( i, 0) ;
-        cy = c( j, 1) - c( i, 1) ;
-        cz = c( j, 2) - c( i, 2) ;
-        r2 = pow( cx, 2.0) + pow( cy, 2.0) + pow( cz, 2.0) ;
-        n_rep += a(i)*a(j)/sqrt(r2) ;
-        }
-      }
- 
-    com.nrep( n_rep ) ;
-    std::cout << " Nuclear repulsion is " << n_rep << std::endl ;
-
-    b = build_basis( com, a, c) ;
-    nbas = b.nbas ;
-    com.nbas( nbas) ;
-    S.resize( nbas, nbas) ;
-    T.resize( nbas, nbas) ;
-    V.resize( nbas, nbas) ;
-    cV.resize( nbas, nbas) ;
-    ao_overlap( com.natm(), b, S) ;
-    com.setS( S) ;
-    symort( S, cV) ;
-    T = cV.real() ;
-    com.setXS( T) ;
-    T.setZero() ;
-    V.setZero() ;
-    ao_kinetic( com.natm(), b, T) ;
-    ao_eN_V( com.natm(), b, c, a, V) ;
-    S = T + V ;
-    com.setH( S) ;
-    T.resize( 0, 0) ;
-    V.resize( 0, 0) ;
-    S.resize( 0, 0) ;
-    list_ao_tei( com, b, intarr) ;
+    std::vector<tei> intarr ;
+    molecular_hamiltonian( com, intarr) ;
 
   } else if ( com.hamil() == 3 ){
+
 /*
   Hubbard
 */
@@ -251,14 +198,21 @@ int main(int argc, char *argv[]) {
   } else {
     qtzcntrl::shutdown( "Unrecognized Hamiltonian in Main." ) ;
     }
-  /* 
-     Step 1 :
-     Build the relevant data in memory.
-     SCF routines
-     real/complex reastricted
-                  unrestricted
-                  generalized  
-  */
+
+
+
+/*
+  Follow the appropriate path through the program
+*/
+
+  if ( true){
+
+/*
+  We always do a mean-field calculation so let's not worry about logic here quite yet
+*/
+    scf_drv( com) ;
+
+    }
 
 /*
   int cghfxx = 11 ;
@@ -272,7 +226,6 @@ int main(int argc, char *argv[]) {
     prj_drv( com, intarr, rrphfb) ;
     }
 
-*/
   nbodyint<double>* W = new r12<double>( intarr, 1, nbas) ;
   wfn< double, Eigen::Dynamic, Eigen::Dynamic> m ;
   m.moc.resize( nbas, nbas) ;
@@ -289,10 +242,7 @@ int main(int argc, char *argv[]) {
   m.e_scf = rhfdia( T, S, W, nbas, nele, m.moc, m.eig, maxit, thresh) ;
   std::cout << m.e_scf << std::endl ;
 
-  intarr.clear() ;
-  V.resize( 0, 0) ;
-  T.resize( 0, 0) ;
-  S.resize( 0, 0) ;
+*/
   quetz_time.end() ;
 
   return 0 ;

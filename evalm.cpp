@@ -157,10 +157,9 @@ void ctr2eg( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> p,
   *
   */
 
-    Eigen::MatrixXd t_p ;
+    Eigen::MatrixXd t_p( nb, nb) ;
 
     g.setZero() ;
-    t_p.resize( nb, nb) ;
 
     t_p.block(0,0,nb,nb) = p.block(0,0,nb,nb) + p.block(nb,nb,nb,nb) ;
 
