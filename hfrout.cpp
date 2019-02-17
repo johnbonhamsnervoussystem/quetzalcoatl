@@ -43,7 +43,7 @@ void scf_drv( common& com) {
 */
   int wfntyp = ( com.methd() / 10) % 2 ;
   int wfnksy = ( com.methd() % 10) % 2 ;
-  int wfnssy = ( com.methd() % 10) / 2 ;
+  int wfnssy = ( ( com.methd() % 10) + 1) / 2 ;
   
   if ( wfntyp == 0 ) {
 
@@ -91,6 +91,7 @@ void real_HFB( common& com, int& opt) {
     int maxit_pn = com.mxpnit() ;
     double lambda = com.mu() ;
     double thresh = com.scfthresh() ;
+    double lshift = -d4 ;
     Eigen::MatrixXd h, xs, xsi, p, k ;
     std::vector<tei>* r12int ;
     com.getr12( r12int) ;
@@ -121,7 +122,7 @@ void real_HFB( common& com, int& opt) {
       transform( 2, xsi, k) ;
       xsi.resize( 0, 0) ;
 
-      w.e_scf = rhfbdia( h, X, nbas, nele, p, k, w.moc, w.eig, lambda, maxit_scf, maxit_pn, thresh) ;
+      w.e_scf = rhfbdia( h, X, nbas, nele, p, k, w.moc, w.eig, lambda, lshift, maxit_scf, maxit_pn, thresh) ;
 
       std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
       print_mat( w.eig, "MO Eigenvalues : ") ;
@@ -186,9 +187,9 @@ void real_SlaDet( common& com, int& opt){
       transform( 2, xs, h) ;
       nbodyint<Eigen::MatrixXd>* X = new r12<Eigen::MatrixXd>( r12int, xs, 1, nbas) ;
       w.moc.resize( nbas, nbas) ;
-      w.eig.resize( nbas) ;
       w.moc.setRandom() ;
-      w.moc *= 0.01 ;
+      w.moc *= d1/d10 ;
+      w.eig.resize( nbas) ;
 
       w.e_scf = rhfdia( h, X, nbas, nele, w.moc, w.eig, maxit, thresh) ;
       std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
@@ -227,12 +228,14 @@ void real_SlaDet( common& com, int& opt){
       h.resize( 2*nbas, 2*nbas) ;
       h.setZero() ;
       xs.resize( nbas, nbas) ;
+      xs = com.getXS() ;
       h.block( 0, 0, nbas, nbas) = com.getH() ;
       h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
       transform( 2, xs, h) ;
       nbodyint<Eigen::MatrixXd>* X = new r12<Eigen::MatrixXd>( r12int, xs, 3, nbas) ;
       w.moc.resize( 2*nbas, 2*nbas) ;
-      w.moc.setZero() ;
+      w.moc.setRandom() ;
+      w.moc *= d1/d10 ;
       w.eig.resize( 2*nbas) ;
 
       w.e_scf = ghfdia( h, X, nbas, nele, w.moc, w.eig, maxit, thresh) ;
@@ -242,6 +245,7 @@ void real_SlaDet( common& com, int& opt){
       print_mat( w.moc, "MO coefficients : ") ;
 
     } else {
+      std::cout << " opt = " << opt << std::endl ;
       qtzcntrl::shutdown("Unrecognized option in real_SlaDet") ;
       }
 
@@ -258,7 +262,7 @@ void real_SlaDet( common& com, int& opt){
 
   } ;
 
-void cplx_HFB( common& com, int opt) {
+void cplx_HFB( common& com, int& opt) {
     /* Do the general HFB first. */
     int nbas = com.nbas() ;
     int nele = com.nele() ;
@@ -266,7 +270,8 @@ void cplx_HFB( common& com, int opt) {
     int maxit_scf = com.mxscfit() ;
     int maxit_pn = com.mxpnit() ;
     double thresh = com.scfthresh() ;
-    double lambda = com.mu() ;
+    cd lambda = cd ( com.mu(), d0) ;
+    cd lshift = -z4 ;
     Eigen::MatrixXcd h, xs, xsi, p, k ;
     std::vector<tei>* r12int ;
     com.getr12( r12int) ;
@@ -301,8 +306,8 @@ void cplx_HFB( common& com, int opt) {
       */
       nalp = nele/2 ;
       thermal_guess( nalp, nbas, p, k) ;
-      w.e_scf = ghfbdia( h, X, nbas, nele, p, k, w.moc, w.eig, lambda, maxit_scf, maxit_pn, thresh) ;
-      com.mu( lambda) ;
+      w.e_scf = ghfbdia( h, X, nbas, nele, p, k, w.moc, w.eig, lambda, lshift, maxit_scf, maxit_pn, thresh) ;
+      com.mu( std::real(lambda)) ;
       std::cout << "Mean Field Energy + NN : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "Eigenvalues : " << std::endl << std::endl ;
       std::cout << w.eig << std::endl ;
@@ -401,7 +406,7 @@ void cplx_SlaDet( common& com, int& opt){
       h.block( 0, 0, nbas, nbas).real() = com.getH() ;
       h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
       transform( 2, xs, h) ;
-      nbodyint<Eigen::MatrixXcd>* X = new r12<Eigen::MatrixXcd>( r12int, xs, 3, 2*nbas) ;
+      nbodyint<Eigen::MatrixXcd>* X = new r12<Eigen::MatrixXcd>( r12int, xs, 3, nbas) ;
       w.moc.resize( 2*nbas, 2*nbas) ;
       w.moc.setZero() ;
       w.eig.resize( 2*nbas) ;
@@ -413,7 +418,8 @@ void cplx_SlaDet( common& com, int& opt){
       print_mat( w.moc, "MO coefficients : ") ;
 
     } else {
-      qtzcntrl::shutdown("Unrecognized option in real_SlaDet") ;
+      std::cout << " opt = " << opt << std::endl ;
+      qtzcntrl::shutdown("Unrecognized option in cplx_SlaDet") ;
       }
 
     w.wfntyp = opt ;
@@ -544,15 +550,14 @@ double uhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
     g = W->getG() ;
     f_a = h + g ;
     g = p_a*f_a ;
-    t = g.trace() ;
+    energy = g.trace() ;
     W->contract( p_t, p_b) ;
     g = W->getG() ;
     f_b = h + g ;
     g = p_b*f_b ;
-    t += g.trace() ;
+    energy += g.trace() ;
     g = p_t*h ;
-    t += g.trace() ;
-    energy = t ;
+    energy += g.trace() ;
 
     g = p_t - p_p ;
     t = g.norm() ;
@@ -561,9 +566,7 @@ double uhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
 
   std::cout << " Number of iterations : " << iter << std::endl ;
 
-  f_diag.compute( f_a) ;
   eig.head(nbasis) = f_diag.eigenvalues() ;
-  f_diag.compute( f_b) ;
   eig.tail(nbasis) = f_diag.eigenvalues() ;
   p_p.resize( 0, 0) ;
   p_t.resize( 0, 0) ;
@@ -606,7 +609,6 @@ double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
   if ( c.isZero(0) ) {
     f = h ;
   } else {
-    c = f_diag.eigenvectors() ;
     p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
     W->contract( p) ;
     g = W->getG() ;
@@ -651,8 +653,8 @@ template double ghfdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, cons
 
 template double ghfdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, const int&, const double&) ;
 
-template < class matrix>
-double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, const int& maxit_scf, const int& maxit_pn, const double& thresh) {
+template < class matrix, class z>
+double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, z& lambda, z& lvlshift, const int& maxit_scf, const int& maxit_pn, const double& thresh) {
 /* 
   Restricted Hartree-Fock Bogoliubov
 
@@ -717,9 +719,8 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
   Eigen::SelfAdjointEigenSolver<matrix> H_diag ;
 
   int iter_N = 0, iter_d = 0 ;
-  int pnum = nele/2 ;
-  double b_ul, b_ll ;
-  double lvlshift = -d4 ;
+  double pnum = static_cast<double>(nele)/d2 ;
+  z b_ul, b_ll ;
   typename matrix::Scalar energy, N ;
   time_dbg rhfbdia_time = time_dbg("rhfbdia") ;
 
@@ -791,35 +792,35 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 
     do {
       b_ll -= d3 ;
-      H = h + W + lvlshift*R + static_cast<z>(b_ll)*mu ;
+      H = h + W + lvlshift*R + b_ll*mu ;
       H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
       N = p.trace() ;
-      } while ( static_cast<double>(N) > static_cast<double>(pnum)) ;
+      } while ( static_cast<double>(std::real(N)) > pnum) ;
 
     std::cout << " Lower limit chemical potential " << b_ll << std::endl ;
 
     do {
       b_ul += d3 ;
-      H = h + W + lvlshift*R + static_cast<z>(b_ul)*mu ;
+      H = h + W + lvlshift*R + b_ul*mu ;
       H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
       N = p.trace() ;
-      } while ( static_cast<double>(N) < static_cast<double>(pnum)) ;
+      } while ( static_cast<double>(std::real(N)) < pnum) ;
 
     std::cout << " upper limit chemical potential " << b_ul << std::endl ;
 
     lambda = (b_ul + b_ll)/d2 ;
-    H = h + W + lvlshift*R + static_cast<z>(lambda)*mu ;
+    H = h + W + lvlshift*R + lambda*mu ;
 
     while ( iter_N++ < maxit_pn) {
       H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
       N = p.trace() ;
-      if  ( std::abs(static_cast<double>(N) - static_cast<double>(pnum)) < 1.0e-5){
+      if  ( std::abs(static_cast<double>(std::real(N)) - pnum) < 1.0e-5){
         std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
         std::cout << "    chemical potential: " << lambda << std::endl ;
         std::cout << "    Particle Number : " << N << std::endl << std::endl ;
@@ -828,7 +829,7 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 /*
   Bisection method
 */
-        if ( static_cast<double>(N) - static_cast<double>(nele) < d0){
+        if ( static_cast<double>(std::real(N)) - pnum < d0){
 /*
   Too few electrons. Increase the chemical potential
 */
@@ -839,7 +840,7 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
           lambda = (b_ul + b_ll)/d2 ;
           }
         }
-      H = h + W + lvlshift*R + static_cast<z>(lambda)*mu ;
+      H = h + W + lvlshift*R + lambda*mu ;
       }
 
     k = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( 0, nbasis, nbasis, nbasis).transpose() ;
@@ -854,7 +855,7 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 /*
   Check that the density has converged
 */
-    if ( energy <= thresh ) {
+    if ( std::real(energy) < thresh ) {
       std::cout << " Converged on the density " << std::endl ;
       break ;
       }
@@ -868,6 +869,7 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
     X->contract( p, k) ;
     W = X->getG() ;
   }
+
 /*
   Save the eigenvalues and vectors
 */
@@ -902,16 +904,16 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 
   rhfbdia_time.end() ;
 
-  return energy ;
+  return std::real(energy) ;
 
 } ;
 
-template double rhfbdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, const int&, const int&, Eigen::MatrixXd&, Eigen::MatrixXd&, Eigen::MatrixXd&, Eigen::Ref<Eigen::VectorXd>, double&, const int&, const int&, const double&) ;
+template double rhfbdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, const int&, const int&, Eigen::MatrixXd&, Eigen::MatrixXd&, Eigen::MatrixXd&, Eigen::Ref<Eigen::VectorXd>, double&, double&, const int&, const int&, const double&) ;
 
-template double rhfbdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, Eigen::MatrixXcd&, Eigen::MatrixXcd&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, double&, const int&, const int&, const double&) ;
+template double rhfbdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, Eigen::MatrixXcd&, Eigen::MatrixXcd&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, cd&, cd&, const int&, const int&, const double&) ;
 
-template < class matrix>
-double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, const int& maxit_scf, const int& maxit_pn, const double& thresh) {
+template < class matrix, class z>
+double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, z& lambda, z& lvlshift, const int& maxit_scf, const int& maxit_pn, const double& thresh) {
 /* 
   Generalized Hartree-Fock Bogoliubov
 
@@ -973,8 +975,7 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
   Eigen::SelfAdjointEigenSolver<matrix> H_diag ;
 
   int iter_N = 0, iter_d = 0 ;
-  double b_ul, b_ll ;
-  double lvlshift = -d4 ;
+  z b_ul, b_ll ;
   typename matrix::Scalar energy, N ;
   time_dbg cghfbdia_time = time_dbg("cghfbdia") ;
 
@@ -1043,37 +1044,37 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 
     do {
       b_ll -= d3 ;
-      H = h + W + lvlshift*R + static_cast<z>(b_ll)*mu ;
+      H = h + W + lvlshift*R + b_ll*mu ;
       H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
       N = p.trace() ;
-      } while ( static_cast<double>(N.real()) > static_cast<double>(nele)) ;
+      } while ( static_cast<double>(std::real(N)) > static_cast<double>(nele)) ;
 
     std::cout << " Lower limit chemical potential " << b_ll << std::endl ;
 
     do {
       b_ul += d3 ;
-      H = h + W + lvlshift*R + static_cast<z>(b_ul)*mu ;
+      H = h + W + lvlshift*R + b_ul*mu ;
       H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
       N = p.trace() ;
-      } while ( static_cast<double>(N.real()) < static_cast<double>(nele)) ;
+      } while ( static_cast<double>(std::real(N)) < static_cast<double>(nele)) ;
 
     std::cout << " upper limit chemical potential " << b_ul << std::endl ;
 
-    H = h + W + lvlshift*R + static_cast<z>(lambda)*mu ;
+    H = h + W + lvlshift*R + lambda*mu ;
 
     while ( iter_N++ < maxit_pn) {
       H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
       N = p.trace() ;
-      if ( std::abs(static_cast<double>(N.real()) - static_cast<double>(nele)) < 1.0e-5){
+      if ( std::abs(static_cast<double>(std::real(N)) - static_cast<double>(nele)) < 1.0e-5){
         std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
         std::cout << "    chemical potential: " << lambda << std::endl ;
-        std::cout << "    Particle Number : " << N.real() << std::endl << std::endl ;
+        std::cout << "    Particle Number : " << N << std::endl << std::endl ;
         break ;
       } else {
 
@@ -1081,7 +1082,7 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
   Bisection method
 */
 
-        if ( static_cast<double>(N.real()) - static_cast<double>(nele) < d0){
+        if ( static_cast<double>(std::real(N)) - static_cast<double>(nele) < d0){
 /*
   Too few electrons. Increase the chemical potential
 */
@@ -1093,7 +1094,7 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
           lambda = (b_ul + b_ll)/d2 ;
           }
         }
-      H = h + W + lvlshift*R + static_cast<z>(lambda)*mu ;
+      H = h + W + lvlshift*R + lambda*mu ;
       }
 
     k = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 0, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
@@ -1113,7 +1114,7 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 /*
   Check that the density has converged
 */
-    if ( energy.real() <= thresh ) {
+    if ( std::real(energy) <= thresh ) {
         std::cout << " Converged on the density " << std::endl ;
         break ;
       }
@@ -1133,13 +1134,13 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 */
 
   t = (h.block( 0, 0, 2*nbasis, 2*nbasis) + W.block( 0, 0, 2*nbasis, 2*nbasis))*p ;
-  energy = t.trace()/z2 ;
+  energy = t.trace() ;
   std::cout << " HF Energy " << energy << std::endl ;
-  t = k.transpose()*W.block( 0, 2*nbasis, 2*nbasis, 2*nbasis)/z2 ;
+  t = k.transpose()*W.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) ;
   std::cout << " Pairing Energy " << t.trace() << std::endl ;
   energy += t.trace() ;
   std::cout << " Total Electronic Energy " << energy << std::endl ;
-  eig = H_diag.eigenvalues().real() ;
+  eig = H_diag.eigenvalues() ;
   c = H_diag.eigenvectors() ;
 
 /*
@@ -1159,11 +1160,11 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 
   cghfbdia_time.end() ;
 
-  return real(energy) ;
+  return std::real(energy)/d2 ;
 
 } ;
 
-template double ghfbdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, const int&, const int&, Eigen::MatrixXd&, Eigen::MatrixXd&, Eigen::MatrixXd&, Eigen::Ref<Eigen::VectorXd>, double&, const int&, const int&, const double&) ;
+template double ghfbdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, const int&, const int&, Eigen::MatrixXd&, Eigen::MatrixXd&, Eigen::MatrixXd&, Eigen::Ref<Eigen::VectorXd>, double&, double&, const int&, const int&, const double&) ;
 
-template double ghfbdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, Eigen::MatrixXcd&, Eigen::MatrixXcd&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, double&, const int&, const int&, const double&) ;
+template double ghfbdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, Eigen::MatrixXcd&, Eigen::MatrixXcd&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, cd&, cd&, const int&, const int&, const double&) ;
 

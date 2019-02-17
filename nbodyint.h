@@ -1,4 +1,5 @@
 #include <Eigen/Core>
+#include "qtzcntrl.h"
 
 #ifndef NBODYINT_H
 #define NBODYINT_H
@@ -20,7 +21,20 @@ class nbodyint{
     nbodyint( int i, int n){
       itype = i ;
       dim = n ;
-      G.resize( dim, dim) ;
+      switch( itype) {
+        case 1 : // rrhf
+          G.resize( dim, dim) ;
+          break ;
+        case 2 : // ruhf
+          G.resize( dim, dim) ;
+          break ;
+        case 3 : // rghf
+          G.resize( 2*dim, 2*dim) ;
+          break ;
+        default : // Unimplemented case
+          qtzcntrl::shutdown( "Unimplemented case in nbodyint") ;
+          break ;
+        }
       } ;
 
 /*

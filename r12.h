@@ -1,4 +1,5 @@
 #include <Eigen/Core>
+#include <iostream>
 #include "nbodyint.h"
 #include <vector>
 #include "tei.h"

@@ -225,23 +225,6 @@ int main(int argc, char *argv[]) {
     int rrphfb = 121 ;
     prj_drv( com, intarr, rrphfb) ;
     }
-
-  nbodyint<double>* W = new r12<double>( intarr, 1, nbas) ;
-  wfn< double, Eigen::Dynamic, Eigen::Dynamic> m ;
-  m.moc.resize( nbas, nbas) ;
-  m.moc.setRandom() ;
-  m.moc *= 0.1 ;
-  m.eig.resize( nbas) ;
-  T.resize( nbas, nbas) ;
-  S.resize( nbas, nbas) ;
-  T = com.getH() ;
-  S = com.getS() ;
-  int maxit = 100 ;
-  double thresh = 1.0e-7 ;
-  int nele = com.nele() ;
-  m.e_scf = rhfdia( T, S, W, nbas, nele, m.moc, m.eig, maxit, thresh) ;
-  std::cout << m.e_scf << std::endl ;
-
 */
   quetz_time.end() ;
 

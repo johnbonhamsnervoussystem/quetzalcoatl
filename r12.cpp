@@ -17,14 +17,16 @@ void r12<matrix>::contract( matrix& m){
     transform( 2, x, m) ;
     ctr2er( *ints, m, G, dim) ;
     transform( 2, xi, m) ;
+    transform( 2, x, G) ;
   } else if ( itype == 3) {
 
 /*
   ghf
 */
     transform( 2, x, m) ;
-    ctr2eg( *ints, m, G, dim/2) ;
+    ctr2eg( *ints, m, G, dim) ;
     transform( 2, xi, m) ;
+    transform( 2, x, G) ;
     }
 
   return ;
@@ -48,6 +50,7 @@ void r12<matrix>::contract( matrix& m, matrix& n){
     ctr2eu( *ints, m, n, G, dim) ;
     transform( 2, xi, m) ;
     transform( 2, xi, n) ;
+    transform( 2, x, G) ;
 
   } else if ( itype == 4){
 

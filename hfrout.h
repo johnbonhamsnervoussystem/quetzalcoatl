@@ -27,10 +27,10 @@ double uhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
 template < class matrix>
 double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const int& nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, const int& maxit, const double& thresh) ;
 
-template < class matrix>
-double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, const int& maxit_scf, const int& maxit_pn, const double& thresh) ;
+template < class matrix, class z>
+double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, z& lambda, z& lshift, const int& maxit_scf, const int& maxit_pn, const double& thresh) ;
 
-template < class matrix>
-double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, double& lambda, const int& maxit_scf, const int& maxit_pn, const double& thresh) ;
+template < class matrix, class z>
+double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, z& lambda, z& lshift, const int& maxit_scf, const int& maxit_pn, const double& thresh) ;
 
 #endif

@@ -29,11 +29,11 @@ void ctrPairr( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> k, Eigen::
 
 void ctrPairr( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> k, Eigen::Ref<Eigen::MatrixXd> D, const int nb) ;
 
-int coulblk( std::vector<tei>& i, const Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> G, const int n) ;
+void coulblk( std::vector<tei>& i, const Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> G, const int n) ;
 
 int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> G, const int nbasis) ;
 
-int coulblk( std::vector<tei>& i, const Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> G, const int n) ;
+void coulblk( std::vector<tei>& i, const Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> G, const int n) ;
 
 int exchblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> G, const int nbasis) ;
 

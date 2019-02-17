@@ -49,7 +49,7 @@ void molecular_hamiltonian( common& com, std::vector<tei>& intarr){
     Currently this only supports a linear symmetrized list of tei
   */
   list_ao_tei( com, b, intarr) ;
-  com.setr12( &intarr) ;
+  com.setr12( intarr) ;
 
   cV.resize( 0, 0) ;
   V.resize( 0, 0) ;

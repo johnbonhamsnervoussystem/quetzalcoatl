@@ -72,7 +72,7 @@ private :
   Eigen::VectorXd a_c ;
   Eigen::MatrixXd coord ;
 
-  std::vector<tei>* r12int ;
+  std::vector<tei> r12int ;
   int nbr_g ;
 
 public :
@@ -108,7 +108,7 @@ public :
   void setH( Eigen::MatrixXd h) ;
   void setA( std::vector<double> a) ;
   void setC( std::vector<std::vector<double>> c) ;
-  void setr12( std::vector<tei>* intarr) ;
+  void setr12( std::vector<tei> intarr) ;
 
 /* Retrieve the data */
   int hamil( void) ;
@@ -137,7 +137,7 @@ public :
   Eigen::MatrixXd getH( void) ;
   Eigen::VectorXd getA( void) ;
   Eigen::MatrixXd getC( void) ;
-  void getr12( std::vector<tei>* intarr) ;
+  void getr12( std::vector<tei>*& intarr) ;
 
 
 } ;

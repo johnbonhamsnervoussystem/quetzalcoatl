@@ -384,7 +384,7 @@ void ctrPairr( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> k, Eigen::R
 
 } ;
 
-  int coulblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
+void coulblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXcd> p, 
     Eigen::Ref<Eigen::MatrixXcd> G, const int nbasis) {
     /* Given a spin density block contract the coulomb terms into G 
      Contract coulomb integrals for complex matrices */
@@ -507,7 +507,7 @@ void ctrPairr( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> k, Eigen::R
       }
 
 
-    return 0 ;
+    return ;
 
   } ;
 
@@ -656,7 +656,7 @@ void ctrPairr( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> k, Eigen::R
 
   } ;
 
-  int coulblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
+void coulblk( std::vector<tei>& intarr, const Eigen::Ref<Eigen::MatrixXd> p, 
     Eigen::Ref<Eigen::MatrixXd> G, const int nbasis) {
 
     /* Given a spin density block contract the coulomb terms into G 
@@ -677,12 +677,13 @@ void ctrPairr( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> k, Eigen::R
 
     for(int t = 0; t < n2ei; t++ ) {
       /*  ( 1 1| 2 2)
- *        ( i j| k l) = val */
+          ( i j| k l) = val */
       i = intarr[t].r_i() ;
       j = intarr[t].r_j() ;
       k = intarr[t].r_k() ;
       l = intarr[t].r_l() ;
       val = intarr[t].r_v() ;
+
 //   
       ieqj = ( ( i == j) ? true : false) ;
       keql = ( ( k == l) ? true : false) ;
@@ -779,7 +780,7 @@ void ctrPairr( std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXd> k, Eigen::R
 
       }
 
-    return 0 ;
+    return ;
 
   } ;
 

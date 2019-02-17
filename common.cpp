@@ -14,6 +14,7 @@
     method = 0 ;
     nbr_g = 11 ;
     print = 0 ;
+    r12int.resize( 0) ;
     return ;
   }
 
@@ -90,8 +91,8 @@
     return ;
     }
 
-/* pointer to tei */
-  void common::setr12( std::vector<tei>* intarr) { 
+/* copy tei */
+  void common::setr12( std::vector<tei> intarr) { 
     r12int = intarr ;
     return ;
     }
@@ -121,8 +122,8 @@
   Eigen::MatrixXd common::getH( void) { return h_c   ;}
   Eigen::VectorXd common::getA( void) { return a_c   ;}
   Eigen::MatrixXd common::getC( void) { return coord ;}
-  void common::getr12( std::vector<tei>* intarr) { 
-    intarr = r12int ;
+  void common::getr12( std::vector<tei>*& intarr) { 
+    intarr = &r12int ;
     return ;
     }
 
