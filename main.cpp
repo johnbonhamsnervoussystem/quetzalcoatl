@@ -18,13 +18,16 @@
 #include "obarasaika.h"
 #include "postscf.h"
 #include "project.h"
+#include "nbodyint.h"
 #include "qtzio.h"
 #include "qtzcntrl.h"
 #include "solver.h"
 #include "tei.h"
 #include "time_dbg.h"
 #include "util.h"
+#include "r12.h"
 #include "wfn.h"
+#include "staging.h"
 
 /*
     Quetzalcoatl - electronic structure package
@@ -142,27 +145,11 @@ int main(int argc, char *argv[]) {
   */
   common com = common() ;
   std::vector<tei> intarr ;
-  std::vector<tei> trnint ;
 
-  int nbas, natm, ntt, n2ei ;
   int quetz_image = 0 ;
-  int i, j, k, l ;
-  double cx = 0.0e0 ;
-  double cy = 0.0e0 ;
-  double cz = 0.0e0 ;
-  double r2 = 0.0e0 ;
-  double n_rep = 0.0e0 ;
   cd ejunk ;
   cd ojunk ;
   std::vector<std::string> wfn_vec ;
-  Eigen::MatrixXd c ;
-  Eigen::VectorXd a ;
-  Eigen::MatrixXd S ;
-  Eigen::MatrixXd T ;
-  Eigen::MatrixXd V ;
-  Eigen::MatrixXcd cV ;
-  Eigen::Tensor<double,4> tei_tensor ( 4, 4, 4, 4) ;
-  basis_set b ;
   wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
   std::ofstream tstfile ; 
   std::ifstream tstfe ; 
@@ -191,145 +178,60 @@ int main(int argc, char *argv[]) {
   read_input( com, inpfile) ;
 
 /*
-  What sort of Hamiltonian are we doing
+  Set up the appropriate Hamiltonian
 */
+
   if ( com.hamil() == 1 || com.hamil() == 2 ){
+
 /*
   Molecular Hamiltonian
 */
-    natm = com.natm() ;
-    c.resize( natm, 3) ;
-    a.resize( natm) ;
-    c = com.getC() ;
-    a = com.getA() ;
-/*
-  Get the nuclear-nuclear repulsion
-*/
-    for ( i=0; i < natm; i++){
-      for ( j=i+1; j < natm; j++){
-        cx = c( j, 0) - c( i, 0) ;
-        cy = c( j, 1) - c( i, 1) ;
-        cz = c( j, 2) - c( i, 2) ;
-        r2 = pow( cx, 2.0) + pow( cy, 2.0) + pow( cz, 2.0) ;
-        n_rep += a(i)*a(j)/sqrt(r2) ;
-        }
-      }
- 
-    com.nrep( n_rep ) ;
-    std::cout << " Nuclear repulsion is " << n_rep << std::endl ;
-
-    b = build_basis( com, a, c) ;
-    nbas = b.nbas ;
-    com.nbas( nbas) ;
-    S.resize( nbas, nbas) ;
-    T.resize( nbas, nbas) ;
-    V.resize( nbas, nbas) ;
-    cV.resize( nbas, nbas) ;
-    ao_overlap( com.natm(), b, S) ;
-    com.setS( S) ;
-    // Find the orthogonalizing routine
-    canort( S, cV, nbas) ;
-    T = -cV.real() ;
-    com.setXS( T) ;
-    T.setZero() ;
-    V.setZero() ;
-    ao_kinetic( com.natm(), b, T) ;
-    ao_eN_V( com.natm(), b, c, a, V) ;
-    S = T + V ;
-    com.setH( S) ;
-    T.resize( 0, 0) ;
-    V.resize( 0, 0) ;
-    S.resize( 0, 0) ;
-    list_ao_tei( com, b, intarr) ;
+//    std::vector<tei> intarr ;
+//    molecular_hamiltonian( com, intarr) ;
+    molecular_hamiltonian( com) ;
 
   } else if ( com.hamil() == 3 ){
+
 /*
   Hubbard
 */
      ;
+  } else if ( com.hamil() == 4 ){
+
+/*
+  Pairing
+*/
+  pairing_hamiltonian( com) ;
+
   } else {
     qtzcntrl::shutdown( "Unrecognized Hamiltonian in Main." ) ;
     }
-  /* 
-     Step 1 :
-     Build the relevant data in memory.
-     SCF routines
-     real/complex reastricted
-                  unrestricted
-                  generalized  
-  */
+
 /*
-  Put the integral list into the tensor
-    ntt = nbas*(nbas + 1)/2 ;
-    n2ei = ntt*(ntt+1)/2 ;
-    std::cout << n2ei << std::endl ;
-    for ( int t = 0; t < n2ei; t++) {
+  Follow the appropriate path through the program
 */
-      /*  ( 1 1| 2 2)
-       *  ( i j| k l) = val */
+
+  if ( true){
+
 /*
-      std::cout << t << std::endl ;
-      i = intarr[t].r_i() ;
-      j = intarr[t].r_j() ;
-      k = intarr[t].r_k() ;
-      l = intarr[t].r_l() ;
-      std::cout << " i = " << i << " j = " << j << " k = " << k << " l = " << l << std::endl ;
-      std::cout << intarr[t].r_v() << std::endl ;
-      tei_tensor ( i, j, k, l) = intarr[t].r_v() ;
-      tei_tensor ( j, i, k, l) = intarr[t].r_v() ;
-      tei_tensor ( j, i, l, k) = intarr[t].r_v() ;
-      tei_tensor ( i, j, l, k) = intarr[t].r_v() ;
-      tei_tensor ( k, l, i, j) = intarr[t].r_v() ;
-      tei_tensor ( l, k, i, j) = intarr[t].r_v() ;
-      tei_tensor ( l, k, j, i) = intarr[t].r_v() ;
-      tei_tensor ( k, l, j, i) = intarr[t].r_v() ;
-      }
+  We always do a mean-field calculation so let's not worry about logic here quite yet
 */
+    scf_drv( com) ;
+
+    }
+
+/*
   int cghfxx = 11 ;
   scf_drv( com, intarr, cghfxx) ;
-//  cghfxx = 26 ;
-//  scf_drv( com, intarr, cghfxx) ;
+  cghfxx = 21 ;
+  scf_drv( com, intarr, cghfxx) ;
 
 
   if ( com.methd() / 100 != 0 ){
     int rrphfb = 121 ;
     prj_drv( com, intarr, rrphfb) ;
     }
-
-/*
-  S.resize( 2*nbas, 2*nbas) ;
-  T.resize( 2*nbas, 2*nbas) ;
-  V.resize( 2*nbas, 2*nbas) ;
-  V.setZero() ;
-  S.setRandom() ;
-  T = (S - S.transpose())/2.0e0 ;
-
-  print_mat( T) ;
-  twin_field( intarr, T.block( 0, nbas, nbas, nbas), V.block( 0, nbas, nbas, nbas), nbas) ;
-  print_mat( V, " twin") ;
-  twin_field( intarr, T.block( nbas, 0, nbas, nbas), V.block( nbas, 0, nbas, nbas), nbas) ;
-  print_mat( V, " twin") ;
-
-  V.setZero() ;
-  T = (S - S.transpose())/2.0e0 ;
-  print_mat( T) ;
-  for ( int i=0; i < nbas; i++){
-    for ( int j=0; j < nbas; j++){
-      for ( int k=0; k < nbas; k++){
-        for ( int l=0; l < nbas; l++){
-          V( i, j + nbas) -= T( k, l+nbas)*tei_tensor(i, l, j, k) ;
-          V( i + nbas, j) -= T( k+nbas, l)*tei_tensor(i, l, j, k) ;
-          }
-        }
-      }
-    }
-
-  print_mat( V, " Full sum twin") ;
 */
-  intarr.clear() ;
-  V.resize( 0, 0) ;
-  T.resize( 0, 0) ;
-  S.resize( 0, 0) ;
   quetz_time.end() ;
 
   return 0 ;
