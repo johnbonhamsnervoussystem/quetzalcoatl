@@ -44,12 +44,20 @@ void scf_drv( common& com) {
   int wfntyp = ( com.methd() / 10) % 2 ;
   int wfnksy = ( com.methd() % 10) % 2 ;
   int wfnssy = ( ( com.methd() % 10) + 1) / 2 ;
+  int wfnguess ;
   
   if ( wfntyp == 0 ) {
 
 /*
   HFB wavefunctions
 */
+
+/*
+  Generate an inital guess from a converged HF calculation
+*/
+    wfnguess = 1 ;
+    real_SlaDet( com, wfnguess) ;
+
     if ( wfnksy == 1 ) {
 
       /* Do real scf */
@@ -114,7 +122,7 @@ void real_HFB( common& com, int& opt) {
       h.block( 0, 0, nbas, nbas) = com.getH() ;
       transform( 0, xs, h.block( 0, 0, nbas, nbas)) ;
       h.block( nbas, nbas, nbas, nbas) = -h.block( 0, 0, nbas, nbas) ;
-      nbodyint<Eigen::MatrixXd>* X = new r12<Eigen::MatrixXd>( r12int, xs, 4, 2*nbas) ;
+      nbodyint<Eigen::MatrixXd>* X = new r12<Eigen::MatrixXd>( r12int, xs, 4, nbas) ;
       thermal_guess( nalp, nbas, p, k) ;
       xsi.resize( nbas, nbas) ;
       xsi = xs.inverse() ;
@@ -138,7 +146,41 @@ void real_HFB( common& com, int& opt) {
 /*
   Generalized HFB
 */
-      qtzcntrl::shutdown("Not yet implemented") ;
+      h.resize( 4*nbas, 4*nbas) ;
+      xs.resize( 2*nbas, 2*nbas) ;
+      p.resize( 2*nbas, 2*nbas) ;
+      k.resize( 2*nbas, 2*nbas) ;
+      w.moc.resize( 4*nbas, 4*nbas) ;
+      w.eig.resize( 4*nbas) ;
+      h.setZero() ;
+      p.setZero() ;
+      k.setZero() ;
+      xs.setZero() ;
+      xs.block( 0, 0, nbas, nbas).real() = com.getXS() ;
+      xs.block( nbas, nbas, nbas, nbas) = xs.block( 0, 0, nbas, nbas) ;
+      h.block( 0, 0, nbas, nbas).real() = com.getH() ;
+      h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
+      transform( 2, xs, h.block( 0, 0, 2*nbas, 2*nbas)) ;
+      h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -h.block( 0, 0, 2*nbas, 2*nbas) ;
+      nbodyint<Eigen::MatrixXd>* X = new r12<Eigen::MatrixXd>( r12int, xs, 6, nbas) ;
+
+/*
+  Build rho and kappa from a previous HF calculation
+*/
+      nalp = nele/2 ;
+      thermal_guess( nalp, nbas, p, k) ;
+      xsi.resize( 2*nbas, 2*nbas) ;
+      xsi = xs.inverse() ;
+      transform( 2, xsi, p) ;
+      transform( 2, xsi, k) ;
+      xsi.resize( 0, 0) ;
+
+      w.e_scf = ghfbdia( h, X, nbas, nele, p, k, w.moc, w.eig, lambda, lshift, maxit_scf, maxit_pn, thresh) ;
+
+      com.mu( std::real(lambda)) ;
+      std::cout << "Mean Field Energy + NN : " << w.e_scf + com.nrep() << std::endl ;
+      std::cout << "Eigenvalues : " << std::endl << std::endl ;
+      std::cout << w.eig << std::endl ;
     } else {
       qtzcntrl::shutdown("Unrecognized option in real_HFB") ;
       }
@@ -250,11 +292,11 @@ void real_SlaDet( common& com, int& opt){
       }
 
     w.wfntyp = opt ;
+    save_wfn(w) ;
     w.moc.resize( 0, 0) ;
     w.eig.resize( 0) ;
     xs.resize( 0, 0) ;
     h.resize( 0, 0) ;
-    save_wfn(w) ;
 
     real_scf_time.end() ;
 
@@ -263,10 +305,9 @@ void real_SlaDet( common& com, int& opt){
   } ;
 
 void cplx_HFB( common& com, int& opt) {
-    /* Do the general HFB first. */
     int nbas = com.nbas() ;
     int nele = com.nele() ;
-    int nalp ;
+    int nalp = com.nalp() ;
     int maxit_scf = com.mxscfit() ;
     int maxit_pn = com.mxpnit() ;
     double thresh = com.scfthresh() ;
@@ -280,7 +321,38 @@ void cplx_HFB( common& com, int& opt) {
     time_dbg cplx_HFB_time = time_dbg("cplx_HFB") ;
 
     if ( opt == 1 ) {
-      qtzcntrl::shutdown("Not yet implemented") ;
+
+/*
+  Restricted HFB
+*/
+      h.resize( 2*nbas, 2*nbas) ;
+      p.resize( nbas, nbas) ;
+      k.resize( nbas, nbas) ;
+      xs.resize( nbas, nbas) ;
+      w.moc.resize( 2*nbas, 2*nbas) ;
+      w.eig.resize( 2*nbas) ;
+      h.setZero() ;
+      p.setZero() ;
+      k.setZero() ;
+      xs.setZero() ;
+      xs.real() = com.getXS() ;
+      h.block( 0, 0, nbas, nbas).real() = com.getH() ;
+      transform( 0, xs, h.block( 0, 0, nbas, nbas)) ;
+      h.block( nbas, nbas, nbas, nbas) = -h.block( 0, 0, nbas, nbas) ;
+      nbodyint<Eigen::MatrixXcd>* X = new r12<Eigen::MatrixXcd>( r12int, xs, 4, nbas) ;
+      thermal_guess( nalp, nbas, p, k) ;
+      xsi.resize( nbas, nbas) ;
+      xsi = xs.inverse() ;
+      transform( 2, xsi, p) ;
+      transform( 2, xsi, k) ;
+      xsi.resize( 0, 0) ;
+
+      w.e_scf = rhfbdia( h, X, nbas, nele, p, k, w.moc, w.eig, lambda, lshift, maxit_scf, maxit_pn, thresh) ;
+
+      std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
+      print_mat( w.eig, "MO Eigenvalues : ") ;
+      print_mat( w.moc, "MO coefficients : ") ;
+
     } else if ( opt == 2 ) {
       qtzcntrl::shutdown("Not yet implemented") ;
     } else if ( opt == 3 ) {
@@ -300,13 +372,20 @@ void cplx_HFB( common& com, int& opt) {
       h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
       transform( 2, xs, h.block( 0, 0, 2*nbas, 2*nbas)) ;
       h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -h.block( 0, 0, 2*nbas, 2*nbas) ;
-      nbodyint<Eigen::MatrixXcd>* X = new r12<Eigen::MatrixXcd>( r12int, xs, 6, 4*nbas) ;
-      /*
-        Build rho and kappa from a previous HF calculation
-      */
-      nalp = nele/2 ;
+      nbodyint<Eigen::MatrixXcd>* X = new r12<Eigen::MatrixXcd>( r12int, xs, 6, nbas) ;
+
+/*
+  Build rho and kappa from a previous HF calculation
+*/
       thermal_guess( nalp, nbas, p, k) ;
+      xsi.resize( 2*nbas, 2*nbas) ;
+      xsi = xs.inverse() ;
+      transform( 2, xsi, p) ;
+      transform( 2, xsi, k) ;
+      xsi.resize( 0, 0) ;
+
       w.e_scf = ghfbdia( h, X, nbas, nele, p, k, w.moc, w.eig, lambda, lshift, maxit_scf, maxit_pn, thresh) ;
+
       com.mu( std::real(lambda)) ;
       std::cout << "Mean Field Energy + NN : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "Eigenvalues : " << std::endl << std::endl ;
@@ -761,7 +840,7 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 
     X->contract( p, k) ;
     W = X->getG() ;
-    t = (d2*h.block( 0, 0, nbasis, nbasis) + W.block( 0, 0, nbasis, nbasis))*p ;
+    t = (static_cast<z>(d2)*h.block( 0, 0, nbasis, nbasis) + W.block( 0, 0, nbasis, nbasis))*p ;
     energy = t.trace() ;
     std::cout << " HF Energy " << energy << std::endl ;
     t = k.transpose()*W.block( 0, nbasis, nbasis, nbasis) ;
@@ -823,7 +902,7 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
       if  ( std::abs(static_cast<double>(std::real(N)) - pnum) < 1.0e-5){
         std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
         std::cout << "    chemical potential: " << lambda << std::endl ;
-        std::cout << "    Particle Number : " << N << std::endl << std::endl ;
+        std::cout << "    Particle Number : " << d2*std::real(N) << std::endl << std::endl ;
         break ;
       } else {
 /*
@@ -975,9 +1054,9 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
   Eigen::SelfAdjointEigenSolver<matrix> H_diag ;
 
   int iter_N = 0, iter_d = 0 ;
-  z b_ul, b_ll ;
+  double b_ul, b_ll ;
   typename matrix::Scalar energy, N ;
-  time_dbg cghfbdia_time = time_dbg("cghfbdia") ;
+  time_dbg ghfbdia_time = time_dbg("ghfbdia") ;
 
 /*
   Alloate space for the local matrices
@@ -1017,11 +1096,11 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
     W = X->getG() ;
     t = (d2*h.block( 0, 0, 2*nbasis, 2*nbasis) + W.block( 0, 0, 2*nbasis, 2*nbasis))*p ;
     energy = t.trace() ;
-    std::cout << " HF Energy " << energy << std::endl ;
+    std::cout << " HF Energy " << std::real(energy)/d2 << std::endl ;
     t = k.transpose()*W.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) ;
-    std::cout << " Pairing Energy " << t.trace() << std::endl ;
+    std::cout << " Pairing Energy " << std::real(t.trace())/d2 << std::endl ;
     energy += t.trace() ;
-    std::cout << " Total Electronic Energy " << energy << std::endl ;
+    std::cout << " Total Electronic Energy " << std::real(energy)/d2 << std::endl ;
     R.block( 0, 0, 2*nbasis, 2*nbasis) = p ;
     R.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis) = I - p.conjugate() ;
     R.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) = k ;
@@ -1035,8 +1114,8 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 /*
    Set and initial guess for the limits of the chemical potential
 */
-    b_ul = lambda ;
-    b_ll = lambda ;
+    b_ul = std::real(lambda) ;
+    b_ll = std::real(lambda) ;
 
 /*
    Set some initial limits
@@ -1044,7 +1123,7 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 
     do {
       b_ll -= d3 ;
-      H = h + W + lvlshift*R + b_ll*mu ;
+      H = h + W + lvlshift*R + static_cast<z>(b_ll)*mu ;
       H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
@@ -1055,7 +1134,7 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 
     do {
       b_ul += d3 ;
-      H = h + W + lvlshift*R + b_ul*mu ;
+      H = h + W + lvlshift*R + static_cast<z>(b_ul)*mu ;
       H_diag.compute( H) ;
       c = H_diag.eigenvectors() ;
       p = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
@@ -1064,6 +1143,7 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 
     std::cout << " upper limit chemical potential " << b_ul << std::endl ;
 
+    lambda = static_cast<z>((b_ul + b_ll)/d2) ;
     H = h + W + lvlshift*R + lambda*mu ;
 
     while ( iter_N++ < maxit_pn) {
@@ -1087,21 +1167,17 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
   Too few electrons. Increase the chemical potential
 */
 
-          b_ll = lambda ;
-          lambda = (b_ul + b_ll)/d2 ;
+          b_ll = std::real(lambda) ;
+          lambda = static_cast<z>((b_ul + b_ll)/d2) ;
         } else {
-          b_ul = lambda ;
-          lambda = (b_ul + b_ll)/d2 ;
+          b_ul = std::real(lambda) ;
+          lambda = static_cast<z>((b_ul + b_ll)/d2) ;
           }
         }
       H = h + W + lvlshift*R + lambda*mu ;
       }
 
     k = c.block( 2*nbasis, 2*nbasis, 2*nbasis, 2*nbasis).conjugate()*c.block( 0, 2*nbasis, 2*nbasis, 2*nbasis).transpose() ;
-
-    /* 
-      Enforce the proper symmetry.
-    */
 
 /*
   Now compare densities to check convergence.
@@ -1133,13 +1209,13 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
   Save the eigenvalues and vectors
 */
 
-  t = (h.block( 0, 0, 2*nbasis, 2*nbasis) + W.block( 0, 0, 2*nbasis, 2*nbasis))*p ;
+  t = (static_cast<z>(d2)*h.block( 0, 0, 2*nbasis, 2*nbasis) + W.block( 0, 0, 2*nbasis, 2*nbasis))*p ;
   energy = t.trace() ;
-  std::cout << " HF Energy " << energy << std::endl ;
+  std::cout << " HF Energy " << std::real(energy)/d2 << std::endl ;
   t = k.transpose()*W.block( 0, 2*nbasis, 2*nbasis, 2*nbasis) ;
-  std::cout << " Pairing Energy " << t.trace() << std::endl ;
+  std::cout << " Pairing Energy " << std::real(t.trace())/d2 << std::endl ;
   energy += t.trace() ;
-  std::cout << " Total Electronic Energy " << energy << std::endl ;
+  std::cout << " Total Electronic Energy " << std::real(energy)/d2 << std::endl ;
   eig = H_diag.eigenvalues() ;
   c = H_diag.eigenvectors() ;
 
@@ -1158,7 +1234,7 @@ double ghfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
   p_prev.resize( 0, 0) ;
   H.resize( 0, 0) ;
 
-  cghfbdia_time.end() ;
+  ghfbdia_time.end() ;
 
   return std::real(energy)/d2 ;
 

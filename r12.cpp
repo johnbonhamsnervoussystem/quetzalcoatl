@@ -3,6 +3,7 @@
 #include "evalm.h"
 #include "nbodyint.h"
 #include <iostream>
+#include "qtzio.h"
 #include "r12.h"
 #include "util.h"
 
@@ -59,15 +60,15 @@ void r12<matrix>::contract( matrix& m, matrix& n){
 */
     transform( 2, x, m) ;
     transform( 2, x, n) ;
-    ctr2er( *ints, m, G.block( 0, 0, dim/2, dim/2), dim/2) ;
-    ctrPairr( *ints, n, G.block( 0, dim/2, dim/2, dim/2), dim/2) ;
+    ctr2er( *ints, m, G.block( 0, 0, dim, dim), dim) ;
+    ctrPairr( *ints, n, G.block( 0, dim, dim, dim), dim) ;
     transform( 2, xi, m) ;
     transform( 2, xi, n) ;
-    transform( 2, x, G.block( 0, 0, dim/2, dim/2)) ;
-    transform( 2, x, G.block( 0, dim/2, dim/2, dim/2)) ;
-    G.block( 0, dim/2, dim/2, dim/2) /= d2 ;
-    G.block( dim/2, dim/2, dim/2, dim/2) = -G.block( 0, 0, dim/2, dim/2) ;
-    G.block( dim/2, 0, dim/2, dim/2) = -G.block( 0, dim/2, dim/2, dim/2) ;
+    transform( 2, x, G.block( 0, 0, dim, dim)) ;
+    transform( 2, x, G.block( 0, dim, dim, dim)) ;
+    G.block( 0, dim, dim, dim) /= two ;
+    G.block( dim, dim, dim, dim) = -G.block( 0, 0, dim, dim).conjugate() ;
+    G.block( dim, 0, dim, dim) = -G.block( 0, dim, dim, dim).conjugate() ;
  
   } else if ( itype == 6){
 
@@ -76,15 +77,15 @@ void r12<matrix>::contract( matrix& m, matrix& n){
 */
     transform( 2, x, m) ;
     transform( 2, x, n) ;
-    ctr2eg( *ints, m, G.block( 0, 0, dim/2, dim/2), dim/2) ;
-    ctrPairg( *ints, n, G.block( 0, dim/2, dim/2, dim/2), dim/2) ;
+    ctr2eg( *ints, m, G.block( 0, 0, 2*dim, 2*dim), dim) ;
+    ctrPairg( *ints, n, G.block( 0, 2*dim, 2*dim, 2*dim), dim) ;
     transform( 2, xi, m) ;
     transform( 2, xi, n) ;
-    transform( 2, x, G.block( 0, 0, dim/2, dim/2)) ;
-    transform( 2, x, G.block( 0, dim/2, dim/2, dim/2)) ;
-    G.block( 0, dim/2, dim/2, dim/2) /= d2 ;
-    G.block( dim/2, dim/2, dim/2, dim/2) = -G.block( 0, 0, dim/2, dim/2) ;
-    G.block( dim/2, 0, dim/2, dim/2) = -G.block( 0, dim/2, dim/2, dim/2) ;
+    transform( 2, x, G.block( 0, 0, 2*dim, 2*dim)) ;
+    transform( 2, x, G.block( 0, 2*dim, 2*dim, 2*dim)) ;
+    G.block( 0, 2*dim, 2*dim, 2*dim) /= two ;
+    G.block( 2*dim, 2*dim, 2*dim, 2*dim) = -G.block( 0, 0, 2*dim, 2*dim).conjugate() ;
+    G.block( 2*dim, 0, 2*dim, 2*dim) = -G.block( 0, 2*dim, 2*dim, 2*dim).conjugate() ;
  
     }
 

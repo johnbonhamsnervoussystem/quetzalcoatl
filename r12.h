@@ -17,11 +17,18 @@ class r12: public nbodyint<matrix> {
     std::vector<tei>* ints ;
     matrix x ;
     matrix xi ;
+    typename matrix::Scalar two ;
   public :
     r12( std::vector<tei>* intarr, matrix& xs, int i, int n) : nbodyint<matrix>::nbodyint( i, n){
       ints = intarr ;
-      x.resize( n, n) ;
-      xi.resize( n, n) ;
+      two = static_cast<typename matrix::Scalar>( 2.0e0) ;
+      if ( itype == 6){
+        x.resize( 2*n, 2*n) ;
+        xi.resize( 2*n, 2*n) ;
+      } else {
+        x.resize( n, n) ;
+        xi.resize( n, n) ;
+        }
       x = xs ;
       xi = x.inverse() ;
       } ;

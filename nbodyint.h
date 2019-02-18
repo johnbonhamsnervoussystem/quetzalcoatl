@@ -22,14 +22,20 @@ class nbodyint{
       itype = i ;
       dim = n ;
       switch( itype) {
-        case 1 : // rrhf
+        case 1 : // rhf
           G.resize( dim, dim) ;
           break ;
-        case 2 : // ruhf
+        case 2 : // uhf
           G.resize( dim, dim) ;
           break ;
-        case 3 : // rghf
+        case 3 : // ghf
           G.resize( 2*dim, 2*dim) ;
+          break ;
+        case 4 : // rhfb
+          G.resize( 2*dim, 2*dim) ;
+          break ;
+        case 6 : // ghfb
+          G.resize( 4*dim, 4*dim) ;
           break ;
         default : // Unimplemented case
           qtzcntrl::shutdown( "Unimplemented case in nbodyint") ;
@@ -37,20 +43,8 @@ class nbodyint{
         }
       } ;
 
-/*
-    void contract( matrix& m) ;
-    void contract( matrix& m, matrix& n) ;
-*/
-
     virtual void contract( matrix& m){} ;
     virtual void contract( matrix& m, matrix& n){} ;
-
-/*
-    virtual void contract( Eigen::MatrixXd& m){} ;
-    virtual void contract( Eigen::MatrixXcd& m){} ;
-    virtual void contract( Eigen::MatrixXd& m, Eigen::MatrixXd& n){} ;
-    virtual void contract( Eigen::MatrixXcd& m, Eigen::MatrixXcd& n){} ;
-*/
     matrix getG( void) ;
 
     ~nbodyint(){} ;
