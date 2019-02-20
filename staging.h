@@ -11,10 +11,12 @@
   keep main clean and readable so that the parsing of jobs is not cluttered
   with generation of necessary elements.
 */
-void molecular_hamiltonian( common& com, std::vector<tei>& intarr) ;
+void molecular_hamiltonian( common& c) ;
 
 void nnrep( common& com) ;
 
 void nnrep( common& com, int& n, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::VectorXd> a ) ;
+
+void pairing_hamiltonian( common& c) ;
 
 #endif

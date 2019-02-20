@@ -12,7 +12,7 @@
 #include "tei.h"
 #include <vector>
 
-void molecular_hamiltonian( common& com, std::vector<tei>& intarr){
+void molecular_hamiltonian( common& com){
 /*
   Build everything we need to do molecular Hamiltonian calculations.
 */
@@ -22,6 +22,7 @@ void molecular_hamiltonian( common& com, std::vector<tei>& intarr){
   Eigen::VectorXd a ( natm) ;
   Eigen::MatrixXd S, T, V ;
   Eigen::MatrixXcd cV ;
+  std::vector<tei> intarr ;
 
   nnrep( com, natm, c, a) ;
   b = build_basis( com, a, c) ;
@@ -123,3 +124,28 @@ void nnrep( common& com, int& natm, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Ei
 
 } ;
 
+void pairing_hamiltonian( common& com){
+/*
+  Build everything we need to do pairing Hamiltonian calculations.
+*/
+  int nbas = com.nbas() ;
+  Eigen::MatrixXd T( nbas, nbas) ;
+  tei g ;
+  std::vector<tei> intarr ;
+/*
+  Set the Core Hamiltonian
+*/
+  T.setZero() ;
+  for ( int i=0; i < nbas; i++){
+    T( i, i) = i+1 ;
+    } ;
+  com.setH( T) ;
+  g.set( 0, 0, 0, 0, -com.getU()) ;
+  intarr.push_back( g) ;
+  com.setr12( intarr) ;
+
+  T.resize( 0, 0) ;
+
+  return ;
+
+} ;

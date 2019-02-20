@@ -153,6 +153,7 @@ int main(int argc, char *argv[]) {
   wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
   std::ofstream tstfile ; 
   std::ifstream tstfe ; 
+  std::srand((unsigned int) time(0)) ;
   time_dbg quetz_time = time_dbg("Quetzalcoatl") ;
 
   /* File reading and header variables. */
@@ -186,8 +187,9 @@ int main(int argc, char *argv[]) {
 /*
   Molecular Hamiltonian
 */
-    std::vector<tei> intarr ;
-    molecular_hamiltonian( com, intarr) ;
+//    std::vector<tei> intarr ;
+//    molecular_hamiltonian( com, intarr) ;
+    molecular_hamiltonian( com) ;
 
   } else if ( com.hamil() == 3 ){
 
@@ -195,11 +197,16 @@ int main(int argc, char *argv[]) {
   Hubbard
 */
      ;
+  } else if ( com.hamil() == 4 ){
+
+/*
+  Pairing
+*/
+  pairing_hamiltonian( com) ;
+
   } else {
     qtzcntrl::shutdown( "Unrecognized Hamiltonian in Main." ) ;
     }
-
-
 
 /*
   Follow the appropriate path through the program
@@ -211,6 +218,7 @@ int main(int argc, char *argv[]) {
   We always do a mean-field calculation so let's not worry about logic here quite yet
 */
     scf_drv( com) ;
+    prj_drv( com) ;
 
     }
 
