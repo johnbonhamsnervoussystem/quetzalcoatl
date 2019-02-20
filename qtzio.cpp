@@ -13,6 +13,7 @@
 #include <string>
 #include "tei.h"
 #include "time_dbg.h"
+#include <unordered_map>
 #include <vector>
 
 /*
@@ -20,9 +21,12 @@
   Reading and parsing the input for traversal through the program may end
   up being the most complicated part of the whole program
 
-  This needs to be clear and easy to modify and I will think more about it
+  This needs to be clear and easy to modify which is currently is not. 
+  Unfortunately this is likely the last thing to be cleaned.
 
 */
+
+/* Routines to swtich between string options */
 
 void read_input( common& com, const std::string& inpfile){
  /* Read the input file and save the information into common. */
@@ -32,23 +36,31 @@ void read_input( common& com, const std::string& inpfile){
   double d_junk ;
   size_t pos = 0 ;
   std::string line ;
-  std::string s_junk ;
+  std::string s_junk, s_j1, s_j2 ;
   std::string delim = "," ;
-  std::string::iterator end_pos ;
+  std::string::size_type first, last ;
   std::ifstream jobfile ;
   std::vector<double> atnum ;
   std::vector<std::vector<double>> t_c ;
+  std::unordered_map< std::string, int> prjcase ( { {"n", 1}, {"s", 2}, {"t", 3}, {"k", 4}} ) ;
   time_dbg read_input_time = time_dbg("read_input") ;
 
   jobfile.open( inpfile, std::ifstream::in ) ;
 
   while( getline( jobfile, line)){
+/*
+  Skip exclamation points in column 1
+*/
+    if ( line.substr(0,1) == "!" ){ continue ;}
+
     if ( line.substr(0,7) == "hamilt " ){
       s_junk = line.substr(9) ;
       strip_lower( s_junk) ;
 /*
-      Molecular/mol
-      Semi-Empirical/se
+      Molecular/mol - 1
+      Semi-Empirical/se - 2
+      Hubbard - 3
+      Pairing - 4
 */
       if ( s_junk == "mol"){
         /* Molecular Electronic Hamiltonian */
@@ -59,7 +71,7 @@ void read_input( common& com, const std::string& inpfile){
         com.hamil(1) ;
       } else if ( s_junk.substr(0,3) == "hub"){
         /* Hubbard */
-        i_junk = 2 ;
+        i_junk = 3 ;
 	if ( s_junk.substr(3,4) == "p"){
 	  /* Periodic */
           i_junk += 10 ;
@@ -78,29 +90,121 @@ void read_input( common& com, const std::string& inpfile){
           i_junk += 100 ;
           }
         com.hamil(i_junk) ;
+      } else if ( s_junk.substr(0,4) == "pair"){
+        com.hamil( 4) ;
+          getline( jobfile, line) ;
+//          line.substr(0,3) == " U " ;
+          i_junk = stoi(line.substr(7)) ;
+          com.nalp( i_junk/2) ;
+          com.nbet( i_junk/2) ;
+          getline( jobfile, line) ;
+//          line.substr(0,3) == " U " ;
+          d_junk = stod(line.substr(5)) ;
+          com.setU( d_junk) ;
+          getline( jobfile, line) ;
+//          line.substr(0,3) == " n " ;
+          i_junk = stoi(line.substr(5)) ;
+          com.nbas( i_junk) ;
+          
       } else {
         com.hamil(1) ;
         }
     } else if ( line.substr( 0, 7) == "method " ){
 /*
-        real/r
-        complex/c
+  List of options :
 
-        restricted/r
-        unrestricted/u
-        genralized/g
+    Projection methods
+      P{..}|...>
+        The options in the brakets {} are the types of projections
+          N - Number projection
+          T - Time Reversal
+          S - Electron Spin
+          K - Complex Conjugation
 
-	Hartree-Fock/HF
-        Hartree-Fock-Bogliubov/HFB
+        The options in the ket will contain the type of reference 
+        determinant to use listed below.
+
+    Single Reference Wavefunction
+      This should be a string containing the possible symmetries to break
+      and takes the form ABC where
+        A - whether the wavefuntion is real or complex
+          real/r
+          complex/c
+
+        B - how the spin symmetry should be treated
+          restricted/r
+          unrestricted/u
+          genralized/g
+
+        C - the type of wavefunction
+          Hartree-Fock/HF
+          Hartree-Fock-Bogliubov/HFB
 */
       s_junk = line.substr(9) ;
       strip_lower( s_junk) ;
+/*
+  Check for projection
+*/
+      if ( s_junk.substr(0, 1) == "p" ){
+/*
+  Get the projection options
+    The various combinations are stored as bitwise
+
+    N  - 0001 -> 1
+    S  - 0010 -> 2
+    K  - 0100 -> 4
+    T  - 1000 -> 8
+*/
+        /* Add 20 here to generate an initial guess */
+        com.methd(20) ;
+        s_junk.pop_back() ;
+        first = s_junk.find("{") ;
+        last = s_junk.find("}") ;
+        s_j1 = s_junk.substr( first+1, last-2) ;
+        s_junk.erase( 0, last+2) ;
+        do {
+          pos = s_j1.find(delim) ;
+          s_j2 = s_j1.substr(0, pos) ;
+          s_j1.erase( 0, pos + delim.length()) ;
+          i_junk = 0 ;
+          switch ( prjcase[s_j2]) {
+            case 1 : /* number projection */
+              i_junk |= 1 ;
+              break ;
+            case 2 : /* spin projection */
+              i_junk |= 2 ;
+              break ;
+            case 3 : /* time reversal projection */
+              i_junk |= 4 ;
+              break ;
+            case 4 : /* complex conjugation projection */
+              i_junk |= 8 ;
+              break ;
+            default :
+              qtzcntrl::shutdown( "Unrecognized Projection Symmetry") ;
+            } // End switch
+          } while ( pos != std::string::npos) ; // End While
+        
+          com.methd( i_junk*100) ;
+        getline( jobfile, line) ;
+        while( line.substr(0,5) != " end" ){
+          if ( line.substr( 0, 7) == " ngrid " ) { 
+            // Size of the number projection grid
+            i_junk = stoi(line.substr(9)) ;
+            com.ngrid(i_junk) ;
+            }
+          getline( jobfile, line) ;
+          } // End Project parameter parsing
+
+        } // End projection parsing
+
       if ( s_junk.substr( 0, 2) == "rr" ) { com.methd(1) ;}
       else if ( s_junk.substr(0,2) == "cr" ) { com.methd(2) ;}
       else if ( s_junk.substr(0,2) == "ru" ) { com.methd(3) ;}
       else if ( s_junk.substr(0,2) == "cu" ) { com.methd(4) ;}
       else if ( s_junk.substr(0,2) == "rg" ) { com.methd(5) ;}
-      else if ( s_junk.substr(0,2) == "cg" ) { com.methd(6) ;}
+      else if ( s_junk.substr(0,2) == "cg" ) { com.methd(6) ;} // End Symmetry parsing
+
       if ( s_junk.substr(2) == "hf" ) { com.methd(10) ;}
       else if ( s_junk.substr( 2) == "hfb" ) {
         getline( jobfile, line) ;
@@ -113,7 +217,8 @@ void read_input( common& com, const std::string& inpfile){
 	  }
         d_junk = stod(line.substr(9)) ;
         com.mu( d_junk) ;
-        }
+        } // End HF/HFB parsing
+
     } else if ( line.substr(0,7) == "basis  " ){
       s_junk = line.substr(9) ;
       com.bnam( s_junk) ;
@@ -149,6 +254,15 @@ void read_input( common& com, const std::string& inpfile){
         if ( line.substr(0,7) == "mxscfit" ) {
           i_junk = stoi(line.substr(9)) ;
           com.mxscfit(i_junk) ;
+        } else if ( line.substr(0,7) == "mxpnit" ) {
+          i_junk = stoi(line.substr(9)) ;
+          com.mxpnit(i_junk) ;
+        } else if ( line.substr(0,7) == "print  " ) {
+          i_junk = stoi(line.substr(9)) ;
+          com.prt(i_junk) ;
+        } else if ( line.substr(0,7) == "lshift " ) {
+          d_junk = stod(line.substr(9)) ;
+          com.lvlshft(i_junk) ;
           }
         getline( jobfile, line) ;
         }
@@ -166,7 +280,58 @@ void read_input( common& com, const std::string& inpfile){
 
   return ;
 
-} 
+}  ;
+
+bool open_text( std::ofstream& F_OUT, int cntl, const std::string& filename) {
+/*
+  cntl :
+    0 - (default) write to a new file or overwrite one that already exists
+    1 - Check if a file exists and append.  If it does not exist create it.
+*/
+  const std::string wfnIO = filename + ".txt" ;
+  bool ioerr = false ;
+  struct stat buf ;
+
+  if ( cntl == 0 ){
+    try {
+      F_OUT.open( wfnIO, std::ofstream::out) ;
+    } catch ( std::fstream::failure& e) {
+      std::cout << e.what() << std::endl ;
+      ioerr = true ;
+    } catch (...) {
+      std::cout << " Default excepetion inside write_to_bin " << std::endl ;
+      ioerr = true ;
+      }
+  } else if ( cntl == 1 ){
+    /* Check if the file exists */
+    if ( stat(wfnIO.c_str(), &buf) == 0) {
+      try {
+        F_OUT.open( wfnIO, std::ofstream::app | std::ofstream::out) ;
+      } catch ( std::fstream::failure& e) {
+        std::cout << e.what() << std::endl ;
+        ioerr = true ;
+      } catch (...) {
+        std::cout << " Default excepetion inside write_to_bin " << std::endl ;
+        ioerr = true ;
+        }
+    } else {
+      try {
+        F_OUT.open( wfnIO, std::ofstream::out) ;
+      } catch ( std::fstream::failure& e) {
+        std::cout << e.what() << std::endl ;
+        ioerr = true ;
+      } catch (...) {
+        std::cout << " Default excepetion inside write_to_bin " << std::endl ;
+        ioerr = true ;
+        }
+    }
+  } else {
+    qtzcntrl::shutdown( "Unrecognized Option (open_binary)") ;
+    }
+
+  return ioerr ;
+
+} ;
 
 bool open_binary( std::ofstream& F_OUT, int cntl) {
 /*
@@ -290,10 +455,15 @@ template void read_eigen_bin(const Eigen::MatrixXd&, std::ifstream&) ;
 template void read_eigen_bin(const Eigen::MatrixXcd&, std::ifstream&) ;
 
 template <class matrix>
-void print_mat( const matrix& o){
+void print_mat( const matrix& o, std::string h){
   int i = 0 ;
   typename matrix::Index cols = o.cols(), rows = o.rows() ;
   Eigen::IOFormat matprt(5, 0, "  ", "\n", "| ", "|", "") ;
+
+  if ( ! h.empty()){
+    std::cout << h << std::endl ;
+    std::cout << "---- ---- ----" << std::endl ;
+    }
 
   if ( cols <= 5){
       std::cout << o.format( matprt) << std::endl ;
@@ -310,12 +480,12 @@ void print_mat( const matrix& o){
 
 }
 
-template void print_mat(const Eigen::VectorXd&) ;
-template void print_mat(const Eigen::VectorXcd&) ;
-template void print_mat(const Eigen::MatrixXd&) ;
-template void print_mat(const Eigen::MatrixXcd&) ;
-template void print_mat(const Eigen::Ref<Eigen::VectorXd>&) ;
-template void print_mat(const Eigen::Ref<Eigen::VectorXcd>&) ;
-template void print_mat(const Eigen::Ref<Eigen::MatrixXd>&) ;
-template void print_mat(const Eigen::Ref<Eigen::MatrixXcd>&) ;
+template void print_mat(const Eigen::VectorXd& , std::string) ;
+template void print_mat(const Eigen::VectorXcd& , std::string) ;
+template void print_mat(const Eigen::MatrixXd& , std::string) ;
+template void print_mat(const Eigen::MatrixXcd& , std::string) ;
+template void print_mat(const Eigen::Ref<Eigen::VectorXd>& , std::string) ;
+template void print_mat(const Eigen::Ref<Eigen::VectorXcd>& , std::string) ;
+template void print_mat(const Eigen::Ref<Eigen::MatrixXd>& , std::string) ;
+template void print_mat(const Eigen::Ref<Eigen::MatrixXcd>& , std::string) ;
 

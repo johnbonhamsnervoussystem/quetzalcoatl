@@ -98,12 +98,14 @@ void real_HFB( common& com, int& opt) {
     int nalp = com.nalp() ;
     int maxit_scf = com.mxscfit() ;
     int maxit_pn = com.mxpnit() ;
-    double lambda = com.mu() ;
+//    double lambda = com.mu() ;
+    double lambda = d0 ;
     double thresh = com.scfthresh() ;
-    double lshift = -d4 ;
-    Eigen::MatrixXd h, xs, xsi, p, k ;
+    double lshift = com.lvlshft() ;
+    nbodyint<Eigen::MatrixXd>* X ;
+    Eigen::MatrixXd h, xs, xsi, p, k, u, v ;
     std::vector<tei>* r12int ;
-    com.getr12( r12int) ;
+//    com.getr12( r12int) ;
     wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
     time_dbg real_HFB_time = time_dbg("real_HFB") ;
 
@@ -112,30 +114,53 @@ void real_HFB( common& com, int& opt) {
 /*
   Restricted HFB
 */
-      h.resize( 2*nbas, 2*nbas) ;
+      initialize( 2, opt, com.hamil(), com, h, X, r12int, nbas) ;
+      /* 
+        Unfortunately generating the initial guess requires an additional call to getXS...
+        Something that will have to be cleaned later.
+      */
       p.resize( nbas, nbas) ;
       k.resize( nbas, nbas) ;
-      xs.resize( nbas, nbas) ;
+      u.resize( nbas, nbas) ;
+      v.resize( nbas, nbas) ;
+      u.setZero() ;
+      v.setZero() ;
+      p.setZero() ;
+      k.setZero() ;
+//      xs.resize( nbas, nbas) ;
+//      xs = com.getXS() ;
+//      thermal_guess( nalp, nbas, p, k) ;
+//      xsi.resize( nbas, nbas) ;
+//      xsi = xs.inverse() ;
+//      transform( 2, xsi, p) ;
+//      transform( 2, xsi, k) ;
+//      xsi.resize( 0, 0) ;
+/*
+  Let's Hack the initial guess until we get something correct and then it can formalized
+  There should be a total of nele/2 particles in the density.  
+  Let's distriute that over nbas orbtials.  This is the algol given by Jorge's code...
+*/
+     for( int qwyzxc=0; qwyzxc < nbas; qwyzxc++){
+       v( qwyzxc, qwyzxc) = d1 - (d6/d10)*static_cast<double>( qwyzxc + 1)/static_cast<double>(nbas) ;
+       u( qwyzxc, qwyzxc) = -std::sqrt(d1 - v( qwyzxc, qwyzxc)*v( qwyzxc, qwyzxc)) ;
+       }
+
+      p = v.conjugate()*v.transpose() ;
+      k = v.conjugate()*u.transpose() ;
+
+      print_mat( p, " thermal density") ;
+      print_mat( k, " thermal pairing") ;
       w.moc.resize( 2*nbas, 2*nbas) ;
       w.eig.resize( 2*nbas) ;
-      xs = com.getXS() ;
-      h.setZero() ;
-      h.block( 0, 0, nbas, nbas) = com.getH() ;
-      transform( 0, xs, h.block( 0, 0, nbas, nbas)) ;
-      h.block( nbas, nbas, nbas, nbas) = -h.block( 0, 0, nbas, nbas) ;
-      nbodyint<Eigen::MatrixXd>* X = new r12<Eigen::MatrixXd>( r12int, xs, 4, nbas) ;
-      thermal_guess( nalp, nbas, p, k) ;
-      xsi.resize( nbas, nbas) ;
-      xsi = xs.inverse() ;
-      transform( 2, xsi, p) ;
-      transform( 2, xsi, k) ;
-      xsi.resize( 0, 0) ;
 
       w.e_scf = rhfbdia( h, X, nbas, nele, p, k, w.moc, w.eig, lambda, lshift, maxit_scf, maxit_pn, thresh) ;
 
       std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
       print_mat( w.eig, "MO Eigenvalues : ") ;
-      print_mat( w.moc, "MO coefficients : ") ;
+      p = w.moc.block( nbas, nbas, nbas, nbas) ;
+      k = w.moc.block( 0, nbas, nbas, nbas) ;
+      print_mat( p, " V ") ;
+      print_mat( k, " U ") ;
     } else if ( opt == 2) {
 
 /*
@@ -219,12 +244,11 @@ void real_SlaDet( common& com, int& opt){
 //    com.getr12( r12int) ;
     Eigen::MatrixXd h, xs, ca, cb ;
     wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
-    std::srand((unsigned int) time(0)) ;
     time_dbg real_scf_time = time_dbg("real_scf") ;
 
     if ( opt == 1 ) {
 
-      initialize( opt, com.hamil(), com, h, X, r12int, nbas) ;
+      initialize( 1, opt, com.hamil(), com, h, X, r12int, nbas) ;
       w.moc.resize( nbas, nbas) ;
       w.moc.setRandom() ;
       w.moc *= d1/d10 ;
@@ -315,7 +339,6 @@ void cplx_HFB( common& com, int& opt) {
     std::vector<tei>* r12int ;
     com.getr12( r12int) ;
     wfn< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
-    std::srand((unsigned int) time(0)) ;
     time_dbg cplx_HFB_time = time_dbg("cplx_HFB") ;
 
     if ( opt == 1 ) {
@@ -426,7 +449,6 @@ void cplx_SlaDet( common& com, int& opt){
     com.getr12( r12int) ;
     Eigen::MatrixXcd h, xs, ca, cb ;
     wfn< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
-    std::srand((unsigned int) time(0)) ;
     time_dbg cplx_hf_time = time_dbg("complex_hartree_fock") ;
 
     if ( opt == 1 ) {
@@ -784,6 +806,7 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 */
 
   matrix H ;
+  matrix Heff ;
   matrix p_prev ;
   matrix k_prev ;
   matrix R ;
@@ -806,6 +829,7 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 */
 
   H.resize( 2*nbasis, 2*nbasis) ;
+  Heff.resize( 2*nbasis, 2*nbasis) ;
   p_prev.resize( nbasis, nbasis) ;
   k_prev.resize( nbasis, nbasis) ;
   G.resize( nbasis, nbasis) ;
@@ -854,76 +878,86 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
 
   while ( iter_d++ < maxit_scf ) {
     std::cout << std::endl << std::endl << "Self-Consistency iteration number: " << iter_d << std::endl << std::endl ;
-    iter_N = 0 ;
+
+    Heff = h + W + lvlshift*R ;
+
+    if ( false ){
+      iter_N = 0 ;
 
 /*
    Set and initial guess for the limits of the chemical potential
 */
 
-    b_ul = lambda ;
-    b_ll = lambda ;
+      b_ul = lambda ;
+      b_ll = lambda ;
 
 /*
    Set some initial limits
 */
 
-    do {
-      b_ll -= d3 ;
-      H = h + W + lvlshift*R + b_ll*mu ;
-      H_diag.compute( H) ;
-      c = H_diag.eigenvectors() ;
-      p = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
-      N = p.trace() ;
-      } while ( static_cast<double>(std::real(N)) > pnum) ;
-
-    std::cout << " Lower limit chemical potential " << b_ll << std::endl ;
-
-    do {
-      b_ul += d3 ;
-      H = h + W + lvlshift*R + b_ul*mu ;
-      H_diag.compute( H) ;
-      c = H_diag.eigenvectors() ;
-      p = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
-      N = p.trace() ;
-      } while ( static_cast<double>(std::real(N)) < pnum) ;
-
-    std::cout << " upper limit chemical potential " << b_ul << std::endl ;
-
-    lambda = (b_ul + b_ll)/d2 ;
-    H = h + W + lvlshift*R + lambda*mu ;
-
-    while ( iter_N++ < maxit_pn) {
-      H_diag.compute( H) ;
-      c = H_diag.eigenvectors() ;
-      p = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
-      N = p.trace() ;
-      if  ( std::abs(static_cast<double>(std::real(N)) - pnum) < 1.0e-5){
-        std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
-        std::cout << "    chemical potential: " << lambda << std::endl ;
-        std::cout << "    Particle Number : " << d2*std::real(N) << std::endl << std::endl ;
-        break ;
-      } else {
+      do {
+        b_ll -= d3 ;
+        H = Heff + b_ll*mu ;
+        H_diag.compute( H) ;
+        c = H_diag.eigenvectors() ;
+        p = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
+        N = p.trace() ;
+        } while ( static_cast<double>(std::real(N)) > pnum) ;
+  
+      std::cout << " Lower limit chemical potential " << b_ll << std::endl ;
+  
+      do {
+        b_ul += d3 ;
+        H = Heff + b_ul*mu ;
+        H_diag.compute( H) ;
+        c = H_diag.eigenvectors() ;
+        p = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
+        N = p.trace() ;
+        } while ( static_cast<double>(std::real(N)) < pnum) ;
+  
+      std::cout << " upper limit chemical potential " << b_ul << std::endl ;
+  
+      lambda = (b_ul + b_ll)/d2 ;
+  
+      while ( iter_N++ < maxit_pn) {
+        H = Heff + lambda*mu ;
+        H_diag.compute( H) ;
+        c = H_diag.eigenvectors() ;
+        p = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
+        N = p.trace() ;
+        if  ( std::abs(static_cast<double>(std::real(N)) - pnum) < 1.0e-5){
+          std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
+          std::cout << "    chemical potential: " << lambda << std::endl ;
+          std::cout << "    Particle Number : " << d2*std::real(N) << std::endl << std::endl ;
+          break ;
+        } else {
 /*
   Bisection method
 */
-        if ( static_cast<double>(std::real(N)) - pnum < d0){
+          if ( static_cast<double>(std::real(N)) - pnum < d0){
 /*
   Too few electrons. Increase the chemical potential
 */
-          b_ll = lambda ;
-          lambda = (b_ul + b_ll)/d2 ;
-        } else {
-          b_ul = lambda ;
-          lambda = (b_ul + b_ll)/d2 ;
+            b_ll = lambda ;
+            lambda = (b_ul + b_ll)/d2 ;
+          } else {
+            b_ul = lambda ;
+            lambda = (b_ul + b_ll)/d2 ;
+            }
           }
         }
-      H = h + W + lvlshift*R + lambda*mu ;
+    } else {
+      H_diag.compute( H) ;
+      c = H_diag.eigenvectors() ;
+      p = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( nbasis, nbasis, nbasis, nbasis).transpose() ;
       }
 
     k = c.block( nbasis, nbasis, nbasis, nbasis).conjugate()*c.block( 0, nbasis, nbasis, nbasis).transpose() ;
 /*
   Now compare densities to check convergence.
 */
+//    print_mat( p, " rho after iter : " + std::to_string( iter_d)) ;
+//    print_mat( k, " kappa after iter : " + std::to_string( iter_d)) ;
     t = p_prev - p ;
     energy = t.norm() ;
     t = k_prev - k ;
@@ -951,9 +985,12 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
   Save the eigenvalues and vectors
 */
 
-  t = (d2*h.block( 0, 0, nbasis, nbasis) + W.block( 0, 0, nbasis, nbasis))*p ;
+  t = (d2*h.block( 0, 0, nbasis, nbasis))*p ;
+  std::cout << " 2*h*p " << t.trace() << std::endl ;
   energy = t.trace() ;
-  std::cout << " HF Energy " << energy << std::endl ;
+  t = W.block( 0, 0, nbasis, nbasis)*p ;
+  energy += t.trace() ;
+  std::cout << " G*p " << t.trace() << std::endl ;
   t = k.transpose()*W.block( 0, nbasis, nbasis, nbasis) ;
   std::cout << " Pairing Energy " << t.trace() << std::endl ;
   energy += t.trace() ;
@@ -961,8 +998,8 @@ double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const i
   eig = H_diag.eigenvalues().real() ;
   c = H_diag.eigenvectors() ;
 
-  print_mat( p, "rho") ;
-  print_mat( k, "kappa") ;
+  print_mat( p, "final rho") ;
+  print_mat( k, "final kappa") ;
 
 /*
   Clean up the memory
