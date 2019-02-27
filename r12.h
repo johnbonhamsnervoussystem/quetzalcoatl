@@ -7,7 +7,6 @@
 #ifndef R12_H
 #define R12_H
 
-
 template <class matrix>
 class r12: public nbodyint<matrix> {
   private :

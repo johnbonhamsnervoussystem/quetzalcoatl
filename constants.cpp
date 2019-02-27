@@ -14,7 +14,6 @@
   const double d8 = 8.0e0 ;
   const double d9 = 9.0e0 ;
   const double d10 = 10.0e0 ;
-  const cd zpi ( pi, d0) ;
   const cd z0 = cd( 0.0e0, 0.0e0) ;
   const cd z1 = cd( 1.0e0, 0.0e0) ;
   const cd z2 = cd( 2.0e0, 0.0e0) ;
@@ -34,3 +33,4 @@
   extern const double kb = 3.1668114e-6 ;
   /* Pi */
   const double pi = d4*std::atan(d1) ;
+  const cd zpi ( pi, d0) ;

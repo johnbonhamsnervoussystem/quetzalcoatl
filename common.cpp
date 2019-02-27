@@ -1,4 +1,5 @@
 #include "common.h"
+#include "constants.h"
 #include <Eigen/Dense>
 #include <iostream>
 #include "qtzio.h"
@@ -7,7 +8,7 @@
 
 /* Intialize defaults */
   common::common( void) {
-    max_scf_iter = 30 ;
+    max_scf_iter = 200 ;
     max_pn_iter = 30 ;
     scf_convergence_threshold = 1.0e-7 ;
     hamiltonian = 0 ;
@@ -15,6 +16,14 @@
     nbr_g = 11 ;
     print = 0 ;
     r12int.resize( 0) ;
+    U_interact = d0 ;
+    level_shift = false ;
+    lshift = d0 ;
+    nn = d0 ;
+    hub_dim = new int[3] ;
+    hub_dim[0] = 1 ;
+    hub_dim[1] = 1 ;
+    hub_dim[2] = 1 ;
     return ;
   }
 
@@ -23,6 +32,8 @@
   General data for calculations */
   void common::hamil( int n) { hamiltonian += n ; return ;}
   void common::methd( int n) { method += n ; return ;}
+  void common::hub_opt( int n) {  hubbard = n ; return ;}
+  void common::hub_n( int n, int i) {  hub_dim[i] = n ; return ;}
   void common::nbas( int n) { nbasis = n ; return ;}
   void common::ntei( int n) { n2ei   = n ; return ;}
   void common::natm( int n) { natoms = n ; return ;}
@@ -39,6 +50,7 @@
   void common::mxpnit( int n) { max_pn_iter = n ; return ;}
   void common::prt( int n) { print = n ; return ;}
   void common::scfthresh( double d) { scf_convergence_threshold = d ; return ;}
+  void common::lvlshft( double d) { lshift = d ; level_shift = true ; return ;}
 
 /* Matrix elements */
   void common::setS ( Eigen::MatrixXd s_in) {
@@ -97,17 +109,21 @@
     return ;
     }
 
+  void common::setU( double u) { U_interact = u ; return ;}
+
 /* Get things */
   int common::hamil( void) { return hamiltonian ;}
   int common::methd( void) { return method ;}
+  int common::hub_opt( void) { return hubbard ;}
+  int common::hub_n( int i) {  return hub_dim[i] ;}
   int common::nbas( void) {return nbasis ;}
-  int common::ntei( void) {return n2ei   ;}
+  int common::ntei( void) {return n2ei ;}
   int common::natm( void) {return natoms ;}
-  int common::nele( void) {return nel    ;}
-  int common::nalp( void) {return nal    ;}
-  int common::nbet( void) {return nbe    ;}
+  int common::nele( void) {return nel ;}
+  int common::nalp( void) {return nal ;}
+  int common::nbet( void) {return nbe ;}
   double common::mu( void) {return chemical_potential ;}
-  double common::nrep( void) {return nn   ;}
+  double common::nrep( void) {return nn ;}
   std::string common::bnam( void) {return basis_name ;}
   int common::ngrid( void){ return nbr_g ;} 
 
@@ -115,15 +131,17 @@
   int common::mxpnit( void) {return max_pn_iter ;}
   int common::prt( void) {return print ;}
   double common::scfthresh( void) {return scf_convergence_threshold ;}
+  double common::lvlshft( void) {return lshift ;}
 
 /* Retrieve a matrix */
-  Eigen::MatrixXd common::getS( void) { return s_c   ;}
-  Eigen::MatrixXd common::getXS( void) { return xs_c   ;}
-  Eigen::MatrixXd common::getH( void) { return h_c   ;}
+  Eigen::MatrixXd common::getS( void) { return s_c ;}
+  Eigen::MatrixXd common::getXS( void) { return xs_c ;}
+  Eigen::MatrixXd common::getH( void) { return h_c ;}
   Eigen::VectorXd common::getA( void) { return a_c   ;}
   Eigen::MatrixXd common::getC( void) { return coord ;}
   void common::getr12( std::vector<tei>*& intarr) { 
     intarr = &r12int ;
     return ;
     }
+  double common::getU( void) { return U_interact ;}
 

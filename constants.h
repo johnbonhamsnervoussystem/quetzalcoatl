@@ -34,5 +34,6 @@
   extern const double bh2an ;
   extern const double kb ;
   extern const double pi ;
+  extern const cd zpi ;
 
 #endif

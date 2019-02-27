@@ -196,13 +196,14 @@ int main(int argc, char *argv[]) {
 /*
   Hubbard
 */
-     ;
+    hubbard_hamiltonian( com) ;
+
   } else if ( com.hamil() == 4 ){
 
 /*
   Pairing
 */
-  pairing_hamiltonian( com) ;
+    pairing_hamiltonian( com) ;
 
   } else {
     qtzcntrl::shutdown( "Unrecognized Hamiltonian in Main." ) ;
@@ -218,7 +219,7 @@ int main(int argc, char *argv[]) {
   We always do a mean-field calculation so let's not worry about logic here quite yet
 */
     scf_drv( com) ;
-    prj_drv( com) ;
+//    prj_drv( com) ;
 
     }
 

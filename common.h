@@ -18,6 +18,7 @@ class common {
   Job Information
     hamiltonian - Indiacates the type of matrix elements we are computing
     method - What type of job are we doing.
+    hub_opt - Options for hubbard
 
   System information :
     nbasis - number of ao basis functions
@@ -29,6 +30,7 @@ class common {
     nalp - the number of spin up electrons
     nbet - the number of spin down electrons
     chemical_potential - the initial guess for mu
+    U_interact - interaction term. U for Hubbard, G for Pairing
 
   Algorithm Control :
     max_scf_iter - the maximum number of scf iterations
@@ -36,6 +38,8 @@ class common {
     scf_convergence_threshold - the threshold at which we consider the wavefunction
       converged.
     print - whether to do debug print or not
+    level_shift - Whether to use level shifting
+    lshift - an initial value for level shifting
 
   Stored Matrices
    s - overlap matrix
@@ -51,6 +55,8 @@ private :
 
   int hamiltonian ;
   int method ;
+  int hubbard ;
+  int *hub_dim ;
   int nbasis ;
   int n2ei ;
   int natoms ;
@@ -58,12 +64,15 @@ private :
   int nal ;
   int nbe ;
   double chemical_potential ;
+  double U_interact ;
   double nn ;
   std::string basis_name ;
 
   int max_scf_iter ;
   int max_pn_iter ;
   int print ;
+  bool level_shift ;
+  double lshift ;
   double scf_convergence_threshold ;
 
   Eigen::MatrixXd s_c ;
@@ -82,6 +91,8 @@ public :
 /* Set the data */
   void hamil( int n) ;
   void methd( int n) ;
+  void hub_opt( int n) ;
+  void hub_n( int n, int i) ;
   void nbas( int n) ;
   void ntei( int n) ;
   void natm( int n) ;
@@ -98,6 +109,7 @@ public :
   void mxpnit( int n) ;
   void prt( int n) ;
   void scfthresh( double d) ;
+  void lvlshft( double d) ;
 
 /* Coordinates */
   void setcoord( std::vector<std::vector<double>> c) ;
@@ -109,10 +121,13 @@ public :
   void setA( std::vector<double> a) ;
   void setC( std::vector<std::vector<double>> c) ;
   void setr12( std::vector<tei> intarr) ;
+  void setU( double u) ;
 
 /* Retrieve the data */
   int hamil( void) ;
   int methd( void) ;
+  int hub_opt( void) ;
+  int hub_n( int i) ;
   int nbas( void) ;
   int ntei( void) ;
   int natm( void) ;
@@ -130,6 +145,7 @@ public :
   int mxpnit( void) ;
   int prt( void) ;
   double scfthresh( void) ;
+  double lvlshft( void) ;
 
 /* Retrieve a matrix */
   Eigen::MatrixXd getS( void) ;
@@ -138,6 +154,7 @@ public :
   Eigen::VectorXd getA( void) ;
   Eigen::MatrixXd getC( void) ;
   void getr12( std::vector<tei>*& intarr) ;
+  double getU( void) ;
 
 
 } ;

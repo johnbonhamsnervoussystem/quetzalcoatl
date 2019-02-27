@@ -2,6 +2,7 @@
 #include "common.h"
 #include "constants.h"
 #include <Eigen/Dense>
+#include "hubbard.h"
 #include <iostream>
 #include "nbodyint.h"
 #include "obarasaika.h"
@@ -11,6 +12,42 @@
 #include "staging.h"
 #include "tei.h"
 #include <vector>
+
+void hubbard_hamiltonian( common& com){
+/*
+  Build everything we need to do Hubbard Hamiltonian calculations.
+
+  Let's Start with a dimension of nx1 periodic
+*/
+  int nx = com.hub_n( 0) ;
+  Eigen::MatrixXd T( nx, nx) ;
+  tei g ;
+  std::vector<tei> intarr ;
+
+/*
+  Set the Core Hamiltonian
+*/
+
+  T.setZero() ;
+
+  for ( int i=0; i < nx-1; i++){
+    T( i, i+1) = -d1 ;
+    T( i+1, i) = -d1 ;
+    } ;
+
+  T( 0, nx-1) = -d1 ;
+  T( nx-1, 0) = -d1 ;
+
+  com.setH( T) ;
+  g.set( 0, 0, 0, 0, com.getU()) ;
+  intarr.push_back( g) ;
+  com.setr12( intarr) ;
+
+  T.resize( 0, 0) ;
+
+  return ;
+
+} ;
 
 void molecular_hamiltonian( common& com){
 /*
@@ -140,7 +177,7 @@ void pairing_hamiltonian( common& com){
     T( i, i) = i+1 ;
     } ;
   com.setH( T) ;
-  g.set( 0, 0, 0, 0, -com.getU()) ;
+  g.set( 0, 0, 0, 0, com.getU()) ;
   intarr.push_back( g) ;
   com.setr12( intarr) ;
 
