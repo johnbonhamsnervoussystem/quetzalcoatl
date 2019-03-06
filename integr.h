@@ -24,9 +24,9 @@ class integration_grid {
     /*
       Allocate space for n points plus n = 0
     */
-    steps = n + 1 ;
-    points.reserve(n+2) ;
-    weights.reserve(n+2) ;
+    steps = n ;
+    points.reserve(n) ;
+    weights.reserve(n) ;
     }
 /*
   Access while iterating through a loop
@@ -54,18 +54,13 @@ class trapezoid : public integration_grid {
       double pt, wt ;
       double seg = ( uv - lv)/static_cast<double>(n) ;
   
-      wt = seg/2.0e0 ;
       for ( auto i = 0; i <= n; i++){
         pt = seg*static_cast<double>(i) + lv ;
-        if( i == 0 || i == n){
-          weights.push_back(wt) ;
-        } else {
-          weights.push_back(seg) ;
-          }
+        weights.push_back(seg) ;
         points.push_back(pt) ;
         }
-      weights.push_back(d0) ;
-      points.push_back(d0) ;
+//      weights.push_back(d0) ;
+//      points.push_back(d0) ;
       set_s() ;
       }
 } ;
@@ -101,9 +96,9 @@ class gauleg : public integration_grid {
       xm = (uv + lv)/2.0 ;
       xl = (uv - lv)/2.0 ;
 
-      for ( int i=1; i <=m; i++ ) {
+      for ( int i=1; i <= m; i++ ) {
 
-        z = cos ( pi*(static_cast<double>(i)-0.25)/(static_cast<double>(n)+0.5)) ;
+        z = std::cos ( pi*(static_cast<double>(i)-0.25)/(static_cast<double>(n)+0.5)) ;
 
         z1 = z + 1.0 ;
         dpy = 1.0 ;
@@ -122,8 +117,8 @@ class gauleg : public integration_grid {
         weights[i-1] = 2.0*xl/((1.0 - z*z)*dpy*dpy) ;
         weights[n-i] = weights[i-1] ;
       }
-      weights.push_back(d0) ;
-      points.push_back(d0) ;
+//      weights.push_back(d0) ;
+//      points.push_back(d0) ;
       set_s() ;
     }
   } ; 

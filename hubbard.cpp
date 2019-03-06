@@ -4,6 +4,7 @@
 #include "nbodyint.h"
 #include <iostream>
 #include "qtzio.h"
+#include "qtzcntrl.h"
 #include "hubbard.h"
 #include "util.h"
 
@@ -16,6 +17,22 @@ void hubbard<matrix>::contract( matrix& m) {
     for( i=0; i < dim; i++) {
       G( i, i) = U*m( i, i) ;
       }
+  } else if ( itype == 3){
+    /*
+      ghfb
+      Gaa | Gab      pbb | -pab
+      --------- = U* ----------
+      Gba | Gbb      -pba| paa
+    */
+    G.setZero() ;
+    for( i=0; i < dim; i++) {
+      G( i, i) = U*m( i, i) ;
+      G( dim + i, dim + i) = U*m( dim + i, dim + i) ;
+      G( i + dim, i) = -U*m( dim + i, i) ;
+      G( i, dim + i) = -U*m( i, dim + i) ;
+      }
+  } else {
+    qtzcntrl::shutdown( " Unrecognized type in Hubbard::contract") ;
     }
 
   return ;
@@ -45,12 +62,25 @@ void hubbard<matrix>::contract( matrix& m, matrix& n){
   } else if ( itype == 6){
     /*
       ghfb
-      The routine is written assuming a factor of 1/2 infront of G
-      and D.  hubbard does not have those and so we remove them here 
-      to maintain the broader implementation.
+      Gaa | Gab      pbb | -pba
+      --------- = U* ----------
+      Gba | Gbb      -pab| paa
+
+      Daa | Dab       0  | kba
+      --------- = U* ----------
+      Dba | Dbb       kab|  0 
     */
     G.setZero() ;
-    std::cout << " ghfb for hubbard not yet implemented " << std::endl ;
+    for( i = 0; i < dim; i++) {
+      G( i, i) = U*m( dim + i, dim + i) ;
+      G( dim + i, dim + i) = U*m( i, i) ;
+      G( i + dim, i) = -U*m( i, dim + i) ;
+      G( i, dim + i) = -U*m( dim + i, i) ;
+      G( i, 3*dim + i) = U*n( dim + i, i) ;
+      G( dim + i, 2*dim + i) = U*n( i, dim + i) ;
+      }
+    G.block( 2*dim, 2*dim, 2*dim, 2*dim) = -G.block( 0, 0, 2*dim, 2*dim).conjugate() ;
+    G.block( 2*dim, 0, 2*dim, 2*dim) = -G.block( 0, 2*dim, 2*dim, 2*dim).conjugate() ;
     }
 
   return ;

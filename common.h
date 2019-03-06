@@ -110,6 +110,7 @@ public :
   void prt( int n) ;
   void scfthresh( double d) ;
   void lvlshft( double d) ;
+  bool use_shift( void) ;
 
 /* Coordinates */
   void setcoord( std::vector<std::vector<double>> c) ;

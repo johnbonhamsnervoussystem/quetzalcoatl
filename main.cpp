@@ -218,8 +218,8 @@ int main(int argc, char *argv[]) {
 /*
   We always do a mean-field calculation so let's not worry about logic here quite yet
 */
-    scf_drv( com) ;
-//    prj_drv( com) ;
+//    scf_drv( com) ;
+    prj_drv( com) ;
 
     }
 

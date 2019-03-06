@@ -132,6 +132,7 @@
   int common::prt( void) {return print ;}
   double common::scfthresh( void) {return scf_convergence_threshold ;}
   double common::lvlshft( void) {return lshift ;}
+  bool common::use_shift( void) {return level_shift ;}
 
 /* Retrieve a matrix */
   Eigen::MatrixXd common::getS( void) { return s_c ;}

@@ -14,39 +14,56 @@ template < class matrix>
 void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix>*& W, std::vector<tei>*& intarr, int& nbas) {
   matrix xs ;
 
+  /*
+    hm - hamiltonian type
+    wt - wavefunction type
+    ws - wavefunction symmetry
+  */
+
   switch( hm){
     case 1 :
       /* 
         Molecular Hamiltonian 
       */
-      if ( wt == 1){
+      if ( wt == 1) {
         /* 
           Hartree-Fock
         */
-        if ( ws == 1){
+        if ( ws == 1) {
           h.resize( nbas, nbas) ;
           h.real() = com.getH() ;
           xs.resize( nbas, nbas) ;
+          xs.setZero() ;
           xs.real() = com.getXS() ;
           transform( 2, xs, h) ;
           com.getr12( intarr) ;
           W = new r12<matrix>( intarr, xs, 1, nbas) ;
-          xs.resize( 0, 0) ;
           break ;
-        } else if ( ws == 2){
+        } else if ( ws == 2) {
           qtzcntrl::shutdown( " UHF NYI") ;
+        } else if ( ws == 3) {
+          h.resize( 2*nbas, 2*nbas) ;
+          h.setZero() ;
+          xs.resize( nbas, nbas) ;
+          xs.setZero() ;
+          xs = com.getXS() ;
+          h.block( 0, 0, nbas, nbas) = com.getH() ;
+          h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
+          transform( 2, xs, h) ;
+          W = new r12<matrix>( intarr, xs, 3, nbas) ;
         } else {
-          qtzcntrl::shutdown( " GHF NYI") ;
+          qtzcntrl::shutdown( " Unrecognized wavefunction symmetry in initialize. ") ;
           }
-      } else if (wt == 2){
+      } else if (wt == 2) {
         /* 
           Hartree-Fock-Bogoliubov
         */
-        if ( ws == 1){
+        if ( ws == 1) {
           h.resize( 2*nbas, 2*nbas) ;
           h.setZero() ;
           h.block( 0, 0, nbas, nbas).real() = com.getH() ;
           xs.resize( nbas, nbas) ;
+          xs.setZero() ;
           xs.real() = com.getXS() ;
           transform( 2, xs, h.block( 0, 0, nbas, nbas)) ;
           h.block( nbas, nbas, nbas, nbas) = -h.block( 0, 0, nbas, nbas) ;
@@ -54,29 +71,70 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
           W = new r12<matrix>( intarr, xs, 4, nbas) ;
           xs.resize( 0, 0) ;
           break ;
-        } else if ( ws == 2){
+        } else if ( ws == 2) {
           qtzcntrl::shutdown( " UHFB NYI") ;
+        } else if ( ws == 3) {
+          h.resize( 4*nbas, 4*nbas) ;
+          xs.resize( 2*nbas, 2*nbas) ;
+          xs.block( 0, 0, nbas, nbas).real() = com.getXS() ;
+          xs.block( nbas, nbas, nbas, nbas) = xs.block( 0, 0, nbas, nbas) ;
+          h.block( 0, 0, nbas, nbas).real() = com.getH() ;
+          h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
+          transform( 2, xs, h.block( 0, 0, 2*nbas, 2*nbas)) ;
+          h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -h.block( 0, 0, 2*nbas, 2*nbas) ;
+          W = new r12<matrix>( intarr, xs, 6, nbas) ;
         } else {
-          qtzcntrl::shutdown( " GHFB NYI") ;
+          qtzcntrl::shutdown( " Unrecognized ws in HFB Molecular initialize. ") ;
           }
       } else {
-        qtzcntrl::shutdown( " No other wavefunctions implemented ") ;
+        qtzcntrl::shutdown( " No other wavefunctions implemented. ") ;
         }
     case 3 :
       /*
         Hubbard
       */
+      std::cout << " Hubbard Hamiltonian " << std::endl ;
       if ( wt == 1){
-        /* 
+        /*
           Hartree-Fock
         */
-        if ( ws == 1){
+        std::cout << " Hartree-Fock " << std::endl ;
+        if ( ws == 1) {
           h.resize( nbas, nbas) ;
           h.real() = com.getH() ;
           W = new hubbard<matrix>( com.getU(), 1, nbas) ;
           break ;
+        } else if ( ws == 3) {
+          h.resize( 2*nbas, 2*nbas) ;
+          h.setZero() ;
+          h.block( 0, 0, nbas, nbas).real() = com.getH() ;
+          h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
+          W = new hubbard<matrix>( com.getU(), 3, nbas) ;
+          break ;
         } else {
-          qtzcntrl::shutdown( " Only RHF Hubbard Implemented ") ;
+          qtzcntrl::shutdown( " Unrecognized Symmetry in HF Hubbard init ") ;
+          }
+      } else if ( wt == 2) {
+        /* 
+          Hartree-Fock-Bogoliubov
+        */
+        if ( ws == 1) {
+          h.resize( 2*nbas, 2*nbas) ;
+          h.setZero() ;
+          h.block( 0, 0, nbas, nbas).real() = com.getH() ;
+          h.block( nbas, nbas, nbas, nbas) = -h.block( 0, 0, nbas, nbas) ;
+          W = new hubbard<matrix>( com.getU(), 4, nbas) ;
+          break ;
+        } else if ( ws == 3) {
+          h.resize( 4*nbas, 4*nbas) ;
+          h.setZero() ;
+          h.block( 0, 0, nbas, nbas).real() = com.getH() ;
+          h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
+          h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -h.block( 0, 0, 2*nbas, 2*nbas) ;
+          W = new hubbard<matrix>( com.getU(), 6, nbas) ;
+          break ;
+        } else {
+          qtzcntrl::shutdown( " Unrecognized Symmetry in HFB Hubbard init ") ;
           }
         }
         break ;
@@ -125,6 +183,7 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
       break ;
     }
 
+  xs.resize( 0, 0) ;
   return ;
 
 } ;

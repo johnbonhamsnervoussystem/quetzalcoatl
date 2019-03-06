@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include "guess.h"
 #include "qtzio.h"
+#include "util.h"
 #include "wfn.h"
 
 void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> k) {
@@ -22,7 +23,8 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXcd> p, Eigen:
   w.moc.resize( nbas, nbas) ;
   w.eig.resize( nbas) ;
   load_wfn( w) ;
-  Ef = (w.eig( nele - 1) + w.eig( nele))/d2 ;
+//  Ef = (w.eig( nele - 1) + w.eig( nele))/d2 ;
+  Ef = -0.06883 ;
   for( int i=0; i < nbas; i++){
     djunk = (w.eig( i) - Ef)/(kb*3.0e4) ;
     A( i, i) = d1/( d1 + std::exp( djunk)) ;
@@ -76,7 +78,8 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXd> p, Eigen::
   w.moc.resize( nbas, nbas) ;
   w.eig.resize( nbas) ;
   load_wfn( w) ;
-  Ef = (w.eig( nele - 1) + w.eig( nele))/d2 ;
+//  Ef = (w.eig( nele - 1) + w.eig( nele))/d2 ;
+  Ef = -0.06883 ;
   for( int i=0; i < nbas; i++){
     djunk = (w.eig( i) - Ef)/(kb*3.0e4) ;
     A( i, i) = d1/( d1 + std::exp( djunk)) ;
@@ -113,3 +116,31 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXd> p, Eigen::
 
 }
 
+void rand01_guess( Eigen::Ref<Eigen::MatrixXd> A, Eigen::Ref<Eigen::MatrixXd> B) {
+/*
+
+  A very specific routine that should be generalized.  
+
+  Use a seed and pseudo-random number generator to build identical initial guesses
+  with values between -0.5 and 0.5.
+
+*/
+  uint32_t seed = 101723 ;
+  uint32_t *state ;
+  state = &seed ;
+
+  for( int i = 0; i < A.rows(); i++){
+    for( int j = 0; j < A.cols(); j++){
+      A( i , j) = rand01( state) ;
+      }
+    }
+
+  for( int i = 0; i < B.rows(); i++){
+    for( int j = 0; j < B.cols(); j++){
+      B( i , j) = rand01( state) ;
+      }
+    }
+
+  return ;
+
+}
