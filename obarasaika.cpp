@@ -453,113 +453,114 @@
 
     } ;
 
-  void ao_overlap( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> ovl) {
-    /* Given a Slater-type Orbital basis, return the overlap. */
-    int ind = -1 ;
-    int jnd ;
-    int nst1, nst2, jstrt ;
-    double s ;
-    time_dbg ao_overlap_time = time_dbg("ao_overlap") ;
- 
-    for ( int i = 0; i < natm; i++) {
-      nst1 = b.b[i].nshl ;
-      for ( int j = 0; j < nst1; j++) {
-        ind ++ ;
-        jnd = ind - 1 ;
-        for ( int k = i; k < natm; k++) {
-          nst2 = b.b[k].nshl ;
-          if ( k == i ) {
-            jstrt = j ;
-          } else {
-            jstrt = 0 ;
-          }
-          for ( int l = jstrt; l < nst2; l++) {
-            jnd ++ ;
-            s = overlap_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c) ;
-            ovl( ind, jnd) =  s*(b.b[i].s[j].norm)*(b.b[k].s[l].norm) ;
-            ovl( jnd, ind) = ovl( ind, jnd) ;
-            }
+void ao_overlap( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> ovl) {
+  /* Given a Slater-type Orbital basis, return the overlap. */
+  int ind = -1 ;
+  int jnd ;
+  int nst1, nst2, jstrt ;
+  double s ;
+  time_dbg ao_overlap_time = time_dbg("ao_overlap") ;
+
+  for ( int i = 0; i < natm; i++) {
+    nst1 = b.b[i].nshl ;
+    for ( int j = 0; j < nst1; j++) {
+      ind ++ ;
+      jnd = ind - 1 ;
+      for ( int k = i; k < natm; k++) {
+        nst2 = b.b[k].nshl ;
+        if ( k == i ) {
+          jstrt = j ;
+        } else {
+          jstrt = 0 ;
+        }
+        for ( int l = jstrt; l < nst2; l++) {
+          jnd ++ ;
+          s = overlap_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c) ;
+          ovl( ind, jnd) =  s*(b.b[i].s[j].norm)*(b.b[k].s[l].norm) ;
+          ovl( jnd, ind) = ovl( ind, jnd) ;
           }
         }
       }
+    }
 
-    ao_overlap_time.end() ;
+  ao_overlap_time.end() ;
 
-    return ;
+  return ;
 
-    } ;
+  } ;
 
-  void ao_kinetic( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> T) {
-    /* Given a Slater-type Orbital basis, return the kinetic
-       energy. */
-    int ind = -1 ;
-    int jnd ;
-    int nst1, nst2, jstrt ;
-    time_dbg ao_kinetic_time = time_dbg("ao_kinetic") ;
- 
-    for ( int i = 0; i < natm; i++) {
-      nst1 = b.b[i].nshl ;
-      for ( int j = 0; j < nst1; j++) {
-        ind ++ ;
-        jnd = ind - 1 ;
-        for ( int k = i; k < natm; k++) {
-          nst2 = b.b[k].nshl ;
-          if ( k == i ) {
-            jstrt = j ;
-          } else {
-            jstrt = 0 ;
-          }
-          for ( int l = jstrt; l < nst2; l++) {
-            jnd ++ ;
-            T( ind, jnd) = kinetic_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c) ;
-            T( jnd, ind) = T( ind, jnd) ;
-            }
+void ao_kinetic( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> T) {
+  /* Given a Slater-type Orbital basis, return the kinetic
+     energy. */
+  int ind = -1 ;
+  int jnd ;
+  int nst1, nst2, jstrt ;
+  time_dbg ao_kinetic_time = time_dbg("ao_kinetic") ;
+
+  for ( int i = 0; i < natm; i++) {
+    nst1 = b.b[i].nshl ;
+    for ( int j = 0; j < nst1; j++) {
+      ind ++ ;
+      jnd = ind - 1 ;
+      for ( int k = i; k < natm; k++) {
+        nst2 = b.b[k].nshl ;
+        if ( k == i ) {
+          jstrt = j ;
+        } else {
+          jstrt = 0 ;
+        }
+        for ( int l = jstrt; l < nst2; l++) {
+          jnd ++ ;
+          T( ind, jnd) = kinetic_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c) ;
+          T( jnd, ind) = T( ind, jnd) ;
           }
         }
       }
+    }
 
-    ao_kinetic_time.end() ;
+  ao_kinetic_time.end() ;
 
-    return ;
+  return ;
 
-    } ;
+  } ;
 
-  void ao_eN_V( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> n_c, Eigen::Ref<Eigen::VectorXd> q, Eigen::Ref<Eigen::MatrixXd> V) {
-    /* Given a Slater-type Orbital basis and the nuclear information, return
-    the electron nuclear potential integrals */
-    int ind = -1 ;
-    int jnd ;
-    int nst1, nst2, jstrt ;
-    time_dbg ao_eN_V_time = time_dbg("ao_eN_V") ;
- 
-    for ( int i = 0; i < natm; i++) {
-      nst1 = b.b[i].nshl ;
-      for ( int j = 0; j < nst1; j++) {
-        ind ++ ;
-        jnd = ind - 1 ;
-        for ( int k = i; k < natm; k++) {
-          nst2 = b.b[k].nshl ;
-          if ( k == i ) {
-            jstrt = j ;
-          } else {
-            jstrt = 0 ;
-          }
-          for ( int l = jstrt; l < nst2; l++) {
-            jnd ++ ;
-            V( ind, jnd) = -nucelecV_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c, n_c, q) ;
-            V( jnd, ind) = V( ind, jnd) ;
-            }
+void ao_eN_V( int natm, basis_set& b, Eigen::Ref<Eigen::MatrixXd> n_c, Eigen::Ref<Eigen::VectorXd> q, Eigen::Ref<Eigen::MatrixXd> V) {
+  /* Given a Slater-type Orbital basis and the nuclear information, return
+  the electron nuclear potential integrals */
+  int ind = -1 ;
+  int jnd ;
+  int nst1, nst2, jstrt ;
+  time_dbg ao_eN_V_time = time_dbg("ao_eN_V") ;
+
+  for ( int i = 0; i < natm; i++) {
+    nst1 = b.b[i].nshl ;
+    for ( int j = 0; j < nst1; j++) {
+      ind ++ ;
+      jnd = ind - 1 ;
+      for ( int k = i; k < natm; k++) {
+        nst2 = b.b[k].nshl ;
+        if ( k == i ) {
+          jstrt = j ;
+        } else {
+          jstrt = 0 ;
+        }
+        for ( int l = jstrt; l < nst2; l++) {
+          jnd ++ ;
+          V( ind, jnd) = -nucelecV_sto( b.b[i].s[j] , b.b[i].c, b.b[k].s[l] , b.b[k].c, n_c, q) ;
+          V( jnd, ind) = V( ind, jnd) ;
           }
         }
       }
+    }
 
-    ao_eN_V_time.end() ;
+  ao_eN_V_time.end() ;
 
-    return ;
+  return ;
 
-    } ;
+  } ;
 
 /*  void tensor_ao_tei( int nbas, int natm, basis_set& b, Eigen::Ref<Eigen::Tensor< double, nbas>> eri) {
+
    Given a Slater-type Orbital basis and the nuclear information, return
     the two electron repulsion integrals over Muliken ao indexes. 
     
@@ -608,10 +609,11 @@
 
     Get the integrals as a list of muliken integrals in the form
     ( i j| k l) where i > j, k > l and ij > kl */
+    int c_elec = 0 ;
     int i, j, k, l, m, n, o, p ;
     int i_v, k_v, m_v, o_v ;
-    int nst1, nst2, nst3, nst4 ;
-    int lto, natm = com.natm(), print = com.prt() ;
+    int nst1, nst2, nst3, nst4, bindx, kindx ;
+    int natm = com.natm(), print = com.prt() ;
     double int_v ;
     tei tmp_tei ;
     time_dbg list_ao_tei_time = time_dbg("list_ao_tei_time") ;
@@ -630,8 +632,8 @@
             }
           for ( l = 0; l < nst2; l++) {
 	    k_v++ ;
+            bindx = (i_v + 1)*i_v/2 + k_v ;
             m_v = -1 ;
- //
             for ( m = 0; m <= i; m++) {
               if ( i != m ) {
                 nst3 = b.b[m].nshl ;
@@ -641,21 +643,19 @@
               for ( n = 0; n < nst3; n++) {
 	        m_v++ ;
                 o_v = -1 ;
-                if ( i != m ) {
-                  lto = m ;
-                } else {
-                  lto = k ;
-                  }
-                for ( o = 0; o <= lto; o++) {
-                  if ( i != m && o == m) {
-                    nst4 = n + 1 ;
-                  } else if ( i == m && k == o ) {
-                    nst4 = std::min( l + 1, n + 1) ;
-                  } else {
+                for ( o = 0; o <= m; o++) {
+                  if ( o != m ) {
                     nst4 = b.b[o].nshl ;
+                  } else {
+                    nst4 = n + 1 ;
                     }
                   for ( p = 0; p < nst4; p++) {
 	            o_v++ ;
+                    kindx = (m_v + 1)*m_v/2 + o_v ;
+                    if ( bindx < kindx ){
+                      break ;
+                      }
+                    c_elec++ ;
                     int_v = r12_sto( b.b[i].s[j], b.b[i].c, b.b[k].s[l], b.b[k].c, b.b[m].s[n], b.b[m].c, b.b[o].s[p], b.b[o].c) ;
                     tmp_tei.set( i_v, k_v, m_v, o_v, int_v) ;
                     if ( print > 0){
@@ -671,6 +671,10 @@
         }
       }
 
+    if ( print > 0){
+      std::cout << " Number of two electron integrals calculated " << std::endl ;
+      std::cout << c_elec << std::endl ;
+      }
     list_ao_tei_time.end() ;
 
     return ;

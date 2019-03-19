@@ -219,7 +219,6 @@ void real_SlaDet( common& com, int& opt){
       w.moc.resize( nbas, nbas) ;
       w.moc.setRandom() ;
       w.moc *= d1/d10 ;
-//      w.moc.setZero() ;
 
       w.eig.resize( nbas) ;
 
@@ -258,20 +257,8 @@ void real_SlaDet( common& com, int& opt){
 
     } else if ( opt == 3 ) {
 
-/*
-      h.resize( 2*nbas, 2*nbas) ;
-      h.setZero() ;
-      xs.resize( nbas, nbas) ;
-      xs = com.getXS() ;
-      h.block( 0, 0, nbas, nbas) = com.getH() ;
-      h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
-      transform( 2, xs, h) ;
-      nbodyint<Eigen::MatrixXd>* X = new r12<Eigen::MatrixXd>( r12int, xs, 3, nbas) ;
-*/
-
       initialize( 1, opt, com.hamil(), com, h, X, r12int, nbas) ;
       w.moc.resize( 2*nbas, 2*nbas) ;
-//      w.moc.setZero() ;
       w.moc.setRandom() ;
       w.moc *= d1/d10 ;
 
@@ -395,7 +382,7 @@ void cplx_HFB( common& com, int& opt) {
       }
 
 //    w.wfntyp = wt/2 ;
-//    save_wfn( w, 0) ;
+    save_wfn( w) ;
     w.eig.resize( 0) ;
     w.moc.resize( 0, 0) ;
     k.resize( 0, 0) ;
@@ -426,8 +413,8 @@ void cplx_SlaDet( common& com, int& opt){
     double thresh = com.scfthresh() ;
     double lvlshft = com.lvlshft() ;
     bool lshift = com.use_shift() ;
+    nbodyint<Eigen::MatrixXcd>* X ;
     std::vector<tei>* r12int ;
-    com.getr12( r12int) ;
     Eigen::MatrixXcd h, xs, ca, cb ;
     wfn< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
     time_dbg cplx_hf_time = time_dbg("complex_hartree_fock") ;
@@ -479,19 +466,23 @@ void cplx_SlaDet( common& com, int& opt){
 
     } else if ( opt == 3 ) {
 
-      h.resize( 2*nbas, 2*nbas) ;
-      h.setZero() ;
-      xs.resize( nbas, nbas) ;
-      xs.real() = com.getXS() ;
-      h.block( 0, 0, nbas, nbas).real() = com.getH() ;
-      h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
-      transform( 2, xs, h) ;
-      nbodyint<Eigen::MatrixXcd>* X = new r12<Eigen::MatrixXcd>( r12int, xs, 3, nbas) ;
+      initialize( 1, opt, com.hamil(), com, h, X, r12int, nbas) ;
       w.moc.resize( 2*nbas, 2*nbas) ;
-      w.moc.setZero() ;
+      w.moc.setRandom() ;
+
       w.eig.resize( 2*nbas) ;
 
-      w.e_scf = ghfdia( h, X, nbas, nele, w.moc, w.eig, lshift, lvlshft, maxit, thresh) ;
+/*
+  Generate a fermi contact term to try and help break symmetry
+    - For tomorrow
+        Add a poiter to the basis set in common.
+
+*/
+      
+      fc_hamiltonian ( H_fc, b, c, ns) ;
+
+//      w.e_scf = ghfdia( h, X, nbas, nele, w.moc, w.eig, lshift, lvlshft, maxit, thresh) ;
+      w.e_scf = ghfdia( h, hfc, X, nbas, nele, w.moc, w.eig, lshift, lvlshft, maxit, thresh) ;
 
       std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
       print_mat( w.eig, "MO Eigenvalues : ") ;
@@ -524,11 +515,14 @@ double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
   matrix f, g, p, p_prev ;
   Eigen::SelfAdjointEigenSolver<matrix> f_diag ;
   int iter=0 ;
-  int occ ;
-  typename matrix::Scalar energy, t, shift, two ;
+  int occ, diis_on = 0 ;
+  typename matrix::Scalar energy, prev_energy, t, tx, shift, zero, two ;
+  diis<typename matrix::Scalar> p_diis ( nbasis*nbasis, 6) ;
   time_dbg rhfdia_time = time_dbg("rhfdia") ;
 
+  zero = static_cast<typename matrix::Scalar>( d0) ;
   two = static_cast<typename matrix::Scalar>( d2) ;
+  energy = zero ;
   occ = nele/2 ;
   if ( lshift){
     shift = static_cast<typename matrix::Scalar>( lvlshft) ;
@@ -538,24 +532,12 @@ double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
   p.resize( nbasis, nbasis) ;
   p_prev.resize( nbasis, nbasis) ;
 
-  /* If c has something in it use it as the initial guess. */
-  if( c.isZero(0) ) {
-    f = h ;
-  } else {
-    p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
-    W->contract( p) ;
-    g = W->getG() ;
-    f = h + g ;
-  }
+  /* At some point its probably better just to pass in the density */
+  p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
 
   while ( iter++ < maxit ) {
+    prev_energy = energy ;
     p_prev = p ;
-    if ( lshift && iter > 3){
-      f += -shift*p ;
-      }
-    f_diag.compute( f) ;
-    c = f_diag.eigenvectors() ;
-    p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
     W->contract( p) ;
     g = W->getG() ;
     f = h + g ;
@@ -563,10 +545,37 @@ double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
 
     energy = g.trace() ;
 
+    if ( false ){
+      f += -shift*p ;
+      }
+    f_diag.compute( f) ;
+    c = f_diag.eigenvectors() ;
+    p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
+
+/*
+*/
+
+    if ( diis_on == 0){
+      tx = energy - prev_energy ;
+      t = std::abs( tx) ;
+      std::cout << " Energy difference between iterations is :  " << t << std::endl ;
+      if ( std::real(t) < 1.0e-3){
+        std::cout << " Turning on DIIS " << std::endl ;
+        diis_on = 1 ;
+        }
+      }
+
+    if ( diis_on == 1){
+      p_diis.update( p, diis_on) ;
+      }
+/*
+*/
+
     g = p - p_prev ;
     t = g.norm() ;
     std::cout << "  rms difference in the densities: " << t << std::endl ;
     if ( std::real(t) < thresh ) { break ;}
+
     }
 
   std::cout << " Number of iterations : " << iter << std::endl ;
@@ -676,16 +685,19 @@ template double uhfdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, co
 template < class matrix>
 double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const int& nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, bool lshift, double lvlshft, const int& maxit, const double& thresh) {
 
-  /* 
-    Generalized Hartree-Fock solved by repeated diagonalization. 
-  */
+/* 
+  Generalized Hartree-Fock solved by repeated diagonalization. 
+*/
   matrix f, g, p, p_prev ;
   Eigen::SelfAdjointEigenSolver<matrix> f_diag ;
   int iter=0 ;
-  int nbas ;
-  typename matrix::Scalar energy, t, shift ;
+  int nbas, diis_on = 0 ;
+  typename matrix::Scalar energy, prev_energy, t, tx, shift, zero ;
+  diis<typename matrix::Scalar> p_diis ( 2*2*nbasis*nbasis, 6) ;
   time_dbg ghfdia_time = time_dbg("ghfdia") ;
 
+  zero = static_cast<typename matrix::Scalar>( d0) ;
+  energy = zero ;
   if ( lshift){
     shift = static_cast<typename matrix::Scalar>(lvlshft) ;
     }
@@ -695,35 +707,43 @@ double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
   p.resize( nbas, nbas) ;
   p_prev.resize( nbas, nbas) ;
 
-  /* If something is stored in c use it for an inital guess */
-  if ( c.isZero(0) ) {
-    f = h ;
-  } else {
-    p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
-    W->contract( p) ;
-    g = W->getG() ;
-    f = h + g ;
-  } 
+  /* Change this at some point */
+  p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
 
   while ( iter++ < maxit ) {
+    prev_energy = energy ;
     p_prev = p ;
-    if ( lshift && iter > 3){
-      f += -shift*p ;
-      }
-    f_diag.compute( f) ;
-    c = f_diag.eigenvectors() ;
-    p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
     W->contract( p) ;
     g = W->getG() ;
     f = h + g ;
     g = p*( h + f) ;
 
     energy = g.trace() ;
+    if ( false ){
+      f += -shift*p ;
+      }
+    f_diag.compute( f) ;
+    c = f_diag.eigenvectors() ;
+    p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
+
+    if ( diis_on == 0){
+      tx = energy - prev_energy ;
+      t = std::abs( tx) ;
+      std::cout << " Energy difference between iterations is :  " << t << std::endl ;
+      if ( std::real(t) < 1.0e-3){
+        std::cout << " Turning on DIIS " << std::endl ;
+        diis_on = 1 ;
+        }
+      }
+    if ( diis_on == 1){
+      p_diis.update( p, diis_on) ;
+      }
 
     g = p - p_prev ;
     t = g.norm() ;
     std::cout << "  rms difference in the densities: " << t << std::endl ;
     if ( std::real(t) < thresh ) { break ;}
+
     }
 
   std::cout << " Number of iterations : " << iter << std::endl ;
@@ -745,6 +765,84 @@ double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
 template double ghfdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, const int&, const int&, Eigen::MatrixXd&, Eigen::Ref<Eigen::VectorXd>, bool, double, const int&, const double&) ;
 
 template double ghfdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, bool, double, const int&, const double&) ;
+
+double ghfdia_fc( const Eigen::Ref<Eigen::MatrixXcd> h, const Eigen::Ref<Eigen::MatrixXcd> f, nbodyint<Eigen::MatrixXcd>* W, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, bool lshift, double lvlshft, const int& maxit, const double& thresh) {
+
+/* 
+  Generalized Hartree-Fock solved by repeated diagonalization. 
+*/
+  Eigen::MatrixXcd f, g, p, p_prev ;
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> f_diag ;
+  int iter=0 ;
+  int nbas, diis_on = 0 ;
+  cd energy, prev_energy, t, tx, shift, zero ;
+  diis<cd> p_diis ( 2*2*nbasis*nbasis, 6) ;
+  time_dbg ghfdia_fc_time = time_dbg("ghfdia_fc") ;
+
+  energy = z0 ;
+  if ( lshift){
+    shift = static_cast<cd>(lvlshft) ;
+    }
+  nbas = nbasis*2 ;
+  f.resize( nbas, nbas) ;
+  g.resize( nbas, nbas) ;
+  p.resize( nbas, nbas) ;
+  p_prev.resize( nbas, nbas) ;
+
+  /* Change this at some point */
+  p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
+
+  while ( iter++ < maxit ) {
+    prev_energy = energy ;
+    p_prev = p ;
+    W->contract( p) ;
+    g = W->getG() ;
+    f = h + g ;
+    g = p*( h + f) ;
+
+    energy = g.trace() ;
+    if ( false ){
+      f += -shift*p ;
+      }
+    f_diag.compute( f) ;
+    c = f_diag.eigenvectors() ;
+    p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
+
+    if ( diis_on == 0){
+      tx = energy - prev_energy ;
+      t = std::abs( tx) ;
+      std::cout << " Energy difference between iterations is :  " << t << std::endl ;
+      if ( std::real(t) < 1.0e-3){
+        std::cout << " Turning on DIIS " << std::endl ;
+        diis_on = 1 ;
+        }
+      }
+    if ( diis_on == 1){
+      p_diis.update( p, diis_on) ;
+      }
+
+    g = p - p_prev ;
+    t = g.norm() ;
+    std::cout << "  rms difference in the densities: " << t << std::endl ;
+    if ( std::real(t) < thresh ) { break ;}
+
+    }
+
+  std::cout << " Number of iterations : " << iter << std::endl ;
+  p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
+  print_mat( p, " Final Density") ;
+
+  eig = f_diag.eigenvalues() ;
+  p_prev.resize( 0, 0) ;
+  p.resize( 0, 0) ;
+  g.resize( 0, 0) ;
+  f.resize( 0, 0) ;
+
+  ghfdia_fc_time.end() ;
+
+  return std::real(energy)/d2 ;
+
+} ;
 
 template < class matrix, class z>
 double rhfbdia( const matrix& h, nbodyint<matrix>* X, const int& nbasis, const int& nele, matrix& p, matrix& k, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, z& lambda, z& lvlshift, const int& maxit_scf, const int& maxit_pn, const double& thresh) {

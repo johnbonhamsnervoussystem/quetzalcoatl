@@ -51,7 +51,7 @@ class trapezoid : public integration_grid {
 /* 
   Set up a trapezoid integration grid
 */
-      double pt, wt ;
+      double pt ;
       double seg = ( uv - lv)/static_cast<double>(n) ;
   
       for ( auto i = 0; i <= n; i++){

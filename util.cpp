@@ -1,13 +1,16 @@
 #include <algorithm>
+#include "basis.h"
 #include <cmath>
 #include "constants.h"
 #include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_sf_hyperg.h>
 #include "integr.h"
 #include <iostream>
 #include <Eigen/LU>
 #include <Eigen/QR>
+#include "qtzio.h"
 #include "solver.h"
 #include "tei.h"
 #include <time.h>
@@ -15,72 +18,102 @@
 #include "util.h"
 #include <vector>
 #include "wigner.h"
+#include "wfn.h"
 
 /* Utilities that don't belong elsewhere. */
 
-  void bonnet_r ( int n, double x, double& p2) {
-  /* 
-    Use Bonnet's recursion formula to evaluate the nth Legendre Polynomial
-    at the point x.
-   
-    P_{m+1}(x) = ((2n + 1)xP_{m}(x) - nP_{n-1}(x))/(m + 1)
-  */
-    double p0 ;
-    double p1 = 1.0 ;
-  
-    // Handle edge cases and
-    if ( n < 0 ){
-     std::cout << "Warning: Negative polynomial in bonnet_r" << std::endl ;
-     return ;
-    }
-  
-    if ( n == 0 ){ p2 = 1.0; return ; }
-    if ( n == 1 ){ p2 = x ; return ; }
-  
-    p2 = x ;
-   
-    for ( int i = 1; i < n ; i++){
-      p0 = p1 ;
-      p1 = p2 ;
-      p2 = (static_cast<double>(2*i + 1)*x*p1 - i*p0)/static_cast<double>(i + 1) ;
-    }
-   
-    return ;
-  
+void bonnet_r ( int n, double x, double& p2) {
+/* 
+  Use Bonnet's recursion formula to evaluate the nth Legendre Polynomial
+  at the point x.
+ 
+  P_{m+1}(x) = ((2n + 1)xP_{m}(x) - nP_{n-1}(x))/(m + 1)
+*/
+  double p0 ;
+  double p1 = 1.0 ;
+
+  // Handle edge cases and
+  if ( n < 0 ){
+   std::cout << "Warning: Negative polynomial in bonnet_r" << std::endl ;
+   return ;
+  }
+
+  if ( n == 0 ){ p2 = 1.0; return ; }
+  if ( n == 1 ){ p2 = x ; return ; }
+
+  p2 = x ;
+ 
+  for ( int i = 1; i < n ; i++){
+    p0 = p1 ;
+    p1 = p2 ;
+    p2 = (static_cast<double>(2*i + 1)*x*p1 - i*p0)/static_cast<double>(i + 1) ;
+  }
+ 
+  return ;
+
   }
   
-  void bonnet_r( int n, double x, double& p2, double& dp) {
-  /* 
-    Use Bonnet's recursion formula to evaluate the nth Legendre Polynomial
-    at the point x.  Additionally, return the derivative of P_{n}
-   
-    P_{m+1}(x) = ((2n + 1)xP_{m}(x) - nP_{n-1}(x))/(m + 1)
-  */ 
-    double p0 ;
-    double p1 = 1.0 ;
-  
-    // Handle edge cases and
-    if ( n < 0 ){
-     std::cout << "Warning: Negative polynomial in bonnet_r" << std::endl ;
-     return ;
-    }
-  
-    if ( n == 0 ){ p2 = 1.0; dp=d0; return ; }
-    if ( n == 1 ){ p2 = x; dp=1.0; return ; }
-  
-    p2 = x ;
-   
-    for ( int i = 1; i < n ; i++){
-      p0 = p1 ;
-      p1 = p2 ;
-      p2 = (static_cast<double>(2*i + 1)*x*p1 - i*p0)/static_cast<double>(i + 1) ;
-    }
-  
-    dp = static_cast<double>(n)*(x*p2 - p1)/(x*x - 1.0) ;
-  
-    return ;
-  
+void bonnet_r( int n, double x, double& p2, double& dp) {
+/* 
+  Use Bonnet's recursion formula to evaluate the nth Legendre Polynomial
+  at the point x.  Additionally, return the derivative of P_{n}
+ 
+  P_{m+1}(x) = ((2n + 1)xP_{m}(x) - nP_{n-1}(x))/(m + 1)
+*/ 
+  double p0 ;
+  double p1 = 1.0 ;
+
+  // Handle edge cases and
+  if ( n < 0 ){
+   std::cout << "Warning: Negative polynomial in bonnet_r" << std::endl ;
+   return ;
   }
+
+  if ( n == 0 ){ p2 = 1.0; dp=d0; return ; }
+  if ( n == 1 ){ p2 = x; dp=1.0; return ; }
+
+  p2 = x ;
+ 
+  for ( int i = 1; i < n ; i++){
+    p0 = p1 ;
+    p1 = p2 ;
+    p2 = (static_cast<double>(2*i + 1)*x*p1 - i*p0)/static_cast<double>(i + 1) ;
+  }
+
+  dp = static_cast<double>(n)*(x*p2 - p1)/(x*x - 1.0) ;
+
+  return ;
+
+  }
+
+void charge_magnetic_decomposition( const Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::MatrixXcd> mx, Eigen::Ref<Eigen::MatrixXcd> my, Eigen::Ref<Eigen::MatrixXcd> mz){
+
+/*
+
+  Given a density matrix of the form
+
+    | paa  pab|
+    | pba  pbb|
+
+  c = ( paa + pbb)/2
+  mx = ( pba + pab)/2
+  my = i( pab - pba)/2
+  mz = ( paa - pbb)/2
+
+  Decompose it into charge and magnetization density matrices
+
+*/
+
+  int n = c.cols() ;
+  
+  c = (p.block( 0, 0, n, n) + p.block( n, n, n, n))/z2 ;
+  mx = (p.block( 0, n, n, n) + p.block( n, 0, n, n))/z2 ;
+  my = zi*(p.block( 0, n, n, n) - p.block( n, 0, n, n))/z2 ;
+  mz = (p.block( 0, 0, n, n) - p.block( n, n, n, n))/z2 ;
+
+  return ;
+
+  } ;
 
 
   double fact ( int n) {
@@ -120,105 +153,267 @@ Let's not mess around.  Just compute this
 */
 
     m = static_cast<double>(k) + d1/d2 ;
-    n = static_cast<double>(k) + 3.0e0/d2 ;
+    n = static_cast<double>(k) + d3/d2 ;
     f = gsl_sf_hyperg_1F1( m, n, -t)/( d2*static_cast<double>(k) + d1) ;
     
     return f ;
 
   } ;
 
-//template<class matrix>
-//void oao( int& nbasis, int& wfntyp, matrix& a, Eigen::Ref<Eigen::MatrixXd> s, Eigen::Ref<Eigen::MatrixXd> x) {
-/* 
-  Given a Slater determinant put it into the oao basis.
-*/
-//    typename matrix::Scalar f ;
-//    matrix t ; 
-//    time_dbg oao_wfn = time_dbg("oao_wfn") ;
-//
-//    std::cout << f << std::endl ;
-//
-//    if ( wfntyp % 2 == 1) {
-//      /* Real wavefuntion*/
-//      if ( wfntyp == 1) {
-//        /* Restricted wavefuntion*/
-//        t.resize( nbasis, nbasis) ;
-//        t = x.adjoint()*s*a ;
-//        a = t ;
-//  
-//      } else if ( wfntyp == 3 ){
-//        /* unrestricted wavefuntion*/
-//        t.resize( nbasis, 2*nbasis) ;
-//        t.block( 0, 0, nbasis, nbasis) = x.adjoint()*s*a.block( 0, 0, nbasis, nbasis) ;
-//        t.block( 0, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( 0, nbasis, nbasis, nbasis) ;
-//        a = t ;
-//  
-//      } else if ( wfntyp == 5 ){
-//        /* Generalized wavefuntion*/
-//        t.resize( 2*nbasis, 2*nbasis) ;
-//        t.block( 0, 0, nbasis, nbasis) = x.adjoint()*s*a.block( 0, 0, nbasis, nbasis) ;
-//        t.block( 0, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( 0, nbasis, nbasis, nbasis) ;
-//        t.block( nbasis, 0, nbasis, nbasis) = x.adjoint()*s*a.block( nbasis, 0, nbasis, nbasis) ;
-//        t.block( nbasis, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( nbasis, nbasis, nbasis, nbasis) ;
-//    
-//        a = t ;
-//        }
-//  
-//        t.resize( 0, 0) ;
-//      } else {
-//      /* Real wavefuntion*/
-//        if ( wfntyp == 2) {
-//          /* Restricted wavefuntion*/
-//          t.resize( nbasis, nbasis) ;
-//          t = x.adjoint()*s*a ;
-//          a = t ;
-//  
-//        } else if ( wfntyp == 4 ){
-//          /* unrestricted wavefuntion*/
-//          t.resize( nbasis, 2*nbasis) ;
-//          t.block( 0, 0, nbasis, nbasis) = x.adjoint()*s*a.block( 0, 0, nbasis, nbasis) ;
-//          t.block( 0, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( 0, nbasis, nbasis, nbasis) ;
-//          a = t ;
-//  
-//        } else if ( wfntyp == 6 ){
-//          /* Generalized wavefuntion*/
-//          t.resize( 2*nbasis, 2*nbasis) ;
-//          t.block( 0, 0, nbasis, nbasis) = x.adjoint()*s*a.block( 0, 0, nbasis, nbasis) ;
-//          t.block( 0, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( 0, nbasis, nbasis, nbasis) ;
-//          t.block( nbasis, 0, nbasis, nbasis) = x.adjoint()*s*a.block( nbasis, 0, nbasis, nbasis) ;
-//          t.block( nbasis, nbasis, nbasis, nbasis) = x.adjoint()*s*a.block( nbasis, nbasis, nbasis, nbasis) ;
-//    
-//          a = t ;
-//          }
-//  
-//          t.resize( 0, 0) ;
-//  
-//        }
-//
-//    oao_wfn.end() ;
-//
-//    return ;
-//  
-//  }  ;
+void fc_hamiltonian ( Eigen::Ref<Eigen::MatrixXcd> H_fc, basis_set b, Eigen::Ref<Eigen::MatrixXd> c, Eigen::Ref<Eigen::MatrixXd> ns) {
 
-//template void oao( int&, int&, Eigen::Ref<Eigen::MatrixXd>&, Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>) ;
-//template void oao( int&, int&, Eigen::Ref<Eigen::MatrixXcd>&, Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>) ;
+  int n = b.b.size(), natm = c.rows() ;
+  int i, j, k, l, m ;
+  int q ;
+  double t, u, x, y, z, r ;
+  atm_basis ai, ak ;
+  sto zj, zl ;
+  Eigen::MatrixXcd I ( n, n) ;
+  I.setConstant( z1) ;
 
-/*void oao( Eigen::Ref<Eigen::MatrixXd> tmp, Eigen::Ref<Eigen::MatrixXd> O, Eigen::MatrixXd X) {
-*/
+  
+  /*
+    Loop over the basis set 
+  */
+  /*
+    Atoms first
+  */
+  for ( i = 0; i < n; i++){
+    ai = b.b[i] ;
+    /*
+      stos on that atom
+    */
+    for ( j = 0; j < ai.nshl; j++){
+      zj = ai.s[j] ;
+      for ( k = 0; k < n; k++){
+        ak = b.b[k] ;
+        for ( l = 0; l < ak.nshl; l++){
+          zl = ak.s[l] ;
+          /*
+            Loop over the nuclear coordinates
+          */
+          for ( m = 0; m < natm; m++){
+            /*
+              Given the coordinates of basis functions r and s and the nucleus,
+              generate the value of phi(R)_{r}^{*}phi(R)_{s}^{*}
+            */
+            x = c( m, 0) - ai.c[0] ;
+            y = c( m, 1) - ai.c[1] ;
+            z = c( m, 2) - ai.c[2] ;
+            r = x*x + y*y + z*z ;
+            /*
+              Iterate over the primitives of the sto
+            */
+            t = 0.0 ;
+            for ( q = 0; q < zj.nprm; q++){
+              t += zj.g[q].c*std::pow( x, zj.l[0])*std::pow( y, zj.l[1])*std::pow( z, zj.l[2])*std::exp( -zj.g[q].x*r)/zj.norm ;
+              }
+
+            x = c( m, 0) - ak.c[0] ;
+            y = c( m, 1) - ak.c[1] ;
+            z = c( m, 2) - ak.c[2] ;
+            r = x*x + y*y + z*z ;
+
+            u = 0.0 ;
+            for ( q = 0; q < zl.nprm; q++){
+              u += zl.g[q].c*std::pow( x, zl.l[0])*std::pow( y, zl.l[1])*std::pow( z, zl.l[2])*std::exp( -zl.g[q].x*r)/zl.norm ;
+              }
+            /*
+              Now that we have the magnitude, add each component to the FC Hamiltonian Perturbation term
+            */
+            H_fc.block( 0, 0, n, n) += I*static_cast<cd>(u*t)*static_cast<cd>(ns( m, 2))/z2 ;
+            H_fc.block( n, n, n, n) -= I*static_cast<cd>(u*t)*static_cast<cd>(ns( m, 2))/z2 ;
+            H_fc.block( 0, n, n, n) += I*static_cast<cd>(u*t)*(static_cast<cd>(ns( m, 0)) + zi*static_cast<cd>(ns( m, 1)))/z2 ;
+            H_fc.block( n, 0, n, n) += I*static_cast<cd>(u*t)*(static_cast<cd>(ns( m, 0)) - zi*static_cast<cd>(ns( m, 1)))/z2 ;
+            }
+          }
+        }
+      }
+    }
+
+  return ;
+
+  } ;
+
+void transform( int o, Eigen::Ref<Eigen::MatrixXd> X, Eigen::Ref<Eigen::MatrixXd> M) {
 /*
-  This is a wrapper to perform a basic function and make the code clearner.
-  Pass this two matrices and a transformation and do a similary transform.
+  Given a tranformation matrix, convert the passed array to or from the 
+  basis transformation passed.  For now we will assume the passed matrices
+  are square.  
 
+  options :
+    o = 0 - Perform X^{t}*M*X
+    o = 1 - Perform X*M*X^{t}
+    o = 2 - Perform X*M*X
+    o = 3 - Perform X^{t}*M*X^{t}
+    o = 4 - Perform X^{T}*M*X
 */
-/*    tmp = X.adjoint()*O*X ;
-    O = tmp ;
 
-    return ;
+  Eigen::MatrixXd::Index xcol = X.cols(), mcol = M.cols() ;
+  Eigen::MatrixXd T ( xcol, xcol) ;
+  
+  if ( xcol == mcol){
+    if ( o == 0){
+      T = X.adjoint()*M ;
+      M = T*X ;
+    } else if ( o == 1){
+      T = X*M ;
+      M = T*X.adjoint() ;
+    } else if ( o == 2){
+      T = X*M ;
+      M = T*X ;
+    } else if ( o == 3){
+      T = X.adjoint()*M ;
+      M = T*X.adjoint() ;
+    } else if ( o == 4){
+      T = X.transpose()*M ;
+      M = T*X ;
+      }
+  } else {
+    if ( o == 0){
+      T = X.adjoint()*M.block( 0, 0, xcol, xcol) ;
+      M.block( 0, 0, xcol, xcol) = T*X ;
+      T = X.adjoint()*M.block( 0, xcol, xcol, xcol) ;
+      M.block( 0, xcol, xcol, xcol) = T*X ;
+      T = X.adjoint()*M.block( xcol, 0, xcol, xcol) ;
+      M.block( xcol, 0, xcol, xcol) = T*X ;
+      T = X.adjoint()*M.block( xcol, xcol, xcol, xcol) ;
+      M.block( xcol, xcol, xcol, xcol) = T*X ;
+    } else if ( o == 1){
+      T = X*M.block( 0, 0, xcol, xcol) ;
+      M.block( 0, 0, xcol, xcol) = T*X.adjoint() ;
+      T = X*M.block( 0, xcol, xcol, xcol) ;
+      M.block( 0, xcol, xcol, xcol) = T*X.adjoint() ;
+      T = X*M.block( xcol, 0, xcol, xcol) ;
+      M.block( xcol, 0, xcol, xcol) = T*X.adjoint() ;
+      T = X*M.block( xcol, xcol, xcol, xcol) ;
+      M.block( xcol, xcol, xcol, xcol) = T*X.adjoint() ;
+    } else if ( o == 2){
+      T = X*M.block( 0, 0, xcol, xcol) ;
+      M.block( 0, 0, xcol, xcol) = T*X ;
+      T = X*M.block( 0, xcol, xcol, xcol) ;
+      M.block( 0, xcol, xcol, xcol) = T*X ;
+      T = X*M.block( xcol, 0, xcol, xcol) ;
+      M.block( xcol, 0, xcol, xcol) = T*X ;
+      T = X*M.block( xcol, xcol, xcol, xcol) ;
+      M.block( xcol, xcol, xcol, xcol) = T*X ;
+    } else if ( o == 3){
+      T = X.adjoint()*M.block( 0, 0, xcol, xcol) ;
+      M.block( 0, 0, xcol, xcol) = T*X.adjoint() ;
+      T = X.adjoint()*M.block( 0, xcol, xcol, xcol) ;
+      M.block( 0, xcol, xcol, xcol) = T*X.adjoint() ;
+      T = X.adjoint()*M.block( xcol, 0, xcol, xcol) ;
+      M.block( xcol, 0, xcol, xcol) = T*X.adjoint() ;
+      T = X.adjoint()*M.block( xcol, xcol, xcol, xcol) ;
+      M.block( xcol, xcol, xcol, xcol) = T*X.adjoint() ;
+    } else if ( o == 4){
+      T = X.transpose()*M.block( 0, 0, xcol, xcol) ;
+      M.block( 0, 0, xcol, xcol) = T*X ;
+      T = X.transpose()*M.block( 0, xcol, xcol, xcol) ;
+      M.block( 0, xcol, xcol, xcol) = T*X ;
+      T = X.transpose()*M.block( xcol, 0, xcol, xcol) ;
+      M.block( xcol, 0, xcol, xcol) = T*X ;
+      T = X.transpose()*M.block( xcol, xcol, xcol, xcol) ;
+      M.block( xcol, xcol, xcol, xcol) = T*X ;
+      }
+    }
 
-    } ;*/
+  T.resize( 0, 0) ;
 
-  void oao( int nbasis, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::MatrixXd shf) {
+  return ;
+
+} ;
+
+void transform( int o, Eigen::Ref<Eigen::MatrixXcd> X, Eigen::Ref<Eigen::MatrixXcd> M) {
+/*
+  Given a tranformation matrix, convert the passed array to or from the 
+  basis transformation passed.  For now we will assume the passed matrices
+  are square.  
+
+  options :
+    o = 0 - Perform X^{t}*M*X
+    o = 1 - Perform X*M*X^{t}
+    o = 2 - Perform X*M*X
+    o = 3 - Perform X^{t}*M*X^{t}
+    o = 4 - Perform X^{T}*M*X
+*/
+
+  Eigen::MatrixXcd::Index xcol = X.cols(), mcol = M.cols() ;
+  Eigen::MatrixXcd T ( xcol, xcol) ;
+  
+  if ( xcol == mcol){
+    if ( o == 0){
+      T = X.adjoint()*M ;
+      M = T*X ;
+    } else if ( o == 1){
+      T = X*M ;
+      M = T*X.adjoint() ;
+    } else if ( o == 2){
+      T = X*M ;
+      M = T*X ;
+    } else if ( o == 3){
+      T = X.adjoint()*M ;
+      M = T*X.adjoint() ;
+    } else if ( o == 4){
+      T = X.transpose()*M ;
+      M = T*X ;
+      }
+  } else {
+    if ( o == 0){
+      T = X.adjoint()*M.block( 0, 0, xcol, xcol) ;
+      M.block( 0, 0, xcol, xcol) = T*X ;
+      T = X.adjoint()*M.block( 0, xcol, xcol, xcol) ;
+      M.block( 0, xcol, xcol, xcol) = T*X ;
+      T = X.adjoint()*M.block( xcol, 0, xcol, xcol) ;
+      M.block( xcol, 0, xcol, xcol) = T*X ;
+      T = X.adjoint()*M.block( xcol, xcol, xcol, xcol) ;
+      M.block( xcol, xcol, xcol, xcol) = T*X ;
+    } else if ( o == 1){
+      T = X*M.block( 0, 0, xcol, xcol) ;
+      M.block( 0, 0, xcol, xcol) = T*X.adjoint() ;
+      T = X*M.block( 0, xcol, xcol, xcol) ;
+      M.block( 0, xcol, xcol, xcol) = T*X.adjoint() ;
+      T = X*M.block( xcol, 0, xcol, xcol) ;
+      M.block( xcol, 0, xcol, xcol) = T*X.adjoint() ;
+      T = X*M.block( xcol, xcol, xcol, xcol) ;
+      M.block( xcol, xcol, xcol, xcol) = T*X.adjoint() ;
+    } else if ( o == 2){
+      T = X*M.block( 0, 0, xcol, xcol) ;
+      M.block( 0, 0, xcol, xcol) = T*X ;
+      T = X*M.block( 0, xcol, xcol, xcol) ;
+      M.block( 0, xcol, xcol, xcol) = T*X ;
+      T = X*M.block( xcol, 0, xcol, xcol) ;
+      M.block( xcol, 0, xcol, xcol) = T*X ;
+      T = X*M.block( xcol, xcol, xcol, xcol) ;
+      M.block( xcol, xcol, xcol, xcol) = T*X ;
+    } else if ( o == 3){
+      T = X.adjoint()*M.block( 0, 0, xcol, xcol) ;
+      M.block( 0, 0, xcol, xcol) = T*X.adjoint() ;
+      T = X.adjoint()*M.block( 0, xcol, xcol, xcol) ;
+      M.block( 0, xcol, xcol, xcol) = T*X.adjoint() ;
+      T = X.adjoint()*M.block( xcol, 0, xcol, xcol) ;
+      M.block( xcol, 0, xcol, xcol) = T*X.adjoint() ;
+      T = X.adjoint()*M.block( xcol, xcol, xcol, xcol) ;
+      M.block( xcol, xcol, xcol, xcol) = T*X.adjoint() ;
+    } else if ( o == 4){
+      T = X.transpose()*M.block( 0, 0, xcol, xcol) ;
+      M.block( 0, 0, xcol, xcol) = T*X ;
+      T = X.transpose()*M.block( 0, xcol, xcol, xcol) ;
+      M.block( 0, xcol, xcol, xcol) = T*X ;
+      T = X.transpose()*M.block( xcol, 0, xcol, xcol) ;
+      M.block( xcol, 0, xcol, xcol) = T*X ;
+      T = X.transpose()*M.block( xcol, xcol, xcol, xcol) ;
+      M.block( xcol, xcol, xcol, xcol) = T*X ;
+      }
+    }
+
+  T.resize( 0, 0) ;
+
+  return ;
+
+} ;
+
+void oao( int nbasis, std::vector<tei>& iarr, std::vector<tei>& ioarr, Eigen::MatrixXd shf) {
   
 /* 
     Given an overlap and two electron integrals.  Convert them to an
@@ -647,4 +842,196 @@ void rand_unitary( Eigen::Ref<Eigen::MatrixXcd> u) {
 
   return ;
 
-}
+  } ;
+
+void testing_magnetic_structure( const Eigen::Ref<Eigen::MatrixXcd> mx, const Eigen::Ref<Eigen::MatrixXcd> my, const Eigen::Ref<Eigen::MatrixXcd> mz){
+
+/*
+  Given the magnetization densities determine whether the wavefunction is collinear or coplanar
+*/
+
+  int i, mchk, nzero, n = mx.cols() ;
+  double thresh = 1.0e-8 ;
+  bool coplanar = false ;
+  cd test ;
+  Eigen::Matrix3d Tr ;
+  Eigen::Matrix3cd T ;
+  Eigen::Vector3cd v ;
+  Eigen::MatrixXcd scr( n, n) ;
+  Eigen::EigenSolver<Eigen::Matrix3d> Tr_diag ;
+  Eigen::ComplexEigenSolver<Eigen::Matrix3cd> T_diag ;
+
+  scr = mz*mz ;
+  T( 0, 0) = scr.trace() ;
+  scr = my*mz ;
+  T( 1, 0) = scr.trace() ;
+  scr = mx*mz ;
+  T( 2, 0) = scr.trace() ;
+  scr = mz*my ;
+  T( 0, 1) = scr.trace() ;
+  scr = mz*mx ;
+  T( 0, 2) = scr.trace() ;
+  scr = my*my ;
+  T( 1, 1) = scr.trace() ;
+  scr = mx*my ;
+  T( 2, 1) = scr.trace() ;
+  scr = my*mx ;
+  T( 1, 2) = scr.trace() ;
+  scr = mx*mx ;
+  T( 2, 2) = scr.trace() ;
+
+  T_diag.compute( T) ;
+  v = T_diag.eigenvalues() ;
+/*
+  Determine the number of zeros
+*/
+  nzero= 0 ;
+  for( i = 0; i < 3; i++){
+    test = std::abs(v(i)) ;
+    if ( std::real( test) < thresh){
+      nzero ++ ;
+      mchk = static_cast<int>(std::floor(std::log10(std::real( test)))) + 10 ;
+      if ( mchk == 1){
+        std::cout << " Caution: Eigenvalue is below the thresh hold by no more than a factor of 10 " << std::endl ;
+        }
+      }
+    std::cout << "       eig           abs(eig) : " << std::endl ;
+    std::cout << v(i) << "    " << test << std::endl ;
+    }
+
+  if ( nzero == 3){
+    std::cout << " Three zero eigenvalues found wavefunction is RHF " << std::endl ;
+  } else if ( nzero == 2){
+    std::cout << " Two zero eigenvalues found wavefunction is collinear " << std::endl ;
+  } else if ( nzero < 2){
+
+    std::cout << " Three non-zero eigenvalues found wavefunction is non-collinear " << std::endl ;
+    std::cout << " Testing for coplanarity " << std::endl ;
+/*
+  Let's check for coplanarity since we have three non-zero eigenvalues
+*/
+    scr.setZero() ;
+    scr.real() = mz.real()*mz.real() ;
+    Tr( 0, 0) = scr.real().trace() ;
+    scr.real() = my.real()*mz.real() ;
+    Tr( 1, 0) = scr.real().trace() ;
+    scr.real() = mx.real()*mz.real() ;
+    Tr( 2, 0) = scr.real().trace() ;
+    scr.real() = mz.real()*my.real() ;
+    Tr( 0, 1) = scr.real().trace() ;
+    scr.real() = mz.real()*mx.real() ;
+    Tr( 0, 2) = scr.real().trace() ;
+    scr.real() = my.real()*my.real() ;
+    Tr( 1, 1) = scr.real().trace() ;
+    scr.real() = mx.real()*my.real() ;
+    Tr( 2, 1) = scr.real().trace() ;
+    scr.real() = my.real()*mx.real() ;
+    Tr( 1, 2) = scr.real().trace() ;
+    scr.real() = mx.real()*mx.real() ;
+    Tr( 2, 2) = scr.real().trace() ;
+
+    Tr_diag.compute( Tr) ;
+    v = Tr_diag.eigenvalues() ;
+
+    for( i = 0; i < 3; i++){
+      test = std::abs(v(i)) ;
+      if ( std::real( test) < thresh){
+        mchk = static_cast<int>(std::floor(std::log10(std::real( test)))) + 10 ;
+        if ( mchk == 1) {
+          std::cout << " Caution: Eigenvalue is below the thresh hold by no more than a factor of 10 " << std::endl ;
+          }
+        coplanar = true ;
+        }
+      std::cout << "       eig           abs(eig) : " << std::endl ;
+      std::cout << v(i) << "    " << test << std::endl ;
+      }
+
+    if ( coplanar ){
+      std::cout << " Wavefunction is coplanar " << std::endl ;
+    } else {
+      std::cout << " Wavefunction is non-coplanar " << std::endl ;
+      }
+    }
+
+  return ;
+
+  } ;
+
+void clean_mat( Eigen::Ref<Eigen::MatrixXcd> m){
+/*
+  Given a matrix "clean it" by zeroing small numbers
+  Currently only works for complex double.
+*/
+  int i ;
+  double tr, ti ;
+  cd t ;
+  for ( i = 0; i < m.size(); i++){
+    t = *(m.data() + i) ;
+    tr = t.real() ;
+    ti = t.imag() ;
+    if ( tr < 1.0e-13){
+      tr = d0 ;
+      }
+    if ( ti < 1.0e-13){
+      ti = d0 ;
+      }
+    *(m.data() + i) = cd ( tr, ti) ;
+    }
+
+  return ;
+
+} ;
+
+uint32_t xorshift32( uint32_t *state){
+  uint32_t x = *state ;
+
+  x ^= x << 13 ;
+  x ^= x >> 17 ;
+  x ^= x << 5 ;
+  *state = x ;
+
+  return x ;
+
+  } ;
+
+double rand01( uint32_t *state) {
+
+/*
+  A pseudo-random number generator that can be quickly implemented in 
+  multiple environments for debugging "randomly" initialized matrices.
+*/
+
+  uint32_t v ;
+  v = xorshift32( state) ;
+  return static_cast<double>( v)/static_cast<double>(UINT32_MAX) - 0.5e0 ;
+
+  } ;
+
+void wavefunction_characterization( const int& nbas, const int& nele, const std::string& f) {
+/*
+  Given the name of binary file open it for testing the wavefunction.
+  If no name is given then open the default.
+
+  Note : this is only used for GHF type wavefunctions and so the wavefunction
+  that is read in must be GHF.
+
+  TBD : Write it for complex and real GHF
+*/
+
+  Eigen::MatrixXcd p( 2*nbas, 2*nbas), c( nbas, nbas), mx( nbas, nbas), my( nbas, nbas), mz( nbas, nbas) ;
+  wfn< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
+  w.eig.resize( 2*nbas) ;
+  w.moc.resize( 2*nbas, 2*nbas) ;
+  load_wfn( w) ;
+
+  print_mat( w.moc, "GHF wavefunction") ;
+
+  p = w.moc.block( 0, 0, 2*nbas, nele)*w.moc.block( 0, 0, 2*nbas, nele).adjoint() ;
+  
+  charge_magnetic_decomposition( p, c, mx, my, mz) ;
+
+  testing_magnetic_structure( mx, my, mz) ;
+
+  return ;
+
+  } ;

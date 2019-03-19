@@ -3,14 +3,14 @@
 
 class tei {
   private :
-    float val ;
+    double val ;
     int i ;
     int j ;
     int k ;
     int l ;
 
   public :
-    void set(int a, int b, int c, int d, float i) ;
+    void set(int a, int b, int c, int d, double i) ;
     float r_v ( void) ;
     int r_i ( void) ; 
     int r_j ( void) ; 

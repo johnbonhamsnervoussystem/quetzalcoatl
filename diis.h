@@ -6,6 +6,12 @@
 
 template<typename s>
 class diis {
+/*
+  Based on the paper :
+    Pulay, Péter. "Convergence acceleration of iterative sequences. 
+    The case of SCF iteration." Chemical Physics Letters 73, no. 2 
+    (1980): 393-398.
+*/
   private:
     /*
       n_e - Maximum Number of error vectors

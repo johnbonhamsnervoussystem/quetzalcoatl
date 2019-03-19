@@ -2,7 +2,7 @@
 #include <iostream>
 #include "tei.h"
 
-  void tei::set(int a, int b, int c, int d, float integral ){
+  void tei::set(int a, int b, int c, int d, double integral ){
     i = a ;
     j = b ;
     k = c ;

@@ -13,13 +13,14 @@
     scf_convergence_threshold = 1.0e-7 ;
     hamiltonian = 0 ;
     method = 0 ;
-    nbr_g = 11 ;
+    nbr_g = 18 ;
     print = 0 ;
     r12int.resize( 0) ;
     U_interact = d0 ;
     level_shift = false ;
     lshift = d0 ;
     nn = d0 ;
+    guess = false ;
     hub_dim = new int[3] ;
     hub_dim[0] = 1 ;
     hub_dim[1] = 1 ;
@@ -31,6 +32,7 @@
  Set things --
   General data for calculations */
   void common::hamil( int n) { hamiltonian += n ; return ;}
+  void common::ini_guess( bool g){ guess = g; return ;} ;
   void common::methd( int n) { method += n ; return ;}
   void common::hub_opt( int n) {  hubbard = n ; return ;}
   void common::hub_n( int n, int i) {  hub_dim[i] = n ; return ;}
@@ -103,6 +105,16 @@
     return ;
     }
 
+/* Coordinates */
+  void common::setNS ( std::vector<std::vector<double>> c) {
+    /* Save the Nuclear Spin vectors */
+    ns.resize(natoms,3) ;
+    for ( unsigned int i=0; i < c.size(); i++){
+      ns.row(i) << c[i][0], c[i][1], c[i][2] ;
+    }
+    return ;
+    }
+
 /* copy tei */
   void common::setr12( std::vector<tei> intarr) { 
     r12int = intarr ;
@@ -113,6 +125,7 @@
 
 /* Get things */
   int common::hamil( void) { return hamiltonian ;}
+  bool common::ini_guess( void) { return guess ;}
   int common::methd( void) { return method ;}
   int common::hub_opt( void) { return hubbard ;}
   int common::hub_n( int i) {  return hub_dim[i] ;}
@@ -140,6 +153,7 @@
   Eigen::MatrixXd common::getH( void) { return h_c ;}
   Eigen::VectorXd common::getA( void) { return a_c   ;}
   Eigen::MatrixXd common::getC( void) { return coord ;}
+  Eigen::MatrixXd common::getNS( void) { return ns ;}
   void common::getr12( std::vector<tei>*& intarr) { 
     intarr = &r12int ;
     return ;

@@ -4,6 +4,7 @@
 #include "init_job.h"
 #include "nbodyint.h"
 #include "qtzcntrl.h"
+#include "qtzio.h"
 #include "pairing.h"
 #include "r12.h"
 #include "tei.h"
@@ -38,7 +39,6 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
           transform( 2, xs, h) ;
           com.getr12( intarr) ;
           W = new r12<matrix>( intarr, xs, 1, nbas) ;
-          break ;
         } else if ( ws == 2) {
           qtzcntrl::shutdown( " UHF NYI") ;
         } else if ( ws == 3) {
@@ -46,10 +46,11 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
           h.setZero() ;
           xs.resize( nbas, nbas) ;
           xs.setZero() ;
-          xs = com.getXS() ;
-          h.block( 0, 0, nbas, nbas) = com.getH() ;
+          xs.real() = com.getXS() ;
+          h.block( 0, 0, nbas, nbas).real() = com.getH() ;
           h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
           transform( 2, xs, h) ;
+          com.getr12( intarr) ;
           W = new r12<matrix>( intarr, xs, 3, nbas) ;
         } else {
           qtzcntrl::shutdown( " Unrecognized wavefunction symmetry in initialize. ") ;
@@ -60,28 +61,29 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
         */
         if ( ws == 1) {
           h.resize( 2*nbas, 2*nbas) ;
-          h.setZero() ;
-          h.block( 0, 0, nbas, nbas).real() = com.getH() ;
           xs.resize( nbas, nbas) ;
           xs.setZero() ;
+          h.setZero() ;
+          h.block( 0, 0, nbas, nbas).real() = com.getH() ;
           xs.real() = com.getXS() ;
           transform( 2, xs, h.block( 0, 0, nbas, nbas)) ;
           h.block( nbas, nbas, nbas, nbas) = -h.block( 0, 0, nbas, nbas) ;
           com.getr12( intarr) ;
           W = new r12<matrix>( intarr, xs, 4, nbas) ;
           xs.resize( 0, 0) ;
-          break ;
         } else if ( ws == 2) {
           qtzcntrl::shutdown( " UHFB NYI") ;
         } else if ( ws == 3) {
-          h.resize( 4*nbas, 4*nbas) ;
+          h.resize( 2*nbas, 2*nbas) ;
           xs.resize( 2*nbas, 2*nbas) ;
+          xs.setZero() ;
+          h.setZero() ;
           xs.block( 0, 0, nbas, nbas).real() = com.getXS() ;
           xs.block( nbas, nbas, nbas, nbas) = xs.block( 0, 0, nbas, nbas) ;
           h.block( 0, 0, nbas, nbas).real() = com.getH() ;
           h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
-          transform( 2, xs, h.block( 0, 0, 2*nbas, 2*nbas)) ;
-          h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -h.block( 0, 0, 2*nbas, 2*nbas) ;
+          transform( 2, xs, h) ;
+          com.getr12( intarr) ;
           W = new r12<matrix>( intarr, xs, 6, nbas) ;
         } else {
           qtzcntrl::shutdown( " Unrecognized ws in HFB Molecular initialize. ") ;
@@ -89,6 +91,7 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
       } else {
         qtzcntrl::shutdown( " No other wavefunctions implemented. ") ;
         }
+      break ;
     case 3 :
       /*
         Hubbard
@@ -103,14 +106,12 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
           h.resize( nbas, nbas) ;
           h.real() = com.getH() ;
           W = new hubbard<matrix>( com.getU(), 1, nbas) ;
-          break ;
         } else if ( ws == 3) {
           h.resize( 2*nbas, 2*nbas) ;
           h.setZero() ;
           h.block( 0, 0, nbas, nbas).real() = com.getH() ;
           h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
           W = new hubbard<matrix>( com.getU(), 3, nbas) ;
-          break ;
         } else {
           qtzcntrl::shutdown( " Unrecognized Symmetry in HF Hubbard init ") ;
           }
@@ -124,7 +125,6 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
           h.block( 0, 0, nbas, nbas).real() = com.getH() ;
           h.block( nbas, nbas, nbas, nbas) = -h.block( 0, 0, nbas, nbas) ;
           W = new hubbard<matrix>( com.getU(), 4, nbas) ;
-          break ;
         } else if ( ws == 3) {
           h.resize( 4*nbas, 4*nbas) ;
           h.setZero() ;
@@ -132,12 +132,11 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
           h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
           h.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -h.block( 0, 0, 2*nbas, 2*nbas) ;
           W = new hubbard<matrix>( com.getU(), 6, nbas) ;
-          break ;
         } else {
           qtzcntrl::shutdown( " Unrecognized Symmetry in HFB Hubbard init ") ;
           }
         }
-        break ;
+      break ;
     case 4 :
       /* 
         Pairing Hamiltonian 

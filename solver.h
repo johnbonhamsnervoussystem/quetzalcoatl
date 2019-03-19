@@ -8,6 +8,8 @@
 #ifndef SOLVER_H
 #define SOLVER_H
 
+void symort( Eigen::Ref<Eigen::MatrixXd> const s, Eigen::Ref<Eigen::MatrixXcd> T) ;
+
 void canort( const Eigen::Ref<Eigen::MatrixXd> s, Eigen::Ref<Eigen::MatrixXcd> xs , int dim) ;
 
 void canort( const Eigen::Ref<Eigen::MatrixXcd> s, Eigen::Ref<Eigen::MatrixXcd> xs , int dim) ;

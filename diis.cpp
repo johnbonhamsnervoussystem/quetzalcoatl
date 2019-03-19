@@ -11,7 +11,6 @@ void diis<s>::update( Eigen::Ref<Eigen::Matrix< s, Eigen::Dynamic, Eigen::Dynami
     If extr == 1 then update the density using DIIS.  Otherwise we just add it to the
       queue.
   */
-
   int i, j, np ;
   /*
     Convert the incoming density to linear. It's column major by default.
@@ -21,13 +20,14 @@ void diis<s>::update( Eigen::Ref<Eigen::Matrix< s, Eigen::Dynamic, Eigen::Dynami
   /*
     Add the density vector to the queue
   */
+
   w_diis.push_back( t) ;
   np = w_diis.size() ;
 
   /*
     Do the DIIS 
   */
-  if ( np > 2 && extr == 1){
+  if ( np >= n_e && extr == 1){
     B.block(0, 0, np, np).setConstant( 1.0e0) ;
     B( np-1, np-1) = 0.0e0 ;
     for ( i = 0; i < np - 1; i++){

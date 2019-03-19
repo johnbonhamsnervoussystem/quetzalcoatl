@@ -46,6 +46,7 @@ class common {
    h - core hamiltonian
    a - atomic number
    coord - coordinates matrix
+   ns - nuclear angular momentum vector
 
   Projection Data
     nbr_g - particle number projection grid
@@ -72,6 +73,7 @@ private :
   int max_pn_iter ;
   int print ;
   bool level_shift ;
+  bool guess ;
   double lshift ;
   double scf_convergence_threshold ;
 
@@ -80,6 +82,7 @@ private :
   Eigen::MatrixXd h_c ;
   Eigen::VectorXd a_c ;
   Eigen::MatrixXd coord ;
+  Eigen::MatrixXd ns ;
 
   std::vector<tei> r12int ;
   int nbr_g ;
@@ -90,6 +93,7 @@ public :
 
 /* Set the data */
   void hamil( int n) ;
+  void ini_guess( bool g) ;
   void methd( int n) ;
   void hub_opt( int n) ;
   void hub_n( int n, int i) ;
@@ -121,11 +125,13 @@ public :
   void setH( Eigen::MatrixXd h) ;
   void setA( std::vector<double> a) ;
   void setC( std::vector<std::vector<double>> c) ;
+  void setNS( std::vector<std::vector<double>> c) ;
   void setr12( std::vector<tei> intarr) ;
   void setU( double u) ;
 
 /* Retrieve the data */
   int hamil( void) ;
+  bool ini_guess( void) ;
   int methd( void) ;
   int hub_opt( void) ;
   int hub_n( int i) ;
@@ -154,6 +160,7 @@ public :
   Eigen::MatrixXd getH( void) ;
   Eigen::VectorXd getA( void) ;
   Eigen::MatrixXd getC( void) ;
+  Eigen::MatrixXd getNS( void) ;
   void getr12( std::vector<tei>*& intarr) ;
   double getU( void) ;
 

@@ -14,6 +14,7 @@
 #include "common.h"
 #include "evalm.h"
 #include "hfrout.h"
+#include "guess.h"
 #include "integr.h"
 #include "obarasaika.h"
 #include "postscf.h"
@@ -187,8 +188,6 @@ int main(int argc, char *argv[]) {
 /*
   Molecular Hamiltonian
 */
-//    std::vector<tei> intarr ;
-//    molecular_hamiltonian( com, intarr) ;
     molecular_hamiltonian( com) ;
 
   } else if ( com.hamil() == 3 ){
@@ -210,31 +209,19 @@ int main(int argc, char *argv[]) {
     }
 
 /*
-  Follow the appropriate path through the program
+  Generate a guess for whatever job we are doing
 */
 
-  if ( true){
 
-/*
-  We always do a mean-field calculation so let's not worry about logic here quite yet
-*/
+//  if ( com.ini_guess()){
+//    guess_drv( com) ;
+//    }
+
+  if ( true ){
 //    scf_drv( com) ;
     prj_drv( com) ;
-
     }
 
-/*
-  int cghfxx = 11 ;
-  scf_drv( com, intarr, cghfxx) ;
-  cghfxx = 21 ;
-  scf_drv( com, intarr, cghfxx) ;
-
-
-  if ( com.methd() / 100 != 0 ){
-    int rrphfb = 121 ;
-    prj_drv( com, intarr, rrphfb) ;
-    }
-*/
   quetz_time.end() ;
 
   return 0 ;

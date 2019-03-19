@@ -33,10 +33,10 @@ void pairing<matrix>::contract( matrix& m, matrix& n){
       to maintain the broader implementation.
     */
     G.setZero() ;
-    G.block( 0, 0, dim, dim) = -two*U*m ;
+    G.block( 0, 0, dim, dim) = -U*m ;
     G.block( dim, dim, dim, dim) = -G.block( 0, 0, dim, dim).conjugate() ;
     G.topRightCorner( dim, dim).setIdentity() ;
-    G.topRightCorner( dim, dim) *= -two*U*n.trace() ;
+    G.topRightCorner( dim, dim) *= -U*n.trace() ;
     G.block( dim, 0, dim, dim) = -G.block( 0, dim, dim, dim).conjugate() ;
     } else if ( itype == 6){
     /*
