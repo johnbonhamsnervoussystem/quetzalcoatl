@@ -844,7 +844,7 @@ void rand_unitary( Eigen::Ref<Eigen::MatrixXcd> u) {
 
   } ;
 
-void testing_magnetic_structure( const Eigen::Ref<Eigen::MatrixXcd> mx, const Eigen::Ref<Eigen::MatrixXcd> my, const Eigen::Ref<Eigen::MatrixXcd> mz){
+void testing_magnetic_structure( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> mx, Eigen::Ref<Eigen::MatrixXcd> my, Eigen::Ref<Eigen::MatrixXcd> mz){
 
 /*
   Given the magnetization densities determine whether the wavefunction is collinear or coplanar
@@ -852,39 +852,92 @@ void testing_magnetic_structure( const Eigen::Ref<Eigen::MatrixXcd> mx, const Ei
 
   int i, mchk, nzero, n = mx.cols() ;
   double thresh = 1.0e-8 ;
-  bool coplanar = false ;
+  bool preal = false, mxreal = false, myreal = false, mzreal = false ;
+  bool mxzero = false, myzero = false, mzzero = false ;
+  bool colin = false, ncopla = false ;
   cd test ;
   Eigen::Matrix3d Tr ;
   Eigen::Matrix3cd T ;
+  Eigen::Matrix3cd evec ;
   Eigen::Vector3cd v ;
-  Eigen::MatrixXcd scr( n, n) ;
+  Eigen::MatrixXd scr3( n, n) ;
+  Eigen::MatrixXcd scr( n, n), scr1( n, n), scr2( n, n) ;
   Eigen::EigenSolver<Eigen::Matrix3d> Tr_diag ;
   Eigen::ComplexEigenSolver<Eigen::Matrix3cd> T_diag ;
 
-  scr = mz*mz ;
+  scr = mx*mx ;
   T( 0, 0) = scr.trace() ;
-  scr = my*mz ;
+  scr = my*mx ;
   T( 1, 0) = scr.trace() ;
-  scr = mx*mz ;
-  T( 2, 0) = scr.trace() ;
-  scr = mz*my ;
-  T( 0, 1) = scr.trace() ;
   scr = mz*mx ;
+  T( 2, 0) = scr.trace() ;
+  scr = mx*my ;
+  T( 0, 1) = scr.trace() ;
+  scr = mx*mz ;
   T( 0, 2) = scr.trace() ;
   scr = my*my ;
   T( 1, 1) = scr.trace() ;
-  scr = mx*my ;
+  scr = mz*my ;
   T( 2, 1) = scr.trace() ;
-  scr = my*mx ;
+  scr = my*mz ;
   T( 1, 2) = scr.trace() ;
-  scr = mx*mx ;
+  scr = mz*mz ;
   T( 2, 2) = scr.trace() ;
 
   T_diag.compute( T) ;
   v = T_diag.eigenvalues() ;
+  evec = T_diag.eigenvectors() ;
+
+/*
+  Rotate the magnetization densities so that 
+  ||my|| < ||mx|| < ||mz||
+*/
+  scr  = evec( 0, 0)*mx + evec( 0, 1)*my + evec( 0, 2)*mz ;
+  scr1 = evec( 1, 0)*mx + evec( 1, 1)*my + evec( 1, 2)*mz ;
+  scr2 = evec( 2, 0)*mx + evec( 2, 1)*my + evec( 2, 2)*mz ;
+
+  mx = scr1 ;
+  my = -scr ;
+  mz = scr2 ;
+
+/*
+  Determine whether they are zero
+*/
+  scr3 = mx.cwiseAbs() ;
+  mxzero = ( scr3.array() < 1.0e-8).all() ;
+  scr3 = my.cwiseAbs() ;
+  myzero = ( scr3.array() < 1.0e-8).all() ;
+  scr3 = mz.cwiseAbs() ;
+  mzzero = ( scr3.array() < 1.0e-8).all() ;
+/*
+  Determine whether they are real of complex matrices
+*/
+  scr = p - p.conjugate() ;
+  scr3 = scr.imag().cwiseAbs() ;
+  preal = ( scr3.array() < 1.0e-8).all() ;
+
+  if ( ! mxzero ){
+    scr = mx - mx.conjugate() ;
+    scr3 = scr.imag().cwiseAbs() ;
+    mxreal = ( scr3.array() < 1.0e-8).all() ;
+    }
+
+  if ( ! myzero ){
+    scr = my - my.conjugate() ;
+    scr3 = scr.imag().cwiseAbs() ;
+    myreal = ( scr3.array() < 1.0e-8).all() ;
+    }
+
+  if ( ! mzzero ){
+    scr = mz - mz.conjugate() ;
+    scr3 = scr.imag().cwiseAbs() ;
+    mzreal = ( scr3.array() < 1.0e-8).all() ;
+    }
+
 /*
   Determine the number of zeros
 */
+
   nzero= 0 ;
   for( i = 0; i < 3; i++){
     test = std::abs(v(i)) ;
@@ -899,14 +952,9 @@ void testing_magnetic_structure( const Eigen::Ref<Eigen::MatrixXcd> mx, const Ei
     std::cout << v(i) << "    " << test << std::endl ;
     }
 
-  if ( nzero == 3){
-    std::cout << " Three zero eigenvalues found wavefunction is RHF " << std::endl ;
-  } else if ( nzero == 2){
-    std::cout << " Two zero eigenvalues found wavefunction is collinear " << std::endl ;
+  if ( nzero == 2){
+    colin = true ;
   } else if ( nzero < 2){
-
-    std::cout << " Three non-zero eigenvalues found wavefunction is non-collinear " << std::endl ;
-    std::cout << " Testing for coplanarity " << std::endl ;
 /*
   Let's check for coplanarity since we have three non-zero eigenvalues
 */
@@ -933,23 +981,62 @@ void testing_magnetic_structure( const Eigen::Ref<Eigen::MatrixXcd> mx, const Ei
     Tr_diag.compute( Tr) ;
     v = Tr_diag.eigenvalues() ;
 
+    /*
+      Generate new magnetization densities
+    */
+
+    nzero = 0 ;
     for( i = 0; i < 3; i++){
       test = std::abs(v(i)) ;
       if ( std::real( test) < thresh){
+        nzero++ ;
         mchk = static_cast<int>(std::floor(std::log10(std::real( test)))) + 10 ;
         if ( mchk == 1) {
           std::cout << " Caution: Eigenvalue is below the thresh hold by no more than a factor of 10 " << std::endl ;
           }
-        coplanar = true ;
         }
       std::cout << "       eig           abs(eig) : " << std::endl ;
       std::cout << v(i) << "    " << test << std::endl ;
       }
-
-    if ( coplanar ){
-      std::cout << " Wavefunction is coplanar " << std::endl ;
+    }
+    if ( nzero == 0){
+      ncopla = true ;
+      }
+  /*
+    Determine the character of the wavefunction now that we have all the information we need.
+  */
+  std::cout << " Characterizing the Wavefunction " << std::endl ;
+  std::cout << " -                             - " << std::endl ;
+  if ( mxzero && myzero && mzzero && preal ){
+    std::cout << " Fukutome   Stuber-Paldus       Symmetries" << std::endl ;
+    std::cout << "   TICS        real RHF       S^{2},S_{z},K,O" << std::endl ;
+  } else if ( mxzero && myzero && mzzero && ! preal ){
+    std::cout << " Fukutome   Stuber-Paldus       Symmetries" << std::endl ;
+    std::cout << "   CCW       complex RHF       S^{2},S_{z}" << std::endl ;
+  } else if ( mxzero && myzero && ! mzreal && preal ){
+    std::cout << " Fukutome   Stuber-Paldus       Symmetries" << std::endl ;
+    std::cout << "   ASCW      paired UHF           S_{z},O" << std::endl ;
+  } else if ( mxzero && myzero && mzreal && preal ){
+    std::cout << " Fukutome   Stuber-Paldus       Symmetries" << std::endl ;
+    std::cout << "   ASDW        real UHF           S_{z},K" << std::endl ;
+  } else if ( mxzero && myzero ){
+    std::cout << " Fukutome   Stuber-Paldus       Symmetries" << std::endl ;
+    std::cout << "   ASW       complex UHF           S_{z}" << std::endl ;
+  } else if ( ! mxreal && ! myreal && ! mzreal && preal ){
+    std::cout << " Fukutome   Stuber-Paldus       Symmetries" << std::endl ;
+    std::cout << "   TSCW      paired GHF             O" << std::endl ;
+  } else if ( mxreal && myreal && mzreal && preal ){
+    std::cout << " Fukutome   Stuber-Paldus       Symmetries" << std::endl ;
+    std::cout << "   TSDW       real GHF              K" << std::endl ;
+  } else {
+    std::cout << " Fukutome   Stuber-Paldus       Symmetries" << std::endl ;
+    std::cout << "   TSW       complex GHF             " << std::endl ;
+    if ( colin){
+      std::cout << "   Wavefunction is collinear " << std::endl ;
+    } else if ( ncopla){
+      std::cout << "   Wavefunction is non-coplanar " << std::endl ;
     } else {
-      std::cout << " Wavefunction is non-coplanar " << std::endl ;
+      std::cout << "   Wavefunction is coplanar " << std::endl ;
       }
     }
 
@@ -1007,7 +1094,7 @@ double rand01( uint32_t *state) {
 
   } ;
 
-void wavefunction_characterization( const int& nbas, const int& nele, const std::string& f) {
+void wavefunction_characterization( int wt, const int& nbas, const int& nalp, const int& nbet, const std::string& f) {
 /*
   Given the name of binary file open it for testing the wavefunction.
   If no name is given then open the default.
@@ -1015,22 +1102,57 @@ void wavefunction_characterization( const int& nbas, const int& nele, const std:
   Note : this is only used for GHF type wavefunctions and so the wavefunction
   that is read in must be GHF.
 
-  TBD : Write it for complex and real GHF
+  wt - what type of wavefunction are we loading?
 */
-
+  int nele = nalp + nbet ;
   Eigen::MatrixXcd p( 2*nbas, 2*nbas), c( nbas, nbas), mx( nbas, nbas), my( nbas, nbas), mz( nbas, nbas) ;
-  wfn< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
-  w.eig.resize( 2*nbas) ;
-  w.moc.resize( 2*nbas, 2*nbas) ;
-  load_wfn( w) ;
+  p.setZero() ;
 
-  print_mat( w.moc, "GHF wavefunction") ;
-
-  p = w.moc.block( 0, 0, 2*nbas, nele)*w.moc.block( 0, 0, 2*nbas, nele).adjoint() ;
+  if ( wt % 2 == 1) {
+    wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
+    if ( (wt + 1)/2 == 1 ) {
+      w.eig.resize( nbas) ;
+      w.moc.resize( nbas, nbas) ;
+      load_wfn( w) ;
+      p.block( 0, 0, nbas, nbas) = w.moc.block( 0, 0, nbas, nalp)*w.moc.block( 0, 0, nbas, nalp).adjoint() ;
+      p.block( nbas, nbas, nbas, nbas) = w.moc.block( 0, 0, nbas, nalp)*w.moc.block( 0, 0, nbas, nalp).adjoint() ;
+    } else if ( (wt + 1)/2 == 2 ) {
+      w.eig.resize( 2*nbas) ;
+      w.moc.resize( nbas, 2*nbas) ;
+      load_wfn( w) ;
+      p.block( 0, 0, nbas, nbas) = w.moc.block( 0, 0, nbas, nalp)*w.moc.block( 0, 0, nbas, nalp).adjoint() ;
+      p.block( nbas, nbas, nbas, nbas) = w.moc.block( 0, nbas, nbas, nbet)*w.moc.block( 0, nbas, nbas, nbet).adjoint() ;
+    } else {
+      w.eig.resize( 2*nbas) ;
+      w.moc.resize( 2*nbas, 2*nbas) ;
+      load_wfn( w) ;
+      p = w.moc.block( 0, 0, 2*nbas, nele)*w.moc.block( 0, 0, 2*nbas, nele).adjoint() ;
+      }
+  } else {
+    wfn< cd, Eigen::Dynamic, Eigen::Dynamic> w ;
+    if ( (wt + 1)/2 == 1 ) {
+      w.eig.resize( nbas) ;
+      w.moc.resize( nbas, nbas) ;
+      load_wfn( w) ;
+      p.block( 0, 0, nbas, nbas) = w.moc.block( 0, 0, nbas, nalp)*w.moc.block( 0, 0, nbas, nalp).adjoint() ;
+      p.block( nbas, nbas, nbas, nbas) = w.moc.block( 0, 0, nbas, nalp)*w.moc.block( 0, 0, nbas, nalp).adjoint() ;
+    } else if ( (wt + 1)/2 == 2 ) {
+      w.eig.resize( 2*nbas) ;
+      w.moc.resize( nbas, 2*nbas) ;
+      load_wfn( w) ;
+      p.block( 0, 0, nbas, nbas) = w.moc.block( 0, 0, nbas, nalp)*w.moc.block( 0, 0, nbas, nalp).adjoint() ;
+      p.block( nbas, nbas, nbas, nbas) = w.moc.block( 0, nbas, nbas, nbet)*w.moc.block( 0, nbas, nbas, nbet).adjoint() ;
+    } else {
+      w.eig.resize( 2*nbas) ;
+      w.moc.resize( 2*nbas, 2*nbas) ;
+      load_wfn( w) ;
+      p = w.moc.block( 0, 0, 2*nbas, nele)*w.moc.block( 0, 0, 2*nbas, nele).adjoint() ;
+      }
+    }
   
   charge_magnetic_decomposition( p, c, mx, my, mz) ;
 
-  testing_magnetic_structure( mx, my, mz) ;
+  testing_magnetic_structure( p, mx, my, mz) ;
 
   return ;
 

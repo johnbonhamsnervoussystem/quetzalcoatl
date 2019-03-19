@@ -50,7 +50,7 @@ cd pfaffian_H( Eigen::Ref<Eigen::MatrixXcd> m) ;
 
 void rand_unitary( Eigen::Ref<Eigen::MatrixXcd> u) ;
 
-void testing_magnetic_structure( const Eigen::Ref<Eigen::MatrixXcd> mx, const Eigen::Ref<Eigen::MatrixXcd> my, const Eigen::Ref<Eigen::MatrixXcd> mz) ;
+void testing_magnetic_structure( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> mx, Eigen::Ref<Eigen::MatrixXcd> my, Eigen::Ref<Eigen::MatrixXcd> mz) ;
 
 void clean_mat( Eigen::Ref<Eigen::MatrixXcd> m) ;
 
@@ -58,6 +58,6 @@ uint32_t xorshift32( uint32_t *state) ;
 
 double rand01( uint32_t *state) ;
 
-void wavefunction_characterization( const int& nb,  const int& ne, const std::string& f = "qtz.wfn.bin") ;
+void wavefunction_characterization( int wt, const int& nb, const int& nae, const int& nbe, const std::string& f = "qtz.wfn.bin") ;
 
 #endif

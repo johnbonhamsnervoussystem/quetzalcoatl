@@ -11,6 +11,7 @@
 #include "solver.h"
 #include "staging.h"
 #include "tei.h"
+#include "util.h"
 #include <vector>
 
 void hubbard_hamiltonian( common& com){
@@ -55,10 +56,10 @@ void molecular_hamiltonian( common& com){
 */
   int nbas, natm = com.natm() ;
   basis_set b ;
-  Eigen::MatrixXd c ( natm, 3) ;
+  Eigen::MatrixXd c ( natm, 3), ns ( natm, 3) ;
   Eigen::VectorXd a ( natm) ;
   Eigen::MatrixXd S, T, V ;
-  Eigen::MatrixXcd cV ;
+  Eigen::MatrixXcd cV, h_fc ;
   std::vector<tei> intarr ;
 
   nnrep( com, natm, c, a) ;
@@ -69,6 +70,7 @@ void molecular_hamiltonian( common& com){
   T.resize( nbas, nbas) ;
   V.resize( nbas, nbas) ;
   cV.resize( nbas, nbas) ;
+  h_fc.resize( 2*nbas, 2*nbas) ;
   ao_overlap( natm, b, S) ;
   com.setS( S) ;
   /*
@@ -84,16 +86,24 @@ void molecular_hamiltonian( common& com){
   S = T + V ;
   com.setH( S) ;
   /*
+    Generate our FC terms
+  */
+  ns = com.getNS() ;
+  fc_hamiltonian ( h_fc, b, c, ns) ;
+  com.setFC( h_fc) ;
+  /*
     Currently this only supports a linear symmetrized list of tei
   */
   list_ao_tei( com, b, intarr) ;
   com.setr12( intarr) ;
 
+  h_fc.resize( 0, 0) ;
   cV.resize( 0, 0) ;
   V.resize( 0, 0) ;
   T.resize( 0, 0) ;
   S.resize( 0, 0) ;
   a.resize( 0) ;
+  ns.resize( 0, 0) ;
   c.resize( 0, 0) ;
 
   return ;

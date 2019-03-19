@@ -8,8 +8,6 @@
 #include "wfn.h"
 #include <sys/stat.h>
 
-const std::string wfnIO = "qtz.wfn.bin" ;
-
 template<typename s, int r, int c>
 void save_wfn( wfn< s, r, c>& w, int cntl){
 /*
@@ -22,7 +20,7 @@ void save_wfn( wfn< s, r, c>& w, int cntl){
 */
   std::ofstream F_OUT ;
 
-  if ( open_binary( F_OUT, cntl) ) {
+  if ( open_binary( F_OUT, w.wfnfile, cntl) ) {
     qtzcntrl::shutdown( "IO Error (save_wfn)") ;
     }
 
@@ -51,7 +49,7 @@ void load_wfn( wfn< s, r, c>& w, int cntl) {
 */
   std::ifstream F_IN ;
 
-  if ( open_binary( F_IN) ) {
+  if ( open_binary( F_IN, w.wfnfile) ) {
     qtzcntrl::shutdown( "IO Error (save_wfn)") ;
     }
 

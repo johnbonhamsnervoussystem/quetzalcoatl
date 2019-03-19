@@ -218,8 +218,13 @@ int main(int argc, char *argv[]) {
 //    }
 
   if ( true ){
-//    scf_drv( com) ;
-    prj_drv( com) ;
+    scf_drv( com) ;
+//    prj_drv( com) ;
+    int nbas = com.nbas() ;
+    int nalp = com.nalp() ;
+    int nbet = com.nbet() ;
+    int wfntype = com.methd() % 10 ;
+    wavefunction_characterization( wfntype, nbas, nalp, nbet) ;
     }
 
   quetz_time.end() ;

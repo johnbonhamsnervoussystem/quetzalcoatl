@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <fstream>
+#include <string>
 
 #ifndef WFN_H
 #define WFN_H
@@ -15,6 +16,8 @@ class wfn {
   /* Store the wavefunction */
     Eigen::Matrix< s, r, c> moc ;
     Eigen::VectorXd eig ;
+  /* Name for the binary file */
+    std::string wfnfile = "tmp.bqtz";
 
 } ;
 

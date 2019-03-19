@@ -13,9 +13,9 @@ void read_input( common& c, const std::string& in_s) ;
 
 bool open_text( std::ofstream& F_OUT, int cntl, const std::string& f = "qtztemp") ;
 
-bool open_binary( std::ofstream& F_OUT, int cntl) ;
+bool open_binary( std::ofstream& F_OUT, std::string& wfnIO, int cntl) ;
 
-bool open_binary( std::ifstream& F_IN) ;
+bool open_binary( std::ifstream& F_IN, std::string& wfnIO) ;
 
 template <class matrix>
 void print_mat( const matrix& o, std::string h = "") ;

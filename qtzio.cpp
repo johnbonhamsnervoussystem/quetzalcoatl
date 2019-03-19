@@ -320,7 +320,7 @@ void read_input( common& com, const std::string& inpfile){
         t_c.push_back( tmp) ;
         }
       com.setNS( t_c) ;
-    } else if ( line.substr(0,7) == "options" ) {
+    } else if ( OUT[0] == "options" ) {
 /*
   Parse random options we may want to use
 */
@@ -341,12 +341,32 @@ void read_input( common& com, const std::string& inpfile){
           }
         getline( jobfile, line) ;
         }
-    } else if ( line.substr(0,7) == "nalpha " ) {
+    } else if ( OUT[0] == "nalpha" ) {
       i_junk = stoi(line.substr(9)) ;
       com.nalp(i_junk) ;
-    } else if ( line.substr(0,7) == "nbeta  " ) {
+    } else if ( OUT[0] == "nbeta" ) {
       i_junk = stoi(line.substr(9)) ;
       com.nbet(i_junk) ;
+    } else if ( OUT[0] == "outfile" ) {
+      /*
+        Check if the end is ".bqtz".  If not add the extension.
+      */
+      boost::erase_all( OUT[1], ".") ;
+      if ( OUT[1].length() < 4 ) {
+        com.biofinm( OUT[1] + ".bqtz") ;
+      } else if ( OUT[1].length() == 4 ) {
+        if ( OUT[1] == "bqtz" ) {
+          com.biofinm( "quetz.bqtz") ;
+        } else {
+          com.biofinm( OUT[1] + ".bqtz") ;
+          }
+      } else {
+        if ( boost::ends_with( OUT[1],  "bqtz")) {
+          com.biofinm( OUT[1].substr( 0, OUT[1].size() - 4) + ".bqtz") ;
+        } else {
+          com.biofinm( OUT[1] + ".bqtz") ;
+          }
+        }
     }
   }
 
@@ -679,13 +699,12 @@ bool open_text( std::ofstream& F_OUT, int cntl, const std::string& filename) {
 
 } ;
 
-bool open_binary( std::ofstream& F_OUT, int cntl) {
+bool open_binary( std::ofstream& F_OUT, std::string& wfnIO, int cntl) {
 /*
   cntl :
     0 - (default) write to a new file or overwrite one that already exists
     1 - Check if a file exists.  If not create it.
 */
-  const std::string wfnIO = "qtz.wfn.bin" ;
   bool ioerr = false ;
   struct stat buf ;
 
@@ -730,11 +749,10 @@ bool open_binary( std::ofstream& F_OUT, int cntl) {
 
 } ;
 
-bool open_binary( std::ifstream& F_IN) {
+bool open_binary( std::ifstream& F_IN, std::string& wfnIO) {
 /*
   (default) Check if a file exists and if it does open it
 */
-  const std::string wfnIO = "qtz.wfn.bin" ;
   bool ioerr = false ;
   struct stat buf ;
 
@@ -750,7 +768,7 @@ bool open_binary( std::ifstream& F_IN) {
       ioerr = true ;
       }
   } else {
-    qtzcntrl::shutdown( "FIle does not exist (open_binary)") ;
+    qtzcntrl::shutdown( "File does not exist (open_binary)") ;
     }
 
   return ioerr ;
