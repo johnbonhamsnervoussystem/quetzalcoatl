@@ -15,7 +15,6 @@
 #include <iomanip>
 #include "guess.h"
 #include "hfrout.h"
-#include <math.h>
 #include "nbodyint.h"
 #include "numer.h"
 #include "project.h"
@@ -74,237 +73,15 @@ void prj_drv( common& com){
  /*
    Start with Ring and Shiekh implementation.  No logic needed.
  */
-  proj_HFB_real( com) ;
+  proj_HFB( com) ;
 
   return ;
 
 } ;
 
-void proj_HFB_real( common& com){
+void proj_HFB( common& com){
 /*
   Projected HFB for Real wavefunctions
-
-    - This will set up all the necessary routines to do various projection.
-    - Set up integration grids
-
-    - Let's start with Number projection as defualt.  We will do repreated diagonalization 
-      of the Number projected Hmailtonian
-
-  H - Core hamiltonian
-  W - HFB wavefunction
-  x - integration points
-  wt - integration weights
-*/
-
-  int nbas = com.nbas() ;
-  int maxit = com.mxscfit() ;
-  int nalp = com.nalp() ;
-  int pngrid = com.ngrid() ;
-  double Nalp = static_cast<double>( nalp) ;
-  double nele = static_cast<double>( com.nele()) ;
-  int Nele = com.nele() ;
-  double nrm, mu = d0 ;
-  cd norm, olap, cospi4, sinpi4 ;
-  cd lshift = static_cast<cd>(com.lvlshft()) ;
-  Eigen::MatrixXcd h ;
-  Eigen::MatrixXd I ;
-  Eigen::MatrixXcd p, k, D, U, V ;
-  Eigen::MatrixXd u, v, a, b ;
-  Eigen::VectorXcd homo, lumo ;
-  Eigen::MatrixXcd t, mix, UV, scr ;
-  nbodyint<Eigen::MatrixXcd>* X ;
-  std::vector<tei>* r12int ;
-  wfn < cd, Eigen::Dynamic, Eigen::Dynamic> w ;
-  time_dbg proj_HFB_real_time = time_dbg("proj_HFB_real") ;
-
-/*
-  scr - scratch space
-*/
-  t.resize( nbas, nbas) ;
-  UV.resize( 2*nbas, nbas) ;
-  I.resize( 2*nbas, 2*nbas) ;
-  D.resize( 2*nbas, 2*nbas) ;
-  p.resize( nbas, nbas) ;
-  k.resize( nbas, nbas) ;
-  u.resize( nbas, nbas) ;
-  v.resize( nbas, nbas) ;
-  mix.resize( 2, 2*nbas) ;
-  homo.resize( 2*nbas) ;
-  lumo.resize( 2*nbas) ;
-  U.resize( 2*nbas, 2*nbas) ;
-  V.resize( 2*nbas, 2*nbas) ;
-  scr.resize( 4*nbas, 4*nbas) ;
-  a.resize( nbas, nbas) ;
-  b.resize( nbas, nbas) ;
-  w.moc.resize( 2*nbas, 2*nbas) ;
-  w.eig.resize( 2*nbas) ;
-
-  h.setZero() ;
-  p.setZero() ;
-  k.setZero() ;
-  U.setZero() ;
-  V.setZero() ;
-  scr.setZero() ;
-  I.setIdentity() ;
-  a.setZero() ;
-  b.setZero() ;
-
-//  int blahhhh = 3 ;
-//  cplx_SlaDet( com, blahhhh) ;
-//  wavefunction_characterization( nbas, nele) ;
-  
-//  generate_pk( nbas, nalp, p, k) ;
-  jorge_guess( p, k, Nalp, nrm) ;
-
-/*
-  Use the Hartree-Fock eigenvalues to build thermally occupied orbitals
-*/
-
-  trapezoid* ngrid = new trapezoid( d0, d2*pi, pngrid) ;
-
-  initialize( 2, 1, com.hamil(), com, h, X, r12int, nbas) ;
-
-  t = h.block( 0, 0, nbas, nbas) ;
-
-  mu = d0 ;
-  lshift = z4 ;
-
-  ring_shiekh_rr( nbas, t, X, w.moc, w.eig, p, k, mu, lshift, ngrid, nele, maxit) ;
-
-  print_mat( w.eig, " HFB Orbital Energies ") ;
-  UV = w.moc.block( 0, nbas, 2*nbas, nbas) ;
-  print_mat( UV, " HFB wavefunction ") ;
-
-/*
-
-  p.resize( 2*nbas, 2*nbas) ;
-  k.resize( 2*nbas, 2*nbas) ;
-
-  Fill the beta block of the HFB wavefunction
-
-  V.block( nbas, nbas, nbas, nbas) = w.moc.block( 0, 0, nbas, nbas) ;
-  U.block( nbas, 0, nbas, nbas) = w.moc.block( nbas, 0, nbas, nbas) ;
-
-  Generate the UHF wavefunction by mixing the HOMO-LUMO in the alpha MOs
-
-  homo = w.moc.col(nbas-1) ;
-  lumo = w.moc.col(nbas) ;
-  print_mat( homo, " homo ") ;
-  print_mat( lumo, " lumo ") ;
-  mix.row(0) = (homo + lumo)/z2 ;
-  mix.row(1) = (homo - lumo)/z2 ;
-  w.moc.col( nbas-1) = mix.row(0) ;
-  w.moc.col( nbas) = mix.row(1) ;
-  print_mat( w.moc, " mixed mos ") ;
-
-  Now that the orbitals are mixed, fill the alpha component of the MOs.
-
-  V.block( 0, 0, nbas, nbas) = w.moc.block( 0, 0, nbas, nbas) ;
-  U.block( 0, nbas, nbas, nbas) = -w.moc.block( nbas, 0, nbas, nbas) ;
-
-  p = V.conjugate()*V.transpose() ;
-  k = V.conjugate()*U.transpose() ;
-
-  initialize( 2, 3, com.hamil(), com, h, X, r12int, nbas) ;
-
-  We need to pass in the quasi particle normalization to properly calculate pfaffians.
-  Using the unrotated density and pairing, calculate 1/pfaffian for the norm.
-
-  w.moc.resize( 4*nbas, 4*nbas) ;
-  w.eig.resize( 4*nbas) ;
-
-  D = k.inverse() ;
-
-  scr.block( 0, 0, 2*nbas, 2*nbas) = -p*D.conjugate() ;
-  scr.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
-  scr.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
-  scr.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = D*p ;
-  olap = pfaffian_H( scr) ;
-  norm = z1/olap ;
-
-  std::cout << " norm " << norm << std::endl ;
-
-  mu = d0 ;
-  lshift = z4 ;
-
-  ring_shiekh_cg( nbas, h, X, w.moc, w.eig, p, k, mu, lshift, ngrid, nele, norm, maxit) ;
-
-*/
-/*
-  Now that we have our number project UHF HFB wavefunction, use that as a starting point
-  for the GHF initial guess using a rotation angle of pi/4
-
-  cospi4 = std::cos( zpi/z4) ;
-  sinpi4 = std::sin( zpi/z4) ;
-
-
-  V.block( 0, 0, nbas, 2*nbas) = cospi4*w.moc.block( 0, 0, nbas, 2*nbas) + sinpi4*w.moc.block( nbas, 0, nbas, 2*nbas) ;
-  V.block( nbas, 0, nbas, 2*nbas) = cospi4*w.moc.block( nbas, 0, nbas, 2*nbas) - sinpi4*w.moc.block( 0, 0, nbas, 2*nbas) ;
-
-  U.block( 0, 0, nbas, 2*nbas) = cospi4*w.moc.block( 2*nbas, 0, nbas, 2*nbas) + sinpi4*w.moc.block( 3*nbas, 0, nbas, 2*nbas) ;
-  U.block( nbas, 0, nbas, 2*nbas) = cospi4*w.moc.block( 3*nbas, 0, nbas, 2*nbas) - sinpi4*w.moc.block( 2*nbas, 0, nbas, 2*nbas) ;
-
-  p = V.conjugate()*V.transpose() ;
-  k = V.conjugate()*U.transpose() ;
-
-  print_mat( p, " density ") ;
-  print_mat( k, " pairing ") ;
-
-  D.setRandom() ;
-  UV = (D.adjoint() - D)/z2 ;
-
-  ahm_exp( UV, D, 2*nbas, 0) ;
-
-  D *= z1/z10 ;
-
-  scr.block( 0, 0, 2*nbas, 2*nbas) = V ;
-  scr.block( 2*nbas, 0, 2*nbas, 2*nbas) = U ;
-
-  V = D*scr.block( 0, 0, 2*nbas, 2*nbas) ;
-  U = D.conjugate()*scr.block( 2*nbas, 0, 2*nbas, 2*nbas) ;
-
-  p = V.conjugate()*V.transpose() ;
-  k = V.conjugate()*U.transpose() ;
-
-  While the matrices have the correct properties, let's iron out any instabilities
-
-  V = p ;
-  p = (V.adjoint() + V)/z2 ;
-  V = k ;
-  k = (V.transpose() - V)/z2 ;
-
-  print_mat( p, " density ") ;
-  print_mat( k, " pairing ") ;
-
-  D = k.inverse() ;
-
-  scr.block( 0, 0, 2*nbas, 2*nbas) = -p*D.conjugate() ;
-  scr.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
-  scr.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
-  scr.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = D*p ;
-  olap = pfaffian_H( scr) ;
-  norm = z1/olap ;
-
-  std::cout << " norm " << norm << std::endl ;
-
-  mu = d0 ;
-  lshift = z4 ;
-
-  ring_shiekh_cg( nbas, h, X, w.moc, w.eig, p, k, mu, lshift, ngrid, nele, norm, maxit) ;
-
-*/
-
-//  tr_ring_shiekh( nbas, h, X, V, U, mu, lshift, ngrid, nele, maxit) ;
-
-  proj_HFB_real_time.end() ;
-
-  return ;
-
-} ;
-
-void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
-/*
-  Projected HFB for Complex wavefunctions
 
     - This will set up all the necessary routines to do various projection.
     - Set up integration grids
@@ -317,242 +94,176 @@ void proj_HFB_cplx( common& com, std::vector<tei>& intarr){
     - Matrices are complex
 
   H - Core hamiltonian
-  oaoint - integrals in the orthogonal basis
   W - HFB wavefunction
   x - integration points
   wt - integration weights
 */
 
-//  int nbas = com.nbas() ;
-//  int nele = com.nele() ;
-//  int maxit = com.mxscfit() ;
-//  double mu = com.mu(), Ef = d0, djunk ; 
-//  cd energy ;
-//  Eigen::MatrixXd rtmp ;
-//  Eigen::MatrixXcd H ;
-//  Eigen::MatrixXcd m ;
-//  Eigen::MatrixXd s ;
-//  Eigen::MatrixXcd sc ;
-//  Eigen::MatrixXd Xs ;
-//  Eigen::MatrixXcd Xsc, R ;
-//  Eigen::MatrixXcd V ;
-//  Eigen::MatrixXcd U ;
-//  Eigen::MatrixXcd G ;
-//  Eigen::MatrixXcd D ;
-//  Eigen::MatrixXcd t ;
-//  Eigen::MatrixXcd rho, kappa ;
-//  Eigen::VectorXcd rl ( 2*nbas), ll ( 2*nbas) ;
-//  std::vector<tei> oaoint ;
-//  wfn < cd, Eigen::Dynamic, Eigen::Dynamic> w;
-//  time_dbg proj_HFB_cplx_time = time_dbg("proj_HFB_cplx") ;
-//
-//  cd Uval, Vval ;
-//
+  int nbas = com.nbas() ;
+  int maxit = com.mxscfit() ;
+  int nalp = com.nalp() ; 
+  double nele = static_cast<double>( com.nele()) ; 
+  double mu = d0 ; 
+  cd lshift = static_cast<cd>(com.lvlshft()), norm, olap ;
+  diis_control diis_opt ;
+  Eigen::MatrixXcd h ;
+  Eigen::MatrixXd D ;
+  Eigen::MatrixXcd p, k, pt, kt ;
+  Eigen::MatrixXcd t, u, prr, krr, I ;
+  nbodyint<Eigen::MatrixXcd>* X ;
+  std::vector<tei>* r12int ;
+  wfn < cd, Eigen::Dynamic, Eigen::Dynamic> w ;
+  time_dbg proj_HFB_time = time_dbg("proj_HFB") ;
 
-//  rtmp.resize( nbas, nbas) ;
-//  H.resize( 2*nbas, 2*nbas) ;
-//  t.resize( 2*nbas, 2*nbas) ;
-//  s.resize( 2*nbas, 2*nbas) ;
-//  sc.resize( 4*nbas, 4*nbas) ;
-//  Xs.resize( nbas, nbas) ;
-//  Xsc.resize( 2*nbas, 2*nbas) ;
-//  w.moc.resize( 2*nbas, 2*nbas) ;
-//  w.eig.resize( 2*nbas) ;
-//
-//  m.resize( 4*nbas, 4*nbas) ; 
-//  R.resize( 2*nbas, 2*nbas) ;
-//
-//  rho.resize( 2*nbas, 2*nbas) ;
-//  kappa.resize( 2*nbas, 2*nbas) ;
-//  V.resize( 2*nbas, 2*nbas) ;
-//  U.resize( 2*nbas, 2*nbas) ;
-//  G.resize( nbas*2, nbas*2) ;
-//  D.resize( nbas*2, nbas*2) ;
+  t.resize( 2*nbas, 2*nbas) ;
+  prr.resize( nbas, nbas) ;
+  krr.resize( nbas, nbas) ;
+  I.resize( 2*nbas, 2*nbas) ;
+  D.resize( nbas, nbas) ;
+  p.resize( 2*nbas, 2*nbas) ;
+  k.resize( 2*nbas, 2*nbas) ;
+  pt.resize( nbas, nbas) ;
+  kt.resize( nbas, nbas) ;
+  u.resize( 4*nbas, 4*nbas) ;
+  w.moc.resize( 2*nbas, 2*nbas) ;
+  w.eig.resize( 2*nbas) ;
+
+  p.setZero() ;
+  k.setZero() ;
+  pt.setZero() ;
+  kt.setZero() ;
+  u.setZero() ;
+  I.setIdentity() ;
 
 /*
-  Orthogonalize the 
-    -one electron Hamiltonian
-    -two electron integrals
-    -the wavefunction.
-*/  
-
-//  H.setZero() ;
-//  rtmp = com.getH() ;
-//  print_mat( rtmp, " Hamiltonian matrix ") ;
-//  Xs = com.getXS() ;
-//  print_mat( Xs, " Oao transform " ) ;
-//  H.block( 0, 0, nbas, nbas).real() =  Xs.adjoint()*rtmp*Xs ;
-//  H.block( nbas, nbas, nbas, nbas) = H.block( 0, 0, nbas, nbas) ;
-/*
-  Leave out chemical potential for now 
+  Set diis options for now.  Wrap into a constructor later
 */
-//  std::cout << " mu " << mu << std::endl ;
-//  H += mu*Eigen::MatrixXcd::Identity( 2*nbas, 2*nbas) ;
-//  print_mat( H, " Oao H + mu ") ;
-
-//  oao( nbas, intarr, oaoint, Xs) ;
-//
-//  s.setZero() ;
-//  s.block( 0, 0, nbas, nbas) = com.getS() ;
-//  s.block( nbas, nbas, nbas, nbas) = s.block( 0, 0, nbas, nbas) ;
-//  print_mat( s, " s ") ;
-//
-//  canort( s, Xsc, 2*nbas) ;
-
-/*
-  std::cout << " Checking the orthogonalization routine " << std::endl ;
-  std::cout << " Xsc.adjoint()*s*Xsc " << std::endl ;
-  std::cout << Xsc.adjoint()*s*Xsc << std::endl ;
-*/
-
-//  load_wfn( w) ;
-
-/*
-  Orthogonalize the wavefunction 
-*/
-//  m.setZero() ;
-//  m.block( 0, 0, 2*nbas, 2*nbas) = s ;
-//  m.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = s ;
-
-//  U = w.moc ;
-//  w.moc = Xsc.adjoint()*s*U ;
-//  w.moc.block( 0, 0, 2*nbas, 2*nbas) = w.moc.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas).conjugate() ;
-//  U = w.moc.block( 0, 2*nbas, 2*nbas, 2*nbas) ;
-//  w.moc.block( 0, 2*nbas, 2*nbas, 2*nbas) = Xsc.adjoint()*s*U ;
-//  w.moc.block( 2*nbas, 0, 2*nbas, 2*nbas) = w.moc.block( 0, 2*nbas, 2*nbas, 2*nbas).conjugate() ;
-/*
-  std::cout << " Orthonormal " << std::endl ;
-  std::cout << " W^{t}*W " << std::endl ;
-*/
-//  R = w.moc.adjoint()*w.moc ;
-//  print_mat( R, " Orthogonal wfn") ;
-
-/*
-  Mix the homo and lumo
-*/
-//  rl = ( w.moc.col( nele-1) + w.moc.col( nele))/std::sqrt(z2) ;
-//  ll = ( w.moc.col( nele-1) - w.moc.col( nele))/std::sqrt(z2) ;
-//  w.moc.col( nele-1) = rl ;
-//  w.moc.col( nele) = ll ;
-//
-//  Ef = (w.eig( nele - 1) + w.eig( nele))/d2 ;
-//  for( int i=0; i < 2*nbas; i++){
-//    djunk = (w.eig( i) - Ef)/(kb*3.0e4) ;
-//    rl( i) = static_cast<cd>(d1/( d1 + std::exp( djunk))) ;
-//    }
-//
-//  rho = U*U.adjoint() ;
-//  print_mat( rho, " 0 k rho") ;
-//  print_mat( rl, "occ #") ;
-//  U = w.moc  ;
-//  print_mat( U, "Mo cof") ;
-//  U = U*rl.asDiagonal() ;
-//  print_mat( U, "Thermalized") ;
-//
-//  rho = w.moc*U.adjoint() ;
-//
-//  print_mat( rho, " Thermalized density") ;
-//  rho = w.moc.conjugate()*w.moc.transpose() ;
-
-//  kappa.block( 0, nbas, nbas, nbas) = rho.block( 0, 0, nbas, nbas) - rho.block( 0, 0, nbas, nbas)*rho.block( 0, 0, nbas, nbas) ;
-//  kappa.block( nbas, 0, nbas, nbas) = -kappa.block( 0, nbas, nbas, nbas) ;
-//  kappa = w.moc.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas).conjugate()*w.moc.block( 0, 2*nbas, 2*nbas, 2*nbas).transpose() ;
-//  std::cout << " Orthonormal rho and kappa " << std::endl ;
-//  print_mat( rho) ;
-//  print_mat( kappa) ;
-/*  ctr2eg( oaoint, rho, G, nbas) ;
-  ctrPairg( oaoint, kappa, D, nbas) ;
-  t = (H + G/d2)*rho ;
-  energy = t.trace() ;
-  t = kappa.conjugate()*D ;
-  energy += t.trace()/d4 ;
-  std::cout << "    Electronic Energy: " << energy.real() << std::endl << std::endl ;
-  std::cout << " rho before thermal " << std::endl ;
-  print_mat( rho) ;
-
-    Thermalize rho
-
-  kappa.setZero() ;
+  diis_opt.set_switch( 2) ;
+  diis_opt.do_diis = false ;
+  diis_opt.diis_switch = false ;
+  diis_opt.ndiisv = 5 ;
+  diis_opt.diistype = 2 ;
+  diis_opt.ediff_thr = 5.0e-3 ;
   
-  kappa.block( 0, nbas, nbas, nbas) = rho.block( 0, 0, nbas, nbas)*rho.block( 0, 0, nbas, nbas) - rho.block( 0, 0, nbas, nbas) ;
-  kappa.block( nbas, 0, nbas, nbas) = -kappa.block( 0, nbas, nbas, nbas) ;
-  print_mat( kappa) ;
-  
-
-  for( int qtz = 0; qtz < 2*nbas; qtz+=4){
-    Vval = rl[qtz/4]*z1 ;
-    Uval = (std::sqrt( z1 - std::pow( rl[qtz/4], 2)))*z1 ;
-    U( qtz, qtz) = Uval ;
-    U( qtz + 1, qtz + 1) = Uval ;
-    V( qtz, qtz + 1) = Vval ;
-    V( qtz + 1, qtz) = -Vval ;
-    }
-
-  for( int qtz = 2; qtz < 2*nbas; qtz+=4){
-    Vval = rl[qtz/4 + nbas/2]*z1 ;
-    Uval = (std::sqrt( z1 - std::pow( rl[qtz/4 + nbas/2], 2)))*z1 ;
-    U( qtz, qtz) = Uval ;
-    U( qtz + 1, qtz + 1) = Uval ;
-    V( qtz, qtz + 1) = Vval ;
-    V( qtz + 1, qtz) = -Vval ;
-    }
+/*
+  Build rho and kappa
 */
+  int blahhhh = 1 ;
+  real_SlaDet( com, blahhhh) ;
+/*
+  Rather than use the previous energy of each iteration to determine
+  when the diis should turn on, we will use the hartree-fock energy
+  as an upper bound to ensure we have passed that solution.
+*/
+  load_wfn( w) ;
+  diis_opt.cntl_ref = w.e_scf ;
 
+//  jorge_guess( pt, kt, Nalp, norm) ;
+  thermal_guess( nalp, nbas, pt, kt) ;
+
+/*
+  I should be able to use rrhfb here.
+*/
+//  initialize( 2, 3, com.hamil(), com, h, X, r12int, nbas) ;
+
+  w.moc.resize( 2*nbas, 2*nbas) ;
+  w.eig.resize( 2*nbas) ;
+
+  lshift = z4 ;
 /*
   Build the particle number integration grid
-
-  trapezoid* ngrid = new trapezoid( d0, d2*pi, 11) ;
-
-  cgHFB_projection_dbg( nbas, H, oaoint, w.moc, rho, kappa, ngrid, maxit) ; 
-
-  proj_HFB_cplx_time.end() ;
-
 */
+  for ( int qz=22; qz < 23; qz+=2) {
+    trapezoid* ngrid = new trapezoid( d0, d2*pi, qz) ;
+    h.setZero() ;
+    initialize( 2, 1, com.hamil(), com, h, X, r12int, nbas) ;
+    t = h.block( 0, 0, nbas, nbas) ;
+/*
+    prr = pt ;
+    krr = kt ;
+    Xring_shiekh_rr( nbas, t, X, w.moc, prr, krr, mu, lshift, ngrid, nele, diis_opt, maxit) ;
+*/
+
+    prr = pt ;
+    krr = kt ;
+    ring_shiekh_rr( nbas, t, X, w.moc, prr, krr, mu, lshift, ngrid, nele, diis_opt, maxit) ;
+/*
+  Reset the DIIS options just in case
+*/
+    diis_opt.set_switch( 2) ;
+    diis_opt.do_diis = true ;
+    diis_opt.diis_switch = false ;
+    diis_opt.ndiisv = 5 ;
+    diis_opt.diistype = 2 ;
+    diis_opt.ediff_thr = 5.0e-3 ;
+  
+    w.moc.resize( 4*nbas, 4*nbas) ;
+    w.eig.resize( 4*nbas) ;
+    h.setZero() ;
+    p.block( 0, 0, nbas, nbas) = pt ;
+    p.block( nbas, nbas, nbas, nbas) = pt ;
+    k.block( 0, nbas, nbas, nbas) = kt ;
+    k.block( nbas, 0, nbas, nbas) = -kt ;
+    t = k.inverse() ;
+    u.block( 0, 0, 2*nbas, 2*nbas) = -p*t.conjugate() ;
+    u.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
+    u.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
+    u.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = t*p ;
+    olap = pfaffian_H( u) ;
+    norm = z1/olap ;
+    initialize( 2, 3, com.hamil(), com, h, X, r12int, nbas) ;
+    t = h.block( 0, 0, 2*nbas, 2*nbas) ;
+    ring_shiekh_cg( nbas, t, X, w.moc, p, k, mu, lshift, ngrid, nele, norm, diis_opt, maxit) ;
+    }
+
+  proj_HFB_time.end() ;
+
   return ;
 
 } ;
 
 template < class matrix>
-void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>* W, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig_v, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen::Ref<Eigen::MatrixXcd> kappa, double& lambda, cd lshift, trapezoid*& ngrid, double& nele, int& maxit) {
-
+void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>* W, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen::Ref<Eigen::MatrixXcd> kappa, double& lambda, cd lshift, trapezoid*& ngrid, double& nele, diis_control& diis_cntrl, int& maxit) {
 /*
-  Various debugging for the number projected HFB.
-*/
+  Real Restricted NHFB implementation using the Ring and Shiekh equations published in
 
+  Sheikh, Javid A., and Peter Ring. "Symmetry-projected Hartree-Fock-Bogoliubov equations." 
+  Nuclear Physics A 665 1-2 (2000): 71-91"
+
+  This version needs improvement but it is not a priority right now.
+*/
   int iter = 1, iter_N = 0 ;
   int in, inmb = ngrid->ns() ;
   double b_ll, b_ul ;
   double pnum = nele/d2 ;
+  cd npar = static_cast<cd>(nele) ;
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> H_diag ;
+  diis<cd> fdiis( 2*nbas, diis_cntrl.ndiisv, diis_cntrl.diistype) ;
   cd N = z0, olap ;
   cd energy, pphase, nphase ;
-  cd s_theta, intE_g, intx_g, fnx, w_phi, x_phi, y_phi ;
+  cd s_theta, intE_g = z0, intx_g, fnx, w_phi, x_phi ;
   cd etr, gtr, dtr, d_phi ;
-  cd acc_etr, acc_gtr, acc_dtr ;
   cd shift ;
   std::vector<cd> cnv_den, cnv_energy ;
-  Eigen::MatrixXcd R, evec ;
+  Eigen::MatrixXcd R, R_save, eigvec ;
   Eigen::MatrixXcd p_rho, p_kappa ;
   Eigen::MatrixXcd epsilonN, gammaN, lambdaN, FockN, DeltaN ;
-  Eigen::MatrixXcd DbaN, tmp, Y_tmp, I ;
+  Eigen::MatrixXcd tmp, Y_tmp, I ;
   Eigen::MatrixXcd C_phi, G_phi, D_phi ;
   Eigen::MatrixXcd r_phi, k_phi, R_phi ;
-  Eigen::MatrixXcd X_phi, Y_phi ;
+  Eigen::MatrixXcd Y_phi ;
   Eigen::MatrixXcd kbar_phi, t ;
   Eigen::MatrixXcd mu, mu_n, Heff, H ;
 
   time_dbg ring_shiekh_rr_projection_time = time_dbg("ring and shiekh rr") ;
 
 /*
-  Local Variables
-    R - Generalized density matrix
-    evec - Eigenvectors
-    p_rho - density from previous iteration
-    p_kappa - pairing from previous iteration
+  Eigen Vectors to accumulate quantities
 */
 
   R.resize( 2*nbas, 2*nbas) ;
-  evec.resize( 2*nbas, 2*nbas) ;
+  R_save.resize( 2*nbas, 2*nbas) ;
+  eigvec.resize( 2*nbas, 2*nbas) ;
   p_rho.resize( nbas, nbas) ;
   p_kappa.resize( nbas, nbas) ;
   epsilonN.resize( nbas, nbas) ;
@@ -560,7 +271,6 @@ void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
   lambdaN.resize( nbas, nbas) ;
   FockN.resize( nbas, nbas) ;
   DeltaN.resize( nbas, nbas) ;
-  DbaN.resize( nbas, nbas) ;
   Y_tmp.resize( nbas, nbas) ;
   tmp.resize( nbas, nbas) ;
   I.resize( nbas, nbas) ;
@@ -570,7 +280,259 @@ void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
   D_phi.resize( nbas, nbas) ;
   r_phi.resize( nbas, nbas) ;
   k_phi.resize( nbas, nbas) ;
-  X_phi.resize( nbas, nbas) ;
+  Y_phi.resize( nbas, nbas) ;
+  kbar_phi.resize( nbas, nbas) ;
+  t.resize( nbas, nbas) ;
+  t.resize( nbas, nbas) ;
+  mu.resize( 2*nbas, 2*nbas) ;
+  mu_n.resize( 2*nbas, 2*nbas) ;
+  Heff.resize( 2*nbas, 2*nbas) ;
+  H.resize( 2*nbas, 2*nbas) ;
+
+  I.setIdentity() ;
+  mu.setZero() ;
+  mu.block( 0, 0, nbas, nbas) = -I ;
+  mu.block( nbas, nbas, nbas, nbas) = I ;
+  mu_n.setIdentity() ;
+
+  /*
+    Prepare level shifting density
+  */
+
+  R.block( 0, 0, nbas, nbas) = rho ;
+  R.block( 0, nbas, nbas, nbas) = kappa ;
+  R.block( nbas, 0, nbas, nbas) = kappa.adjoint() ;
+  R.block( nbas, nbas, nbas, nbas) = I - rho.conjugate() ;
+
+  do {
+    /*
+      Loop over the number projection grid and accumulate quantities 
+      Clear our accumulation matrices
+    */
+    p_rho = rho ;
+    p_kappa = kappa ;
+
+    epsilonN.setZero() ;
+    gammaN.setZero() ;
+    lambdaN.setZero() ;
+    FockN.setZero() ;
+    DeltaN.setZero() ;
+    Y_tmp.setZero() ;
+
+    intx_g = z0 ;
+    intE_g = z0 ;
+
+    for ( in = 0; in < inmb; in++){
+      fnx = static_cast<cd>( ngrid->q()) ;
+      w_phi = ngrid->w() ;
+      d_phi = std::exp( -zi*fnx*static_cast<cd>(nele))/( z2*zpi) ;
+      pphase = std::exp( z2*zi*fnx) ;
+      nphase = std::exp( -z2*zi*fnx) ;
+
+      /*
+        Build our rotated quantities
+      */
+
+      tmp = I + rho*( pphase - z1) ;
+      t = tmp.inverse() ;
+      C_phi = pphase*t ;
+      r_phi = C_phi*rho ;
+      k_phi = C_phi*kappa ;
+      kbar_phi = pphase*kappa*C_phi.conjugate() ;
+      olap =  std::exp( zi*z2*fnx*static_cast<cd>(nbas))/C_phi.determinant() ;
+      x_phi = d_phi*olap ;
+      Y_tmp += w_phi*zi*x_phi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi ;
+      intx_g += w_phi*x_phi ;
+      Y_phi = zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi ;
+
+      /*
+        Get the energy expression.
+        Start by putting into the non orthogonal basis
+      */
+
+      W->contract( r_phi, k_phi) ;
+      eigvec = W->getG() ;
+      G_phi = eigvec.block( 0, 0, nbas, nbas) ;
+      D_phi = eigvec.block( 0, nbas, nbas, nbas) ;
+
+      t = h*r_phi ;
+      etr = z2*t.trace() ;
+      epsilonN = w_phi*x_phi*(Y_phi*etr + ( I - z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*r_phi)*h*C_phi) ;
+      t = G_phi*r_phi ;
+      gtr = t.trace() ;
+      gammaN = w_phi*x_phi*(Y_phi*gtr + ( I - z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*r_phi)*G_phi*C_phi) ;
+      t = D_phi*kbar_phi.adjoint() ;
+      dtr = -t.trace()/z2 ;
+      t = D_phi.transpose()*kbar_phi.conjugate() ;
+      dtr -= t.trace()/z2 ;
+      lambdaN = -w_phi*x_phi*(Y_phi*dtr + z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi*D_phi*kbar_phi.adjoint()) ;
+
+      FockN += epsilonN + gammaN + lambdaN ;
+      DeltaN += w_phi*nphase*x_phi*C_phi*D_phi ;
+
+/*
+  Accumulate the overlap and projected energy
+*/
+      intE_g += w_phi*x_phi*( etr + gtr - dtr) ;
+      }
+
+    ngrid->set_s() ;
+
+/*
+  Now that everything has been accumulated, there are a few post loop modifications to make.
+*/
+
+    intE_g /= intx_g ;
+    FockN /= intx_g ;
+    DeltaN /= intx_g ;
+    Y_tmp /= intx_g ;
+    FockN -= intE_g*Y_tmp ;
+
+    cnv_energy.push_back( intE_g) ;
+
+    t = (FockN + FockN.adjoint())/z2 ;
+    Heff.block( 0, 0, nbas, nbas) = t ;
+
+    t = (DeltaN + DeltaN.transpose())/z2 ;
+    Heff.block( 0, nbas, nbas, nbas) = t ;
+
+    Heff.block( nbas, nbas, nbas, nbas) = -Heff.block( 0, 0, nbas, nbas).conjugate() ;
+    Heff.block( nbas, 0, nbas, nbas) = Heff.block( 0, nbas, nbas, nbas).adjoint() ;
+
+    if ( iter < 5 ){
+      shift = lshift/static_cast<cd>(iter) ;
+      }
+
+    Heff += -shift*R ;
+
+    Heff += shift*(mu_n - R) ;
+
+    if ( diis_cntrl.do_diis){
+
+      R_save = R ;
+
+      }
+
+  /*
+    Adjust the chemical potential until the density gives the proper number
+    of particles.
+  */
+
+  chemical_potential ( pnum, nbas, lambda, H_diag, R, mu, eigvec, Heff, rho, H) ;
+
+  if ( diis_cntrl.do_diis){
+    diis_cntrl.toggle( std::real(intE_g)) ;
+    fdiis.update( R_save, H, diis_cntrl.diis_switch) ;
+    if ( diis_cntrl.diis_switch ) {
+      Heff = H ;
+      chemical_potential ( pnum, nbas, lambda, H_diag, R, mu, eigvec, Heff, rho, H) ;
+      }
+    }
+
+   kappa = R.block( 0, nbas, nbas, nbas) ;
+
+/*
+  Check for convergence
+*/
+
+   t = rho - p_rho ;
+   energy = t.norm() ;
+   t = kappa - p_kappa ;
+   energy += t.norm() ;
+   cnv_den.push_back( energy) ;
+
+   if ( energy.real() < 1.0e-7) {
+     std::cout << " Converged in the density after " << iter << " iterations. "  << std::endl ;
+     std::cout << " Chemical potential: " << lambda << std::endl ;
+     std::cout << " Energy " << intE_g << std::endl ;
+     break ;
+     }
+ 
+ } while ( ++iter < maxit) ;
+
+  ngrid->set_s() ;
+
+  for( unsigned int xq=0; xq < cnv_den.size(); xq++){
+    std::cout << cnv_den[xq] << "  " << cnv_energy[xq] << std::endl ;
+    }
+
+  ring_shiekh_rr_projection_time.end() ;
+
+  return ;
+
+} ;
+
+template void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<Eigen::MatrixXcd>* W, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen::Ref<Eigen::MatrixXcd> kappa, double& lambda, cd lshift, trapezoid*& ngrid, double& nele, diis_control&, int& maxit) ;
+
+template < class matrix>
+void ring_shiekh_rr_K( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>* W, Eigen::Ref<Eigen::MatrixXcd> V, Eigen::Ref<Eigen::MatrixXcd> U, double& lambda, cd lshift, trapezoid*& ngrid, double& nele, diis_control& diis_cntrl, int& maxit) {
+/*
+  Real Restricted KNHFB implementation.
+*/
+
+  time_dbg ring_shiekh_rr_K_projection_time = time_dbg("ring and shiekh rr K") ;
+
+  ring_shiekh_rr_K_projection_time.end() ;
+
+  return ;
+
+} ;
+
+template void ring_shiekh_rr_K( int&, Eigen::Ref<Eigen::MatrixXcd>, nbodyint<Eigen::MatrixXcd>*, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, double&, cd, trapezoid*&, double&, diis_control&, int&) ;
+
+template < class matrix>
+void Xring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>* W, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen::Ref<Eigen::MatrixXcd> kappa, double& lambda, cd lshift, trapezoid*& ngrid, double& nele, diis_control& diis_cntrl, int& maxit) {
+/*
+  This is a working version of the routine however inefficient.  DO NOT ALTER
+*/
+  int iter = 1, iter_N = 0 ;
+  int in, inmb = ngrid->ns() ;
+  double b_ll, b_ul ;
+  double pnum = nele/d2 ;
+  cd npar = static_cast<cd>(nele) ;
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> H_diag ;
+  diis<cd> fdiis( 2*nbas, diis_cntrl.ndiisv, diis_cntrl.diistype) ;
+  cd N = z0, olap ;
+  cd energy, pphase, nphase ;
+  cd s_theta, intE_g = z0, intx_g, fnx, w_phi, x_phi, y_phi ;
+  cd etr, gtr, dtr, d_phi ;
+  cd shift, prev_energy ;
+  std::vector<cd> cnv_den, cnv_energy ;
+  Eigen::MatrixXcd R, R_save, eigvec ;
+  Eigen::MatrixXcd p_rho, p_kappa ;
+  Eigen::MatrixXcd epsilonN, gammaN, lambdaN, FockN, DeltaN ;
+  Eigen::MatrixXcd /*DbaN,*/ tmp, Y_tmp, I ;
+  Eigen::MatrixXcd C_phi, G_phi, D_phi ;
+  Eigen::MatrixXcd r_phi, k_phi, R_phi ;
+  Eigen::MatrixXcd Y_phi ;
+  Eigen::MatrixXcd kbar_phi, t ;
+  Eigen::MatrixXcd mu, mu_n, Heff, H ;
+
+  time_dbg ring_shiekh_rr_projection_time = time_dbg("Xring and shiekh rr") ;
+
+/*
+  Eigen Vectors to accumulate quantities
+*/
+
+  R.resize( 2*nbas, 2*nbas) ;
+  R_save.resize( 2*nbas, 2*nbas) ;
+  eigvec.resize( 2*nbas, 2*nbas) ;
+  p_rho.resize( nbas, nbas) ;
+  p_kappa.resize( nbas, nbas) ;
+  epsilonN.resize( nbas, nbas) ;
+  gammaN.resize( nbas, nbas) ;
+  lambdaN.resize( nbas, nbas) ;
+  FockN.resize( nbas, nbas) ;
+  DeltaN.resize( nbas, nbas) ;
+  Y_tmp.resize( nbas, nbas) ;
+  tmp.resize( nbas, nbas) ;
+  I.resize( nbas, nbas) ;
+  C_phi.resize( nbas, nbas) ;
+  G_phi.resize( nbas, nbas) ;
+  R_phi.resize( nbas, nbas) ;
+  D_phi.resize( nbas, nbas) ;
+  r_phi.resize( nbas, nbas) ;
+  k_phi.resize( nbas, nbas) ;
   Y_phi.resize( nbas, nbas) ;
   kbar_phi.resize( nbas, nbas) ;
   t.resize( nbas, nbas) ;
@@ -586,8 +548,9 @@ void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
   mu_n.setIdentity() ;
 
   /*
-    Prepare the generalized density with the initial guess
+    Prepare level shifting density
   */
+
   R.block( 0, 0, nbas, nbas) = rho ;
   R.block( 0, nbas, nbas, nbas) = kappa ;
   R.block( nbas, 0, nbas, nbas) = kappa.adjoint() ;
@@ -595,49 +558,65 @@ void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
 
   do {
     /*
-      Save the previous matrices
+      Loop over the number projection grid and accumulate quantities 
+      Clear our accumulation matrices
     */
     p_rho = rho ;
     p_kappa = kappa ;
 
-    /*
-      Clear our accumulation matrices for the Hamiltonian
-    */
-
+    epsilonN.setZero() ;
+    gammaN.setZero() ;
+    lambdaN.setZero() ;
     FockN.setZero() ;
     DeltaN.setZero() ;
     Y_tmp.setZero() ;
 
+    prev_energy = intE_g ;
     intx_g = z0 ;
     intE_g = z0 ;
-    acc_etr = z0 ;
-    acc_gtr = z0 ;
-    acc_dtr = z0 ;
-
 /*
-  Generate int d(phi) <O|phi> dphi and integral of the overlap derivative.
+  I don't want to do two loops because I think the same thing can be accomplished in one.
+  However in the spirit of debugging, I will do two loops to match the equations Ring and 
+  Shiekh wrote out as closely as possible.
 */
 
     for ( in = 0; in < inmb; in++){
       fnx = static_cast<cd>( ngrid->q()) ;
+//      std::cout << " angle " << fnx << std::endl ;
       w_phi = ngrid->w() ;
+//      std::cout << " weight " << w_phi << std::endl ;
       d_phi = std::exp( -zi*fnx*static_cast<cd>(nele))/( z2*zpi) ;
       pphase = std::exp( z2*zi*fnx) ;
+//      std::cout << " pphase " << pphase << std::endl ;
 
       tmp = I + rho*( pphase - z1) ;
-      C_phi = pphase*tmp.inverse() ;
+//      print_mat( tmp, " I + p*( pphase  - z1 ) ") ;
+      t = tmp.inverse() ;
+//      print_mat( t, " tmp.inverse ") ;
+      C_phi = pphase*t ;
+//      print_mat( C_phi, " C (phi) ") ;
+//      std::cout << " det(tmp.inverse()) " << t.determinant() << std::endl ;
+//      std::cout << " fac1(nbas) " << std::exp( zi*fnx*static_cast<cd>(nbas)) << std::endl ;
       olap =  std::exp( zi*z2*fnx*static_cast<cd>(nbas))/C_phi.determinant() ;
-
+//      std::cout << " olap " << olap << std::endl ;
       x_phi = d_phi*olap ;
+//      std::cout << " x_phi CAJ " << std::exp( -zi*fnx*static_cast<cd>(nele))/(z2*zpi*t.determinant()) << std::endl ;
+//      std::cout << " x_phi " << x_phi << std::endl ;
+//      std::cout << " zi*x_phi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi " << std::endl << zi*x_phi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi << std::endl ;
       Y_tmp += w_phi*zi*x_phi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi ;
 
       intx_g += w_phi*x_phi ;
 
+   //   std::cout << std::endl << std::endl ;
       }
 
     ngrid->set_s() ;
 
     Y_tmp /= intx_g ;
+
+//    std::cout << " intx_g " << intx_g << std::endl ;
+
+//    print_mat( Y_tmp, "Y_tmp") ;
 
     for ( in = 0; in < inmb; in++){
       fnx = static_cast<cd>( ngrid->q()) ;
@@ -646,35 +625,46 @@ void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
       pphase = std::exp( z2*zi*fnx) ;
       nphase = std::exp( -z2*zi*fnx) ;
 
-/*
-  Build our rotated quantities
-*/
+      /*
+        Build our rotated quantities
+      */
 
       tmp = I + rho*( pphase - z1) ;
-      C_phi = pphase*tmp.inverse() ;
+      t = tmp.inverse() ;
+      C_phi = pphase*t ;
+//      print_mat( C_phi, "C(phi)") ;
       r_phi = C_phi*rho ;
+//      print_mat( r_phi, "p(phi)") ;
       k_phi = C_phi*kappa ;
+//      print_mat( k_phi, "k(phi)") ;
       kbar_phi = pphase*kappa*C_phi.conjugate() ;
+//      print_mat( kbar_phi, "kbar(phi)") ;
       olap =  std::exp( zi*z2*fnx*static_cast<cd>(nbas))/C_phi.determinant() ;
       x_phi = d_phi*olap ;
+//      std::cout << " x_phi " << x_phi << std::endl ;
       y_phi = x_phi/intx_g ;
+//      std::cout << " y_phi " << y_phi << std::endl ;
       Y_phi = zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi - Y_tmp ;
 
-/*
-  Calculate the Coulomb and Pairing Matrices
-*/
+      /*
+        Get the energy expression.
+        Start by putting into the non orthogonal basis
+      */
 
       W->contract( r_phi, k_phi) ;
-      evec = W->getG() ;
-      G_phi = evec.block( 0, 0, nbas, nbas) ;
-      D_phi = evec.block( 0, nbas, nbas, nbas) ;
-
-/*
-  Generate the one and two body hamiltonian elements
-*/
+      eigvec = W->getG() ;
+      G_phi = eigvec.block( 0, 0, nbas, nbas) ;
+//      print_mat( G_phi, " G(phi) ") ;
+      D_phi = eigvec.block( 0, nbas, nbas, nbas) ;
+//      print_mat( D_phi, " D(phi) ") ;
 
       t = h*r_phi ;
       etr = z2*t.trace() ;
+//      std::cout << " 2*tr(hp) " << etr << std::endl ;
+//      t = y_phi*Y_phi*etr ;
+//      print_mat( t, " y_phi*Y_phi*etr ") ;
+//      t = y_phi*( I - z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*r_phi)*h*C_phi ;
+//      print_mat( t, " y_phi*( I - z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*r_phi)*h*C_phi ") ;
       epsilonN = w_phi*y_phi*(Y_phi*etr + ( I - z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*r_phi)*h*C_phi) ;
       t = G_phi*r_phi ;
       gtr = t.trace() ;
@@ -683,39 +673,51 @@ void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
       dtr = -t.trace()/z2 ;
       t = D_phi.transpose()*kbar_phi.conjugate() ;
       dtr -= t.trace()/z2 ;
+//      std::cout << " -(tr(D^{T}*kbar_phi^{*}) + tr(D*kbar_phi^{t}))/2 " << dtr << std::endl ;
+//      std::cout << " y_phi " << y_phi << std::endl ;
+//      print_mat( Y_phi, "Y(phi)") ;
+//      t = y_phi*Y_phi*dtr ;
+//      print_mat( t, " y_phi*Y_phi*dtr ") ;
+//      t = y_phi*z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi*D_phi*kbar_phi.adjoint() ;
+//      print_mat( t, " y_phi*z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi*D_phi*kbar_phi.adjoint() ") ;
       lambdaN = -w_phi*y_phi*(Y_phi*dtr + z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi*D_phi*kbar_phi.adjoint()) ;
 
       FockN += epsilonN + gammaN + lambdaN ;
+//      t = nphase*y_phi*C_phi*D_phi ;
+//      print_mat( t, " nphase*y_phi*C_phi*D_phi ") ;
       DeltaN += w_phi*nphase*y_phi*C_phi*D_phi ;
+//      DbaN = w_phi*nphase*y_phi*C_phi*D_phi.transpose() ;
 
 /*
-  Accumulate the projected energy
+  Accumulate the overlap and projected energy
 */
-      acc_etr += w_phi*y_phi*etr ;
-      acc_gtr += w_phi*y_phi*gtr ;
-      acc_dtr -= w_phi*y_phi*dtr ;
       intE_g += w_phi*y_phi*( etr + gtr - dtr) ;
       }
 
-    std::cout << " acc_etr " << acc_etr << std::endl ;
-    std::cout << " acc_gtr " << acc_gtr << std::endl ;
-    std::cout << " acc_dtr " << acc_dtr << std::endl ;
-
     ngrid->set_s() ;
+
+/*
+    t = (epsilonN + epsilonN.adjoint())/z2 ;
+    print_mat( t, " FN") ;
+
+    t = (gammaN + gammaN.adjoint())/z2 ;
+    print_mat( t, " GN") ;
+
+    t = (lambdaN + lambdaN.adjoint())/z2 ;
+    print_mat( t, " LN") ;
+
+    t = (DeltaN - DbaN.transpose())/z2 ;
+    print_mat( t, " DabN") ;
+
+    t = (DeltaN + DeltaN.transpose())/z2 ;
+    print_mat( t, " DabN") ;
+*/
 
     cnv_energy.push_back( intE_g) ;
 
-/*
-  Symmetrize the normal density component
-*/
-
     t = (FockN + FockN.adjoint())/z2 ;
+//    print_mat( t, " FockN ") ;
     Heff.block( 0, 0, nbas, nbas) = t ;
-
-/*
-  Symmetrize the pairing component.  Since kab = -kba we do
-  DN + DN^{T} rather than DN - DN^{T}
-*/
 
     t = (DeltaN + DeltaN.transpose())/z2 ;
     Heff.block( 0, nbas, nbas, nbas) = t ;
@@ -723,98 +725,100 @@ void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
     Heff.block( nbas, nbas, nbas, nbas) = -Heff.block( 0, 0, nbas, nbas).conjugate() ;
     Heff.block( nbas, 0, nbas, nbas) = Heff.block( 0, nbas, nbas, nbas).adjoint() ;
 
-    if ( false ){
-//    if ( iter < 5 ){
-/*
-  Slowly scale down the level shifting
-*/
+    if ( iter < 5 ){
       shift = lshift/static_cast<cd>(iter) ;
       }
 
-//    Heff += -shift*R ;
+    Heff += -shift*R ;
+
+    Heff += shift*(mu_n - R) ;
+
+    if ( diis_cntrl.do_diis){
+
+      R_save = R ;
+
+      }
 
   /*
     Adjust the chemical potential until the density gives the proper number
     of particles.
   */
 
-    if ( false ){
+    if ( true ){
       iter_N = 0 ;
 
       b_ul = lambda ;
       b_ll = lambda ;
 
-/*
-  Do the bisection method to find the value of the chemical potential.
-*/
+      /*
+         Set some initial limits
+      */
 
       do {
         b_ll -= d3 ;
         H = Heff + static_cast<cd>(b_ll)*mu ;
         H_diag.compute( H) ;
-        evec = H_diag.eigenvectors() ;
-        R = evec.block( 0, 0, 2*nbas, nbas)*evec.block( 0, 0, 2*nbas, nbas).adjoint() ;
+        eigvec = H_diag.eigenvectors() ;
+        R = eigvec.block( 0, 0, 2*nbas, nbas)*eigvec.block( 0, 0, 2*nbas, nbas).adjoint() ;
         rho = R.block( 0, 0, nbas, nbas) ;
         N = rho.trace() ;
-        } while ( static_cast<double>(N.real()) > pnum) ;
-
-      std::cout << " Lower limit chemical potential " << b_ll << std::endl ;
+        } while ( ++iter_N < 30 && static_cast<double>(N.real()) > pnum) ;
+  
       iter_N = 0 ;
-
+  
       do {
         b_ul += d3 ;
         H = Heff + static_cast<cd>(b_ul)*mu ;
         H_diag.compute( H) ;
-        evec = H_diag.eigenvectors() ;
-        R = evec.block( 0, 0, 2*nbas, nbas)*evec.block( 0, 0, 2*nbas, nbas).adjoint() ;
+        eigvec = H_diag.eigenvectors() ;
+        R = eigvec.block( 0, 0, 2*nbas, nbas)*eigvec.block( 0, 0, 2*nbas, nbas).adjoint() ;
         rho = R.block( 0, 0, nbas, nbas) ;
         N = rho.trace() ;
-        } while ( static_cast<double>(N.real()) < pnum) ;
-
-      std::cout << " upper limit chemical potential " << b_ul << std::endl ;
+        } while ( ++iter_N < 30 && static_cast<double>(N.real()) < pnum) ;
+  
       iter_N = 0 ;
-
+  
       lambda = ( b_ll + b_ul)/d2 ;
-
+  
       while ( iter_N++ < 30) {
         H = Heff + static_cast<cd>(lambda)*mu ;
         H_diag.compute( H) ;
-        evec = H_diag.eigenvectors() ;
-        R = evec.block( 0, 0, 2*nbas, nbas)*evec.block( 0, 0, 2*nbas, nbas).adjoint() ;
+        eigvec = H_diag.eigenvectors() ;
+        R = eigvec.block( 0, 0, 2*nbas, nbas)*eigvec.block( 0, 0, 2*nbas, nbas).adjoint() ;
         rho = R.block( 0, 0, nbas, nbas) ;
         N = rho.trace() ;
         if ( std::abs(static_cast<double>(N.real()) - pnum) < 1.0e-5){
-          std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
-          std::cout << "    chemical potential: " << lambda << std::endl ;
-          std::cout << "    Particle Number : " << N.real() << std::endl << std::endl ;
           break ;
         } else {
+  
+/*
+  Bisection method
+*/
 
           if ( static_cast<double>(N.real()) - pnum < d0){
 /*
   Too few electrons. Increase the chemical potential
 */
 
-          b_ll = lambda ;
-          lambda = (b_ul + b_ll)/d2 ;
-        } else {
-          b_ul = lambda ;
-          lambda = (b_ul + b_ll)/d2 ;
+            b_ll = lambda ;
+            lambda = (b_ul + b_ll)/d2 ;
+          } else {
+            b_ul = lambda ;
+            lambda = (b_ul + b_ll)/d2 ;
+            }
           }
         }
+      } else {
+        H_diag.compute( Heff) ;
+        eigvec = H_diag.eigenvectors() ;
+        R = eigvec.block( 0, 0, 2*nbas, nbas)*eigvec.block( 0, 0, 2*nbas, nbas).adjoint() ;
+        rho = R.block( 0, 0, nbas, nbas) ;
+        }
+
+    if ( diis_cntrl.do_diis){
+      diis_cntrl.toggle( std::real(intE_g)) ;
+      fdiis.update( R_save, H, diis_cntrl.diis_switch) ;
       }
-    } else {
-/*
-  If there is no chemical potential then simply diagonalize the Hamiltonian
-*/
-      H_diag.compute( Heff) ;
-      evec = H_diag.eigenvectors() ;
-      R = evec.block( 0, 0, 2*nbas, nbas)*evec.block( 0, 0, 2*nbas, nbas).adjoint() ;
-      rho = R.block( 0, 0, nbas, nbas) ;
-      }
-/*
-  Grab kappa
-*/
 
    kappa = R.block( 0, nbas, nbas, nbas) ;
 
@@ -828,20 +832,20 @@ void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
    energy += t.norm() ;
    cnv_den.push_back( energy) ;
 
-   std::cout << " rms difference in the density " << energy << std::endl ;
    if ( energy.real() < 1.0e-7) {
-     c = H_diag.eigenvectors() ;
-     R.col(0) = H_diag.eigenvalues() ;
-     eig_v = R.col(0).real() ;
-     std::cout << " converged in the density " << std::endl ;
+     std::cout << " Converged in the density after " << iter << " iterations. "  << std::endl ;
+     std::cout << " Chemical potential: " << lambda << std::endl ;
+     std::cout << " Energy " << intE_g << std::endl ;
      break ;
      }
  
- } while ( ++iter < 250) ;
+ } while ( ++iter < maxit) ;
 
- for( unsigned int xq=0; xq < cnv_den.size(); xq++){
-   std::cout << cnv_den[xq] << "  " << cnv_energy[xq] << std::endl ;
-   }
+  ngrid->set_s() ;
+
+  for( unsigned int xq=0; xq < cnv_den.size(); xq++){
+    std::cout << cnv_den[xq] << "  " << cnv_energy[xq] << std::endl ;
+    }
 
   ring_shiekh_rr_projection_time.end() ;
 
@@ -849,68 +853,66 @@ void ring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
 
 } ;
 
-template void ring_shiekh_rr( int&, Eigen::Ref<Eigen::MatrixXcd>, nbodyint<Eigen::MatrixXcd>*, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::VectorXd>, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, double&, cd, trapezoid*&, double&, int&) ;
+template void Xring_shiekh_rr( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<Eigen::MatrixXcd>* W, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen::Ref<Eigen::MatrixXcd> kappa, double& lambda, cd lshift, trapezoid*& ngrid, double& nele, diis_control&, int& maxit) ;
 
 template < class matrix>
-void ring_shiekh_cg( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>* W, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen::Ref<Eigen::MatrixXcd> kappa, double& lambda, cd lshift, trapezoid*& ngrid, double& nele, cd &norm, int& maxit) {
+void ring_shiekh_cg( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>* W, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen::Ref<Eigen::MatrixXcd> kappa, double& lambda, cd lshift, trapezoid*& ngrid, double& nele, cd &nrm, diis_control& diis_cntrl, int& maxit) {
 
 /*
-  Complex Generalized Number projected HFB
+  Various debugging for the number projected HFB.
 */
 
-  int iter = 1, iter_N = 0 ;
+  int iter = 1, iter_N = 0, dbas = 2*nbas ;
   int in, inmb = ngrid->ns() ;
   double b_ll, b_ul ;
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> H_diag ;
-  cd N = z0, olap ;
-  cd nrm = norm ;
-  cd energy, pphase, nphase, shift ;
-  cd s_theta, intE_g, intx_g, fnx, w_phi, x_phi, y_phi ;
-  cd etr, gtr, dtr, d_phi ;
+  diis<cd> fdiis( 4*nbas, diis_cntrl.ndiisv, diis_cntrl.diistype) ;
+  cd N = z0, olap, shift ;
+  cd energy, pphase, nphase, d_phi ;
+  cd s_theta, intE_g, intx_g, fnx, w_phi, x_phi ;
+  cd etr, gtr, dtr, cds_scr ;
   std::vector<cd> cnv_den, cnv_energy ;
-  Eigen::VectorXcd teig ;
-  Eigen::MatrixXcd R, evec ;
+  Eigen::MatrixXcd R, R_save, eigvec ;
   Eigen::MatrixXcd p_rho, p_kappa ;
   Eigen::MatrixXcd epsilonN, gammaN, lambdaN, FockN, DeltaN ;
   Eigen::MatrixXcd tmp, Y_tmp, I ;
   Eigen::MatrixXcd C_phi, G_phi, D_phi ;
   Eigen::MatrixXcd r_phi, k_phi, R_phi ;
   Eigen::MatrixXcd X_phi, Y_phi ;
-  Eigen::MatrixXcd kbar_phi, t, t1 ;
+  Eigen::MatrixXcd kbar_phi, t, t1, kappa_i ;
   Eigen::MatrixXcd mu, mu_n, Heff, H ;
 
-  time_dbg ring_shiekh_cg_time = time_dbg("ring and shiekh cg") ;
+  time_dbg ring_shiekh_projection_time = time_dbg("ring and shiekh cg") ;
 
 /*
-  Local :
-    R - Generalized density
-    evec - eigenvectors/scratch space
+  Eigen Vectors to accumulate quantities
 */
 
   R.resize( 4*nbas, 4*nbas) ;
-  eig.resize( 4*nbas) ;
-  evec.resize( 4*nbas, 4*nbas) ;
-  p_rho.resize( 2*nbas, 2*nbas) ;
-  p_kappa.resize( 2*nbas, 2*nbas) ;
-  epsilonN.resize( 2*nbas, 2*nbas) ;
-  gammaN.resize( 2*nbas, 2*nbas) ;
-  lambdaN.resize( 2*nbas, 2*nbas) ;
-  FockN.resize( 2*nbas, 2*nbas) ;
-  DeltaN.resize( 2*nbas, 2*nbas) ;
-  Y_tmp.resize( 2*nbas, 2*nbas) ;
-  tmp.resize( 2*nbas, 2*nbas) ;
-  I.resize( 2*nbas, 2*nbas) ;
-  C_phi.resize( 2*nbas, 2*nbas) ;
-  G_phi.resize( 2*nbas, 2*nbas) ;
-  R_phi.resize( 2*nbas, 2*nbas) ;
-  D_phi.resize( 2*nbas, 2*nbas) ;
-  r_phi.resize( 2*nbas, 2*nbas) ;
-  k_phi.resize( 2*nbas, 2*nbas) ;
-  X_phi.resize( 2*nbas, 2*nbas) ;
-  Y_phi.resize( 2*nbas, 2*nbas) ;
-  kbar_phi.resize( 2*nbas, 2*nbas) ;
-  t.resize( 2*nbas, 2*nbas) ;
-  t1.resize( 2*nbas, 2*nbas) ;
+  R_save.resize( 4*nbas, 4*nbas) ;
+  eigvec.resize( 4*nbas, 4*nbas) ;
+  p_rho.resize( dbas, dbas) ;
+  p_kappa.resize( dbas, dbas) ;
+  epsilonN.resize( dbas, dbas) ;
+  gammaN.resize( dbas, dbas) ;
+  lambdaN.resize( dbas, dbas) ;
+  FockN.resize( dbas, dbas) ;
+  DeltaN.resize( dbas, dbas) ;
+  Y_tmp.resize( dbas, dbas) ;
+  tmp.resize( dbas, dbas) ;
+  I.resize( dbas, dbas) ;
+  C_phi.resize( dbas, dbas) ;
+  G_phi.resize( dbas, dbas) ;
+  R_phi.resize( dbas, dbas) ;
+  D_phi.resize( dbas, dbas) ;
+  r_phi.resize( dbas, dbas) ;
+  k_phi.resize( dbas, dbas) ;
+  kappa_i.resize( dbas, dbas) ;
+  X_phi.resize( dbas, dbas) ;
+  Y_phi.resize( dbas, dbas) ;
+  kbar_phi.resize( dbas, dbas) ;
+  t.resize( dbas, dbas) ;
+  t1.resize( dbas, dbas) ;
   mu.resize( 4*nbas, 4*nbas) ;
   mu_n.resize( 4*nbas, 4*nbas) ;
   Heff.resize( 4*nbas, 4*nbas) ;
@@ -918,28 +920,31 @@ void ring_shiekh_cg( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
 
   I.setIdentity() ;
   mu.setZero() ;
-  mu.block( 0, 0, 2*nbas, 2*nbas) = -I ;
-  mu.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = I ;
+  mu.block( 0, 0, dbas, dbas) = -I ;
+  mu.block( dbas, dbas, dbas, dbas) = I ;
   mu_n.setIdentity() ;
 
   /*
-    Prepare level shifting density
+    Initialize the generalized density
   */
 
-  R.block( 0, 0, 2*nbas, 2*nbas) = rho ;
-  R.block( 0, 2*nbas, 2*nbas, 2*nbas) = kappa ;
-  R.block( 2*nbas, 0, 2*nbas, 2*nbas) = -kappa.conjugate() ;
-  R.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = I - rho.conjugate() ;
+  R.block( 0, 0, dbas, dbas) = rho ;
+  R.block( 0, dbas, dbas, dbas) = kappa ;
+  R.block( dbas, 0, dbas, dbas) = kappa.adjoint() ;
+  R.block( dbas, dbas, dbas, dbas) = I - rho.conjugate() ;
 
   do {
     /*
       Loop over the number projection grid and accumulate quantities 
       Clear our accumulation matrices
     */
-
     p_rho = rho ;
     p_kappa = kappa ;
- 
+    kappa_i = kappa.inverse() ;
+
+    epsilonN.setZero() ;
+    gammaN.setZero() ;
+    lambdaN.setZero() ;
     FockN.setZero() ;
     DeltaN.setZero() ;
     Y_tmp.setZero() ;
@@ -952,197 +957,122 @@ void ring_shiekh_cg( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
       w_phi = ngrid->w() ;
       d_phi = std::exp( -zi*fnx*static_cast<cd>( nele))/( z2*zpi) ;
       pphase = std::exp( z2*zi*fnx) ;
+      nphase = std::exp( -z2*zi*fnx) ;
+
+      /*
+        Build our rotated quantities
+      */
 
       R_phi = I*std::exp( zi*fnx) ;
       tmp = I + rho*( pphase - z1) ;
-      C_phi = pphase*tmp.inverse() ;
-
-      t = R_phi*kappa ;
-      t1 = t.inverse() ;
-      evec.block( 0, 0, 2*nbas, 2*nbas) = -R_phi*rho*t1.conjugate() ;
-      evec.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
-      evec.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
-      evec.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = kappa.inverse()*rho ;
-      olap = nrm*pfaffian_H( evec) ;
-
-      x_phi = d_phi*olap ;
-      Y_tmp += w_phi*zi*x_phi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi ;
-
-      intx_g += w_phi*x_phi ;
-
-      }
-
-    ngrid->set_s() ;
-
-    Y_tmp /= intx_g ;
-
-    for ( in = 0; in < inmb; in++){
-      fnx = static_cast<cd>( ngrid->q()) ;
-      w_phi = ngrid->w() ;
-      d_phi = std::exp( -zi*fnx*static_cast<cd>( nele))/( z2*zpi) ;
-      pphase = std::exp( z2*zi*fnx) ;
-      nphase = std::exp( -z2*zi*fnx) ;
-
-/*
-  Build our rotated quantities
-*/
-
-      tmp = I + rho*( pphase - z1) ;
-      C_phi = pphase*tmp.inverse() ;
+      t = tmp.inverse() ;
+      C_phi = pphase*t ;
       r_phi = C_phi*rho ;
       k_phi = C_phi*kappa ;
       kbar_phi = pphase*kappa*C_phi.conjugate() ;
-      R_phi = I*std::exp( zi*fnx) ;
       t = R_phi*kappa ;
       t1 = t.inverse() ;
-      evec.block( 0, 0, 2*nbas, 2*nbas) = -R_phi*rho*t1.conjugate() ;
-      evec.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
-      evec.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
-      evec.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = kappa.inverse()*rho ;
-      olap = nrm*pfaffian_H( evec) ;
+      eigvec.block( 0, 0, dbas, dbas) = -R_phi*rho*t1.conjugate() ;
+      eigvec.block( 0, dbas, dbas, dbas) = -I ;
+      eigvec.block( dbas, 0, dbas, dbas) = I ;
+      eigvec.block( dbas, dbas, dbas, dbas) = kappa_i*rho ;
+      olap = nrm*pfaffian_H( eigvec) ;
       x_phi = d_phi*olap ;
-      y_phi = x_phi/intx_g ;
-      Y_phi = zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi - Y_tmp ;
+
+      Y_tmp += w_phi*zi*x_phi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi ;
+
+      intx_g += w_phi*x_phi ;
+      Y_phi = zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi ;
 
       W->contract( r_phi, k_phi) ;
-      evec = W->getG() ;
-      G_phi = evec.block( 0, 0, 2*nbas, 2*nbas) ;
-      D_phi = evec.block( 0, 2*nbas, 2*nbas, 2*nbas) ;
+      eigvec = W->getG() ;
+      G_phi = eigvec.block( 0, 0, dbas, dbas) ;
+      D_phi = eigvec.block( 0, dbas, dbas, dbas) ;
 
+      cds_scr = z2*zi*std::exp( -zi*fnx)*std::sin( fnx) ;
       t = h*r_phi ;
       etr = t.trace() ;
-      epsilonN = w_phi*y_phi*(Y_phi*etr + ( I - z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*r_phi)*h*C_phi) ;
+      epsilonN = w_phi*x_phi*(Y_phi*etr + ( I - cds_scr*r_phi)*h*C_phi) ;
       t = G_phi*r_phi ;
       gtr = t.trace() ;
-      gammaN = w_phi*y_phi*(Y_phi*gtr/z2 + ( I - z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*r_phi)*G_phi*C_phi) ;
+      gammaN = w_phi*x_phi*(Y_phi*gtr/z2 + ( I - cds_scr*r_phi)*G_phi*C_phi) ;
       t = D_phi*kbar_phi.adjoint() ;
       dtr = -t.trace()/z2 ;
       t = D_phi.transpose()*kbar_phi.conjugate() ;
       dtr -= t.trace()/z2 ;
-      lambdaN = -w_phi*y_phi*(Y_phi*dtr/z2 + z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi*D_phi*kbar_phi.adjoint()) ;
+      lambdaN = -w_phi*x_phi*(Y_phi*dtr/z2 + cds_scr*C_phi*D_phi*kbar_phi.adjoint()) ;
 
       FockN += epsilonN + gammaN + lambdaN ;
-      DeltaN += w_phi*nphase*y_phi*C_phi*D_phi ;
+      DeltaN += w_phi*nphase*x_phi*C_phi*D_phi ;
 
 /*
   Accumulate the overlap and projected energy
 */
-      intE_g += w_phi*y_phi*( etr + gtr/z2 - dtr/z2) ;
+      intE_g += w_phi*x_phi*( etr + gtr/z2 - dtr/z2) ;
       }
 
     ngrid->set_s() ;
+
+/*
+  Post Processing of the accumulated quantities
+*/
+
+    intE_g /= intx_g ;
+    FockN /= intx_g ;
+    DeltaN /= intx_g ;
+    Y_tmp /= intx_g ;
+    FockN -= intE_g*Y_tmp ;
 
     cnv_energy.push_back( intE_g) ;
 
     t = (FockN + FockN.adjoint())/z2 ;
-    FockN = t ;
+    Heff.block( 0, 0, dbas, dbas) = t ;
     t = (DeltaN - DeltaN.transpose())/z2 ;
-    DeltaN = t ;
+    Heff.block( 0, dbas, dbas, dbas) = t ;
 
-    Heff.block( 0, 0, 2*nbas, 2*nbas) = FockN ;
-    Heff.block( 0, 2*nbas, 2*nbas, 2*nbas) = DeltaN ;
-    Heff.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -Heff.block( 0, 0, 2*nbas, 2*nbas).conjugate() ;
-    Heff.block( 2*nbas, 0, 2*nbas, 2*nbas) = Heff.block( 0, 2*nbas, 2*nbas, 2*nbas).adjoint() ;
+    Heff.block( dbas, dbas, dbas, dbas) = -Heff.block( 0, 0, dbas, dbas).conjugate() ;
+    Heff.block( dbas, 0, dbas, dbas) = -Heff.block( 0, dbas, dbas, dbas).conjugate() ;
 
-    if ( iter < 5 ){
-/*
-  Slowly scale down the level shifting
-*/
+    if ( iter < 5){
       shift = lshift/static_cast<cd>(iter) ;
       }
 
     Heff += -shift*R ;
+
+    Heff += shift*(mu_n - R) ;
 /*
   Adjust the chemical potential until the density gives the proper number
   of particles.
 */
 
-    if ( true ) {
-      iter_N = 0 ;
-  
-      b_ul = lambda ;
-      b_ll = lambda ;
-  
-      /*
-         Set some initial limits
-      */
-  
-      do {
-        b_ll -= d3 ;
-        H = Heff + static_cast<cd>(b_ll)*mu ;
-        H_diag.compute( H) ;
-        evec = H_diag.eigenvectors() ;
-        R = evec.block( 0, 0, 4*nbas, 2*nbas)*evec.block( 0, 0, 4*nbas, 2*nbas).adjoint() ;
-        rho = R.block( 0, 0, 2*nbas, 2*nbas) ;
-        N = rho.trace() ;
-        } while ( static_cast<double>(N.real()) > nele) ;
-    
-      std::cout << " Lower limit chemical potential " << b_ll << std::endl ;
-      iter_N = 0 ;
-    
-      do {
-        b_ul += d3 ;
-        H = Heff + static_cast<cd>(b_ul)*mu ;
-        H_diag.compute( H) ;
-        evec = H_diag.eigenvectors() ;
-        R = evec.block( 0, 0, 4*nbas, 2*nbas)*evec.block( 0, 0, 4*nbas, 2*nbas).adjoint() ;
-        rho = R.block( 0, 0, 2*nbas, 2*nbas) ;
-        N = rho.trace() ;
-        } while ( static_cast<double>(N.real()) < nele) ;
-    
-      std::cout << " upper limit chemical potential " << b_ul << std::endl ;
-      iter_N = 0 ;
-    
-      lambda = ( b_ll + b_ul)/d2 ;
-    
-      while ( iter_N++ < 30) {
-        H = Heff + static_cast<cd>(lambda)*mu ;
-        H_diag.compute( H) ;
-        evec = H_diag.eigenvectors() ;
-        R = evec.block( 0, 0, 4*nbas, 2*nbas)*evec.block( 0, 0, 4*nbas, 2*nbas).adjoint() ;
-        rho = R.block( 0, 0, 2*nbas, 2*nbas) ;
-        N = rho.trace() ;
-        if ( std::abs(static_cast<double>(N.real()) - nele) < 1.0e-5){
-          std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
-          std::cout << "    chemical potential: " << lambda << std::endl ;
-          std::cout << "    Particle Number : " << N.real() << std::endl << std::endl ;
-          break ;
-        } else {
-  
-          if ( static_cast<double>(N.real()) - nele < d0){
-/*
-  Too few electrons. Increase the chemical potential
-*/
+    if ( diis_cntrl.do_diis){
 
-            b_ll = lambda ;
-            lambda = (b_ul + b_ll)/d2 ;
-          } else {
-            b_ul = lambda ;
-            lambda = (b_ul + b_ll)/d2 ;
-            }
-          }
-        }
-   } else {
-/*
-  If there is no chemical potential then simply diagonalize the Hamiltonian
+      R_save = R ;
+
+      }
+
+   chemical_potential ( nele, dbas, lambda, H_diag, R, mu, eigvec, Heff, rho, H) ;
+
+   if ( diis_cntrl.do_diis){
+     diis_cntrl.toggle( std::real(intE_g)) ;
+     fdiis.update( R_save, H, diis_cntrl.diis_switch) ;
+      if ( false ) {
+/*      if ( diis_cntrl.diis_switch ) {
+  For some reason this second adjustment of the chemical potential leads to 
+  convergence to a higher energy solution.  Avoid it for now.
 */
-     H_diag.compute( Heff) ;
-     evec = H_diag.eigenvectors() ;
-     R = evec.block( 0, 0, 4*nbas, 2*nbas)*evec.block( 0, 0, 4*nbas, 2*nbas).adjoint() ;
-     rho = R.block( 0, 0, 2*nbas, 2*nbas) ;
+        Heff = H ;
+        chemical_potential ( nele, dbas, lambda, H_diag, R, mu, eigvec, Heff, rho, H) ;
+        }
      }
 
-   kappa = R.block( 0, 2*nbas, 2*nbas, 2*nbas) ;
-   t = evec.block(  0, 2*nbas, 2*nbas, 2*nbas).adjoint()*evec.block( 0, 2*nbas, 2*nbas, 2*nbas) ;
+   kappa = R.block( 0, dbas, dbas, dbas) ;
+   t = eigvec.block( dbas, 0, dbas, dbas).conjugate()*eigvec.block( dbas, 0, dbas, dbas).transpose() ;
    nrm = std::sqrt( t.determinant()) ;
 
 /*
   Check for convergence
 */
-   R.block( 0, 0, 2*nbas, 2*nbas) = rho ;
-   R.block( 0, 2*nbas, 2*nbas, 2*nbas) = kappa ;
-   R.block( 2*nbas, 0, 2*nbas, 2*nbas) = kappa.adjoint() ;
-   R.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = I - rho.conjugate() ;
 
    t = rho - p_rho ;
    energy = t.norm() ;
@@ -1150,581 +1080,20 @@ void ring_shiekh_cg( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
    energy += t.norm() ;
    cnv_den.push_back( energy) ;
 
-   std::cout << " rms difference in the density " << energy << std::endl ;
    if ( energy.real() < 1.0e-7 ) {
-     std::cout << " converged in the density " << std::endl ;
+     std::cout << " Converged in the density after " << iter << " iterations." << std::endl ;
+     std::cout << " Chemical potential: " << lambda << std::endl ;
+     std::cout << " Energy " << intE_g << std::endl ;
      break ;
      }
+ 
+ } while ( ++iter < maxit) ;
 
- } while ( ++iter < 250) ;
-
-  c = H_diag.eigenvectors() ;
-  teig = H_diag.eigenvalues() ;
-  eig = teig.real() ;
 
   for( unsigned int xq=0; xq < cnv_den.size(); xq++){
     std::cout << cnv_den[xq] << "  " << cnv_energy[xq] << std::endl ;
     }
 
-  ring_shiekh_cg_time.end() ;
-
-  return ;
-
-} ;
-
-template void ring_shiekh_cg( int&, Eigen::Ref<Eigen::MatrixXcd>, nbodyint<Eigen::MatrixXcd>*, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::VectorXd>, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, double&, cd,  trapezoid*&, double&, cd&, int&) ;
-
-template < class matrix>
-void tr_ring_shiekh( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>* W, Eigen::Ref<Eigen::MatrixXcd> V, Eigen::Ref<Eigen::MatrixXcd> U, double& lambda, cd lshift, trapezoid*& ngrid, double& nele, int& maxit) {
-
-/*
-  Complex Generalized Number projection with Time reversal
-*/
-
-  int iter = 1, iter_N = 0 ;
-  int in, inmb = ngrid->ns() ;
-  int tr_opt = 0, ci_indx ;
-  double b_ll, b_ul ;
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> H_diag ;
-  Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXcd> HCI_diag ;
-  cd N = z0, olap ;
-  cd nrm ;
-  cd energy, pphase, nphase, shift ;
-  cd s_theta, intE_g, intx_g, fnx, w_phi, x_phi, y_phi ;
-  cd etr, gtr, dtr, d_phi ;
-  cd cospi2, sinpi2 ;
-  std::vector<cd> cnv_den, cnv_energy ;
-  Eigen::MatrixXcd R, evec, Revec ;
-  Eigen::MatrixXcd p_rho, p_kappa ;
-  Eigen::MatrixXcd epsilonN, gammaN, lambdaN, FockN, DeltaN ;
-  Eigen::MatrixXcd tmp, Y_tmp, I ;
-  Eigen::MatrixXcd C_phi, G_phi, D_phi ;
-  Eigen::MatrixXcd r_phi, k_phi, R_phi ;
-  Eigen::MatrixXcd X_phi, Y_phi ;
-  Eigen::MatrixXcd Ux, Vx, ta, tb, rho, kappa ;
-  Eigen::MatrixXcd kbar_phi, t, t1 ;
-  Eigen::MatrixXcd mu, mu_n, Heff, H ;
-  Eigen::MatrixXcd H_CI( 2, 2), S_CI( 2, 2), CI_vec( 2, 2), CI_val( 2, 2), CI_cof( 4, 1) ;
-
-  time_dbg ring_shiekh_projection_time = time_dbg("tr_ring_shiekh") ;
-
-/*
-  Local :
-    R - Generalized density
-    evec - eigenvectors/scratch space
-*/
-
-  R.resize( 4*nbas, 4*nbas) ;
-  evec.resize( 4*nbas, 4*nbas) ;
-  Revec.resize( 4*nbas, 4*nbas) ;
-  p_rho.resize( 2*nbas, 2*nbas) ;
-  p_kappa.resize( 2*nbas, 2*nbas) ;
-  epsilonN.resize( 2*nbas, 2*nbas) ;
-  gammaN.resize( 2*nbas, 2*nbas) ;
-  lambdaN.resize( 2*nbas, 2*nbas) ;
-  FockN.resize( 2*nbas, 2*nbas) ;
-  DeltaN.resize( 2*nbas, 2*nbas) ;
-  Y_tmp.resize( 2*nbas, 2*nbas) ;
-  tmp.resize( 2*nbas, 2*nbas) ;
-  I.resize( 2*nbas, 2*nbas) ;
-  rho.resize( 2*nbas, 2*nbas) ;
-  kappa.resize( 2*nbas, 2*nbas) ;
-  C_phi.resize( 2*nbas, 2*nbas) ;
-  G_phi.resize( 2*nbas, 2*nbas) ;
-  R_phi.resize( 2*nbas, 2*nbas) ;
-  D_phi.resize( 2*nbas, 2*nbas) ;
-  r_phi.resize( 2*nbas, 2*nbas) ;
-  k_phi.resize( 2*nbas, 2*nbas) ;
-  X_phi.resize( 2*nbas, 2*nbas) ;
-  Y_phi.resize( 2*nbas, 2*nbas) ;
-  Ux.resize( 2*nbas, 2*nbas) ;
-  Vx.resize( 2*nbas, 2*nbas) ;
-  ta.resize( nbas, 2*nbas) ;
-  tb.resize( nbas, 2*nbas) ;
-  kbar_phi.resize( 2*nbas, 2*nbas) ;
-  t.resize( 2*nbas, 2*nbas) ;
-  t1.resize( 2*nbas, 2*nbas) ;
-  mu.resize( 4*nbas, 4*nbas) ;
-  mu_n.resize( 4*nbas, 4*nbas) ;
-  Heff.resize( 4*nbas, 4*nbas) ;
-  H.resize( 4*nbas, 4*nbas) ;
-
-  I.setIdentity() ;
-  mu.setZero() ;
-  mu.block( 0, 0, 2*nbas, 2*nbas) = -I ;
-  mu.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = I ;
-  mu_n.setIdentity() ;
-
-/*
-  We are doing time reversal projection.  Calculate cos(pi/2)
-  and sin(pi/2) here one time.
-  cospi2 = cos( zpi/z2) ;
-  sinpi2 = sin( zpi/z2) ;
-*/
-
-  cospi2 = z0 ;
-  sinpi2 = z1 ;
-
-/*
-  step 1 : Generate an initial CI vector by iterating over the operators
-  we need.
-*/
-
-  for( ci_indx = 0; ci_indx < 4; ci_indx++){
-    if ( ci_indx == 0){
-      /* <0|P^{N}|0> */
-//      std::cout << " <0|P^{N}|0> " << std::endl ;
-
-      rho = V.conjugate()*V.transpose() ;
-      kappa = V.conjugate()*U.transpose() ;
-    } else if ( ci_indx == 2){
-      /* <0|P^{N}T|0> */
- //     std::cout << " <0|P^{N}T|0> " << std::endl ;
-
-      ta = V.block( 0, 0, nbas, 2*nbas).conjugate() ;
-      tb = V.block( nbas, 0, nbas, 2*nbas).conjugate() ;
-      Vx.block( 0, 0, nbas, 2*nbas) = cospi2*ta + sinpi2*tb ;
-      Vx.block( nbas, 0, nbas, 2*nbas) = cospi2*tb - sinpi2*ta ;
-
-      rho = Vx.conjugate()*V.transpose() ;
-      kappa = Vx.conjugate()*U.transpose() ;
-    } else if ( ci_indx == 1){
-      /* <0|TP^{N}|0> */
-//      std::cout << " <0|TP^{N}|0> " << std::endl ;
-
-      ta = V.block( 0, 0, nbas, 2*nbas).conjugate() ;
-      tb = V.block( nbas, 0, nbas, 2*nbas).conjugate() ;
-      Vx.block( 0, 0, nbas, 2*nbas) = cospi2*ta + sinpi2*tb ;
-      Vx.block( nbas, 0, nbas, 2*nbas) = cospi2*tb - sinpi2*ta ;
- 
-      ta = U.block( 0, 0, nbas, 2*nbas).conjugate() ;
-      tb = U.block( nbas, 0, nbas, 2*nbas).conjugate() ;
-      Ux.block( 0, 0, nbas, 2*nbas) = cospi2*ta + sinpi2*tb ;
-      Ux.block( nbas, 0, nbas, 2*nbas) = cospi2*tb - sinpi2*ta ;
-
-      rho = V.conjugate()*Vx.transpose() ;
-      kappa = V.conjugate()*Ux.transpose() ;
-    } else if ( ci_indx == 3){
-      /* <0|TP^{N}T|0> */
-//      std::cout << " <0|TP^{N}T|0> " << std::endl ;
-
-      ta = V.block( 0, 0, nbas, 2*nbas).conjugate() ;
-      tb = V.block( nbas, 0, nbas, 2*nbas).conjugate() ;
-      Vx.block( 0, 0, nbas, 2*nbas) = cospi2*ta + sinpi2*tb ;
-      Vx.block( nbas, 0, nbas, 2*nbas) = cospi2*tb - sinpi2*ta ;
- 
-      ta = U.block( 0, 0, nbas, 2*nbas).conjugate() ;
-      tb = U.block( nbas, 0, nbas, 2*nbas).conjugate() ;
-      Ux.block( 0, 0, nbas, 2*nbas) = cospi2*ta + sinpi2*tb ;
-      Ux.block( nbas, 0, nbas, 2*nbas) = cospi2*tb - sinpi2*ta ;
-
-      rho = Vx.conjugate()*Vx.transpose() ;
-      kappa = Vx.conjugate()*Ux.transpose() ;
-      }
-
-      t = kappa.inverse() ;
-      evec.block( 0, 0, 2*nbas, 2*nbas) = -rho*t.conjugate() ;
-      evec.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
-      evec.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
-      evec.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = t*rho ;
-      olap = pfaffian_H( evec) ;
-      std::cout << " olap " << olap << std::endl ;
-      std::cout << " norm " << z1/olap << std::endl ;
-
-      continue ;
-
-/*
-  Calculate the overlap and energy between the two states
-*/
-
-    intx_g = z0 ;
-    intE_g = z0 ;
-
-    for ( in = 0; in < inmb; in++){
-      fnx = static_cast<cd>( ngrid->q()) ;
-      w_phi = ngrid->w() ;
-      d_phi = std::exp( -zi*fnx*static_cast<cd>( nele))/( z2*zpi) ;
-      pphase = std::exp( z2*zi*fnx) ;
-      nphase = std::exp( -z2*zi*fnx) ;
-
-/*
-  Build our rotated quantities
-*/
-      tmp = I + rho*( pphase - z1) ;
-      C_phi = pphase*tmp.inverse() ;
-      r_phi = C_phi*rho ;
-      k_phi = C_phi*kappa ;
-      kbar_phi = pphase*kappa*C_phi.conjugate() ;
-      R_phi = I*std::exp( zi*fnx) ;
-      t = R_phi*kappa ;
-      t1 = t.inverse() ;
-      evec.block( 0, 0, 2*nbas, 2*nbas) = -R_phi*rho*t1.conjugate() ;
-      evec.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
-      evec.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
-      evec.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = kappa.inverse()*rho ;
-      olap = nrm*pfaffian_H( evec) ;
-      x_phi = d_phi*olap ;
-
-      W->contract( r_phi, k_phi) ;
-      evec = W->getG() ;
-      G_phi = evec.block( 0, 0, 2*nbas, 2*nbas) ;
-      D_phi = evec.block( 0, 2*nbas, 2*nbas, 2*nbas) ;
-
-      t = h*r_phi ;
-      etr = t.trace() ;
-      t = G_phi*r_phi ;
-      gtr = t.trace() ;
-      t = D_phi*kbar_phi.adjoint() ;
-      dtr = -t.trace()/z2 ;
-      t = D_phi.transpose()*kbar_phi.conjugate() ;
-      dtr -= t.trace()/z2 ;
-
-/*
-  Accumulate the projected energy and the overlap
-*/
-
-      intx_g += w_phi*x_phi ;
-      intE_g += w_phi*x_phi*( etr + gtr/z2 - dtr/z2) ;
-      }
-
-    *(H_CI.data() + ci_indx) = intE_g ;
-    *(S_CI.data() + ci_indx) = intx_g ;
-
-    std::cout << " Energy " << intE_g/intx_g << std::endl ;
-
-    ngrid->set_s() ;
- 
-    }
-
-  return ;
-
-  print_mat( H_CI, " H_CI matrix ") ;
-  print_mat( S_CI, " S_CI matrix ") ;
-
-  HCI_diag.compute( H_CI, S_CI) ;
-  if ( HCI_diag.info() != Eigen::Success){
-    std::cout << " Not Successful " << std::endl ;
-    }
-
-  CI_vec = HCI_diag.eigenvectors() ;
-  CI_val = HCI_diag.eigenvalues() ;
-  print_mat( CI_vec, " TRCI eigvec ") ;
-  print_mat( CI_val, " TRCI eigval ") ;
-  std::cout << " Overlap " << std::endl ;
-  std::cout << CI_vec.adjoint().block( 0, 0, 1, 2)*S_CI*CI_vec.block( 0, 0, 2, 1) << std::endl ;
-  std::cout << " Energy " << std::endl ;
-  std::cout << CI_vec.adjoint().block( 0, 0, 1, 2)*H_CI*CI_vec.block( 0, 0, 2, 1) << std::endl ;
-//  intx_g = CI_vec.adjoint().block( 0, 0, 1, 2)*S_CI*CI_vec.block( 0, 0, 2, 1) ;
-//  std::cout << " Overlap " << intx_g << std::endl ;
-//  intE_g = CI_vec.adjoint().block( 0, 0, 1, 2)*H_CI*CI_vec.block( 0, 0, 2, 1) ;
-//  std::cout << " Energy " << intE_g << std::endl ;
-//  std::cout << " <0|H|0>/<0|0> " << intE_g/intx_g << std::endl ;
-
-  return ;
-
-/*
-  Build the prefactors for the linear combination of Time Reversal elements
-*/
-
-  CI_cof( 0, 0) = std::conj(CI_vec( 0, 0))*CI_vec( 0, 0) ;
-  CI_cof( 1, 0) = std::conj(CI_vec( 1, 0))*CI_vec( 0, 0) ;
-  CI_cof( 2, 0) = std::conj(CI_vec( 0, 0))*CI_vec( 1, 0) ;
-  CI_cof( 3, 0) = std::conj(CI_vec( 1, 0))*CI_vec( 1, 0) ;
-
-/*
-  Loop of the Time Reversal elements and gather the heffective Hamiltonians together into one 
-  MEGA EFFECTIVE HAMILTONIAN
-*/
-
-  Heff.setZero() ;
-
-
-    do {
-
-  for( ci_indx = 0; ci_indx < 4; ci_indx++){
-    if ( ci_indx == 0){
-      /* <0|P^{N}|0> */
-
-      rho = V.conjugate()*V.transpose() ;
-      kappa = V.conjugate()*U.transpose() ;
-    } else if ( ci_indx == 2){
-      /* <0|P^{N}T|0> */
-
-      ta = V.block( 0, 0, nbas, 2*nbas).conjugate() ;
-      tb = V.block( nbas, 0, nbas, 2*nbas).conjugate() ;
-      Vx.block( 0, 0, nbas, 2*nbas) = cospi2*ta + sinpi2*tb ;
-      Vx.block( nbas, 0, nbas, 2*nbas) = cospi2*tb - sinpi2*ta ;
-
-      rho = Vx.conjugate()*V.transpose() ;
-      kappa = Vx.conjugate()*U.transpose() ;
-    } else if ( ci_indx == 1){
-      /* <0|TP^{N}|0> */
-
-      ta = V.block( 0, 0, nbas, 2*nbas).conjugate() ;
-      tb = V.block( nbas, 0, nbas, 2*nbas).conjugate() ;
-      Vx.block( 0, 0, nbas, 2*nbas) = cospi2*ta + sinpi2*tb ;
-      Vx.block( nbas, 0, nbas, 2*nbas) = cospi2*tb - sinpi2*ta ;
- 
-      ta = U.block( 0, 0, nbas, 2*nbas).conjugate() ;
-      tb = U.block( nbas, 0, nbas, 2*nbas).conjugate() ;
-      Ux.block( 0, 0, nbas, 2*nbas) = cospi2*ta + sinpi2*tb ;
-      Ux.block( nbas, 0, nbas, 2*nbas) = cospi2*tb - sinpi2*ta ;
-
-      rho = V.conjugate()*Vx.transpose() ;
-      kappa = V.conjugate()*Ux.transpose() ;
-    } else if ( ci_indx == 3){
-      /* <0|TP^{N}T|0> */
-
-      ta = V.block( 0, 0, nbas, 2*nbas).conjugate() ;
-      tb = V.block( nbas, 0, nbas, 2*nbas).conjugate() ;
-      Vx.block( 0, 0, nbas, 2*nbas) = cospi2*ta + sinpi2*tb ;
-      Vx.block( nbas, 0, nbas, 2*nbas) = cospi2*tb - sinpi2*ta ;
- 
-      ta = U.block( 0, 0, nbas, 2*nbas).conjugate() ;
-      tb = U.block( nbas, 0, nbas, 2*nbas).conjugate() ;
-      Ux.block( 0, 0, nbas, 2*nbas) = cospi2*ta + sinpi2*tb ;
-      Ux.block( nbas, 0, nbas, 2*nbas) = cospi2*tb - sinpi2*ta ;
-
-      rho = Vx.conjugate()*Vx.transpose() ;
-      kappa = Vx.conjugate()*Ux.transpose() ;
-      }
-
-/*
-  Loop over the number projection grid and accumulate quantities 
-  Clear our accumulation matrices
-*/
-
-      p_rho = rho ;
-      p_kappa = kappa ;
-   
-      FockN.setZero() ;
-      DeltaN.setZero() ;
-      Y_tmp.setZero() ;
-  
-      intx_g = z0 ;
-      intE_g = z0 ;
-  
-      for ( in = 0; in < inmb; in++){
-        fnx = static_cast<cd>( ngrid->q()) ;
-        w_phi = ngrid->w() ;
-        d_phi = std::exp( -zi*fnx*static_cast<cd>( nele))/( z2*zpi) ;
-        pphase = std::exp( z2*zi*fnx) ;
-  
-        R_phi = I*std::exp( zi*fnx) ;
-        tmp = I + rho*( pphase - z1) ;
-        C_phi = pphase*tmp.inverse() ;
-  
-        t = R_phi*kappa ;
-        t1 = t.inverse() ;
-        evec.block( 0, 0, 2*nbas, 2*nbas) = -R_phi*rho*t1.conjugate() ;
-        evec.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
-        evec.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
-        evec.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = kappa.inverse()*rho ;
-        olap = nrm*pfaffian_H( evec) ;
-  
-        x_phi = d_phi*olap ;
-        Y_tmp += w_phi*zi*x_phi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi ;
-  
-        intx_g += w_phi*x_phi ;
-  
-        }
-  
-      ngrid->set_s() ;
-  
-      Y_tmp /= intx_g ;
-  
-      for ( in = 0; in < inmb; in++){
-        fnx = static_cast<cd>( ngrid->q()) ;
-        w_phi = ngrid->w() ;
-        d_phi = std::exp( -zi*fnx*static_cast<cd>( nele))/( z2*zpi) ;
-        pphase = std::exp( z2*zi*fnx) ;
-        nphase = std::exp( -z2*zi*fnx) ;
-
-/*
-  Build our rotated quantities
-*/
-
-        tmp = I + rho*( pphase - z1) ;
-        C_phi = pphase*tmp.inverse() ;
-        r_phi = C_phi*rho ;
-        k_phi = C_phi*kappa ;
-        kbar_phi = pphase*kappa*C_phi.conjugate() ;
-        R_phi = I*std::exp( zi*fnx) ;
-        t = R_phi*kappa ;
-        t1 = t.inverse() ;
-        evec.block( 0, 0, 2*nbas, 2*nbas) = -R_phi*rho*t1.conjugate() ;
-        evec.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
-        evec.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
-        evec.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = kappa.inverse()*rho ;
-        olap = nrm*pfaffian_H( evec) ;
-        x_phi = d_phi*olap ;
-        y_phi = x_phi/intx_g ;
-        Y_phi = zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi - Y_tmp ;
-  
-        W->contract( r_phi, k_phi) ;
-        evec = W->getG() ;
-        G_phi = evec.block( 0, 0, 2*nbas, 2*nbas) ;
-        D_phi = evec.block( 0, 2*nbas, 2*nbas, 2*nbas) ;
-  
-        t = h*r_phi ;
-        etr = t.trace() ;
-        epsilonN = w_phi*y_phi*(Y_phi*etr + ( I - z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*r_phi)*h*C_phi) ;
-        t = G_phi*r_phi ;
-        gtr = t.trace() ;
-        gammaN = w_phi*y_phi*(Y_phi*gtr/z2 + ( I - z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*r_phi)*G_phi*C_phi) ;
-        t = D_phi*kbar_phi.adjoint() ;
-        dtr = -t.trace()/z2 ;
-        t = D_phi.transpose()*kbar_phi.conjugate() ;
-        dtr -= t.trace()/z2 ;
-        lambdaN = -w_phi*y_phi*(Y_phi*dtr/z2 + z2*zi*std::exp( -zi*fnx)*std::sin( fnx)*C_phi*D_phi*kbar_phi.adjoint()) ;
-  
-        FockN += epsilonN + gammaN + lambdaN ;
-        DeltaN += w_phi*nphase*y_phi*C_phi*D_phi ;
-
-/*
-  Accumulate the overlap and projected energy
-*/
-        }
-
-      ngrid->set_s() ;
-  
-      t = (FockN + FockN.adjoint())/z2 ;
-      FockN = t ;
-      t = (DeltaN - DeltaN.transpose())/z2 ;
-      DeltaN = t ;
-
-      Heff.block( 0, 0, 2*nbas, 2*nbas) += CI_cof( ci_indx, 0)*FockN ;
-      Heff.block( 0, 2*nbas, 2*nbas, 2*nbas) += CI_cof( ci_indx, 0)*DeltaN ;
-      Heff.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) += -CI_cof( ci_indx, 0)*FockN.conjugate() ;
-      Heff.block( 2*nbas, 0, 2*nbas, 2*nbas) += CI_cof( ci_indx, 0)*DeltaN.adjoint() ;
-
-    }
-
-    if ( iter < 5 ){
-/*
-  Slowly scale down the level shifting
-*/
-      shift = lshift/static_cast<cd>(iter) ;
-      }
-
-    Heff += -shift*R ;
-
-/*
-  Adjust the chemical potential until the density gives the proper number
-  of particles.
-*/
-
-    if ( true ) {
-      iter_N = 0 ;
-  
-      b_ul = lambda ;
-      b_ll = lambda ;
-  
-      /*
-         Set some initial limits
-      */
-  
-      do {
-        b_ll -= d3 ;
-        H = Heff + static_cast<cd>(b_ll)*mu ;
-        H_diag.compute( H) ;
-        evec = H_diag.eigenvectors() ;
-        R = evec.block( 0, 0, 4*nbas, 2*nbas)*evec.block( 0, 0, 4*nbas, 2*nbas).adjoint() ;
-        rho = R.block( 0, 0, 2*nbas, 2*nbas) ;
-        N = rho.trace() ;
-        } while ( static_cast<double>(N.real()) > nele) ;
-    
-      std::cout << " Lower limit chemical potential " << b_ll << std::endl ;
-      iter_N = 0 ;
-    
-      do {
-        b_ul += d3 ;
-        H = Heff + static_cast<cd>(b_ul)*mu ;
-        H_diag.compute( H) ;
-        evec = H_diag.eigenvectors() ;
-        R = evec.block( 0, 0, 4*nbas, 2*nbas)*evec.block( 0, 0, 4*nbas, 2*nbas).adjoint() ;
-        rho = R.block( 0, 0, 2*nbas, 2*nbas) ;
-        N = rho.trace() ;
-        } while ( static_cast<double>(N.real()) < nele) ;
-    
-      std::cout << " upper limit chemical potential " << b_ul << std::endl ;
-      iter_N = 0 ;
-    
-      lambda = ( b_ll + b_ul)/d2 ;
-    
-      while ( iter_N++ < 30) {
-        H = Heff + static_cast<cd>(lambda)*mu ;
-        H_diag.compute( H) ;
-        evec = H_diag.eigenvectors() ;
-        R = evec.block( 0, 0, 4*nbas, 2*nbas)*evec.block( 0, 0, 4*nbas, 2*nbas).adjoint() ;
-        rho = R.block( 0, 0, 2*nbas, 2*nbas) ;
-        N = rho.trace() ;
-        if ( std::abs(static_cast<double>(N.real()) - nele) < 1.0e-5){
-          std::cout << "  Particle Number Iteration: " << iter_N << std::endl ;
-          std::cout << "    chemical potential: " << lambda << std::endl ;
-          std::cout << "    Particle Number : " << N.real() << std::endl << std::endl ;
-          break ;
-        } else {
-  
-          if ( static_cast<double>(N.real()) - nele < d0){
-/*
-  Too few electrons. Increase the chemical potential
-*/
-
-            b_ll = lambda ;
-            lambda = (b_ul + b_ll)/d2 ;
-          } else {
-            b_ul = lambda ;
-            lambda = (b_ul + b_ll)/d2 ;
-            }
-          }
-        }
-   } else {
-/*
-  If there is no chemical potential then simply diagonalize the Hamiltonian
-*/
-     H_diag.compute( Heff) ;
-     evec = H_diag.eigenvectors() ;
-     R = evec.block( 0, 0, 4*nbas, 2*nbas)*evec.block( 0, 0, 4*nbas, 2*nbas).adjoint() ;
-     rho = R.block( 0, 0, 2*nbas, 2*nbas) ;
-     }
-
-   kappa = R.block( 0, 2*nbas, 2*nbas, 2*nbas) ;
-   t = evec.block(  0, 2*nbas, 2*nbas, 2*nbas).adjoint()*evec.block( 0, 2*nbas, 2*nbas, 2*nbas) ;
-   nrm = std::sqrt( t.determinant()) ;
-
-/*
-  Check for convergence
-*/
-
-   R.block( 0, 0, 2*nbas, 2*nbas) = rho ;
-   R.block( 0, 2*nbas, 2*nbas, 2*nbas) = kappa ;
-   R.block( 2*nbas, 0, 2*nbas, 2*nbas) = kappa.adjoint() ;
-   R.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = I - rho.conjugate() ;
-
-   t = rho - p_rho ;
-   energy = t.norm() ;
-   t = kappa - p_kappa ;
-   energy += t.norm() ;
-   cnv_den.push_back( energy) ;
-
-   std::cout << " rms difference in the density " << energy << std::endl ;
-   if ( energy.real() < 1.0e-7 ) {
-     std::cout << " converged in the density " << std::endl ;
-     break ;
-     }
-
-/*
-  Get the new U and V and continue the cycle.
-*/
-  V = evec.block( 0, 0, 2*nbas, 2*nbas) ;
-  U = evec.block( 2*nbas, 0, 2*nbas, 2*nbas) ;
-
- } while ( ++iter < 250) ;
-
-  for( unsigned int xq=0; xq < cnv_den.size(); xq++){
-    std::cout << cnv_den[xq] << "  " << cnv_energy[xq] << std::endl ;
-    }
 
   ring_shiekh_projection_time.end() ;
 
@@ -1732,7 +1101,7 @@ void tr_ring_shiekh( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbodyint<matrix>
 
 } ;
 
-template void tr_ring_shiekh( int&, Eigen::Ref<Eigen::MatrixXcd>, nbodyint<Eigen::MatrixXcd>*, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, double&, cd,  trapezoid*&, double&, int&) ;
+template void ring_shiekh_cg( int&, Eigen::Ref<Eigen::MatrixXcd>, nbodyint<Eigen::MatrixXcd>*, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, double&, cd, trapezoid*&, double&, cd&, diis_control&, int&) ;
 
 //void rrHFB_projection( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> w, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen::Ref<Eigen::MatrixXcd> kappa, double& lambda, trapezoid*& ngrid, int& maxit, Eigen::Ref<Eigen::MatrixXcd> xs, Eigen::Ref<Eigen::MatrixXcd> xsi) {
 //
@@ -2541,6 +1910,158 @@ template void tr_ring_shiekh( int&, Eigen::Ref<Eigen::MatrixXcd>, nbodyint<Eigen
 //} ;
 //
 
+template < class matrix>
+void projected_wavefunction_energy( const int& nele, const int& nbas, nbodyint<matrix>* W, trapezoid*& ngrid, const Eigen::Ref<Eigen::MatrixXcd> h, Eigen::MatrixXcd rho, Eigen::MatrixXcd kappa, const Eigen::Ref<Eigen::MatrixXcd> kappa_i, Eigen::Ref<Eigen::MatrixXcd> R_phi, Eigen::Ref<Eigen::MatrixXcd> r_phi, Eigen::Ref<Eigen::MatrixXcd> k_phi, Eigen::Ref<Eigen::MatrixXcd> kbar_phi, Eigen::Ref<Eigen::MatrixXcd> I, Eigen::Ref<Eigen::MatrixXcd> scr1, Eigen::Ref<Eigen::MatrixXcd> scr2, Eigen::Ref<Eigen::MatrixXcd> scr3, cd& intx_g, cd& intE_g) {
+/*
+  This is a wrapper for convienence and readability and so most everything is passed preallocated.
+  Given a density, pairing matrix, two electron interaction, and integration grids, calculate the energy and overlap.
+*/
+
+  int in, inmb = ngrid->ns()  ;
+  cd fnx, w_phi, x_phi, d_phi, pphase, nphase, olap, nrm, etr ;
+
+  for ( in = 0; in < inmb; in++){
+    fnx = static_cast<cd>( ngrid->q()) ;
+    w_phi = ngrid->w() ;
+    d_phi = std::exp( -zi*fnx*static_cast<cd>( nele))/( z2*zpi) ;
+    pphase = std::exp( z2*zi*fnx) ;
+    nphase = std::exp( -z2*zi*fnx) ;
+
+    /*
+      Build our rotated quantities
+    */
+
+    R_phi = I*std::exp( zi*fnx) ;
+    scr1 = I + rho*( pphase - z1) ;
+    scr2 = scr1.inverse() ;
+    scr1 = pphase*scr2 ;
+    r_phi = scr1*rho ;
+    k_phi = scr1*kappa ;
+    kbar_phi = pphase*kappa*scr1.conjugate() ;
+    scr1 = R_phi*kappa ;
+    scr2 = scr1.inverse() ;
+    scr3.block( 0, 0, 2*nbas, 2*nbas) = -R_phi*rho*scr2.conjugate() ;
+    scr3.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
+    scr3.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
+    scr3.block(  2*nbas, 2*nbas, 2*nbas, 2*nbas) = kappa_i*rho ;
+
+    if ( in == 0){
+      /* This is our unrotated wavefunction and is the norm */
+      olap = pfaffian_H( scr3) ;
+      nrm = z1/olap ;
+      olap = z1 ;
+    } else {
+      olap = nrm*pfaffian_H( scr3) ;
+      }
+
+    x_phi = d_phi*olap ;
+
+    intx_g += w_phi*x_phi ;
+
+    W->contract( r_phi, k_phi) ;
+    scr3 = W->getG() ;
+
+    scr1 = h*r_phi ;
+    etr = scr1.trace() ;
+    scr1 = scr3.block( 0, 0, 2*nbas, 2*nbas) ;
+    scr2 = scr1*r_phi ;
+    etr += scr2.trace() ;
+    scr1 = scr3.block( 0, 2*nbas, 2*nbas, 2*nbas) ;
+    scr2 = scr1*kbar_phi.adjoint() ;
+    etr -= scr2.trace()/z2 ;
+    scr2 = scr1.transpose()*kbar_phi.conjugate() ;
+    etr -= scr2.trace()/z2 ;
+
+/*
+  Accumulate the overlap and projected energy
+*/
+    intE_g += w_phi*x_phi*etr ;
+    }
+
+  ngrid->set_s() ;
+
+  return ;
+
+} ;
+
+template void projected_wavefunction_energy( const int&, const int&, nbodyint<Eigen::MatrixXcd>*, trapezoid*&, const Eigen::Ref<Eigen::MatrixXcd>, Eigen::MatrixXcd, Eigen::MatrixXcd, const Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, Eigen::Ref<Eigen::MatrixXcd>, cd&, cd&) ;
+
+void chemical_potential ( const int& nele, const int& nbas, double& lambda, Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> H_diag, Eigen::Ref<Eigen::MatrixXcd> R, Eigen::Ref<Eigen::MatrixXcd> mu, Eigen::Ref<Eigen::MatrixXcd> eigvec, const Eigen::Ref<Eigen::MatrixXcd> Heff, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen::Ref<Eigen::MatrixXcd> H) {
+/*
+  This is a wrapper for the bisection method for locating chemical potential.
+  This will make the code more readable.  Consequently, nearly everything is passed as
+  a pre-allocated matrix so that memory is not allocated and deallocated over and over.
+*/
+
+      int iter_N = 0 ;
+
+      double b_ul = lambda ;
+      double b_ll = lambda ;
+      cd N ;
+
+      /*
+         Set some initial limits
+      */
+
+      do {
+        b_ll -= d3 ;
+        H = Heff + static_cast<cd>(b_ll)*mu ;
+        H_diag.compute( H) ;
+        eigvec = H_diag.eigenvectors() ;
+        R = eigvec.block( 0, 0, 2*nbas, nbas)*eigvec.block( 0, 0, 2*nbas, nbas).adjoint() ;
+        rho = R.block( 0, 0, nbas, nbas) ;
+        N = rho.trace() ;
+        } while ( ++iter_N < 30 && static_cast<double>(N.real()) > static_cast<double>(nele)) ;
+    
+      iter_N = 0 ;
+    
+      do {
+        b_ul += d3 ;
+        H = Heff + static_cast<cd>(b_ul)*mu ;
+        H_diag.compute( H) ;
+        eigvec = H_diag.eigenvectors() ;
+        R = eigvec.block( 0, 0, 2*nbas, nbas)*eigvec.block( 0, 0, 2*nbas, nbas).adjoint() ;
+        rho = R.block( 0, 0, nbas, nbas) ;
+        N = rho.trace() ;
+        } while ( ++iter_N < 30 && static_cast<double>(N.real()) < static_cast<double>(nele)) ;
+    
+      iter_N = 0 ;
+    
+      lambda = ( b_ll + b_ul)/d2 ;
+    
+      while ( iter_N++ < 30) {
+        H = Heff + static_cast<cd>(lambda)*mu ;
+        H_diag.compute( H) ;
+        eigvec = H_diag.eigenvectors() ;
+        R = eigvec.block( 0, 0, 2*nbas, nbas)*eigvec.block( 0, 0, 2*nbas, nbas).adjoint() ;
+        rho = R.block( 0, 0, nbas, nbas) ;
+        N = rho.trace() ;
+        if ( std::abs(static_cast<double>(N.real()) - static_cast<double>(nele)) < 1.0e-5){
+          break ;
+        } else {
+
+/*
+  Bisection method
+*/
+
+          if ( static_cast<double>(N.real()) - static_cast<double>(nele) < d0){
+/*
+  Too few electrons. Increase the chemical potential
+*/
+
+            b_ll = lambda ;
+            lambda = (b_ul + b_ll)/d2 ;
+          } else {
+            b_ul = lambda ;
+            lambda = (b_ul + b_ll)/d2 ;
+            }
+          }
+        }
+
+  return ;
+
+} ;
+
 void jorge_guess( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> k, double N, double& norm) {
   int i = 0, j, nbas =  p.rows() ;
   double s1 = d1, s2, s3, n1, n2 ;
@@ -2567,8 +2088,6 @@ void jorge_guess( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> k
     i++ ;
     }
 
-  std::cout << " Read in correct values " << std::endl ;
-
   v1 = v ;
   n1 = v1.dot( v1) - N ;
 
@@ -2577,8 +2096,6 @@ void jorge_guess( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> k
   } else {
     s2 = d1/d2 ;
     }
-
-  std::cout << " Searching for proper Scaling " << std::endl ;
 
   for( i = 0; i < nbas; i++){
     v2(i) = v(i)/std::sqrt( v(i)*v(i) + s2*s2*u(i)*u(i)) ;
