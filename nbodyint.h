@@ -12,7 +12,9 @@ template <class matrix>
 class nbodyint{
   public :
     /*
-      Symmetry of the wavefunction - restricted/unrestriced/generalized
+      itype = symmetry of the wavefunction - restricted/unrestriced/generalized
+      dim   = smallest dimension of the problem
+      tr    = symmetric or cannonical orthogonalization
     */
     int itype ;
     int dim ;

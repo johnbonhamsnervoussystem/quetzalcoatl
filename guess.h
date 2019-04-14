@@ -9,7 +9,9 @@ void generate_pk( int nb, int ne, Eigen::Ref<Eigen::MatrixXcd> r, Eigen::Ref<Eig
 void guess_drv( common& c) ;
 
 template< class matrix>
-void homo_lumo_mix( matrix& w, const int i) ;
+void homo_lumo_mix_r( matrix& w, const int i, double angle) ;
+
+void homo_lumo_mix_c( Eigen::Ref<Eigen::MatrixXcd> w, const int i, double angle) ;
 
 void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> k) ;
 

@@ -51,16 +51,16 @@ class trapezoid : public integration_grid {
 /* 
   Set up a trapezoid integration grid
 */
-      double pt ;
+      double pt, xs ;
       double seg = ( uv - lv)/static_cast<double>(n) ;
-  
-      for ( auto i = 0; i <= n; i++){
-        pt = seg*static_cast<double>(i) + lv ;
-        weights.push_back(seg) ;
+
+      xs = lv + seg/d2 ;
+
+      for ( auto i = 0; i < n; i++){
+        pt = seg*static_cast<double>(i) + xs ;
+        weights.push_back( d1/static_cast<double>(n)) ;
         points.push_back(pt) ;
         }
-//      weights.push_back(d0) ;
-//      points.push_back(d0) ;
       set_s() ;
       }
 } ;

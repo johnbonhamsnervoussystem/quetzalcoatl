@@ -68,6 +68,7 @@ private :
   double U_interact ;
   double nn ;
   std::string basis_name ;
+  std::string bin_outfile ;
 
   int max_scf_iter ;
   int max_pn_iter ;
@@ -76,6 +77,7 @@ private :
   bool guess ;
   double lshift ;
   double scf_convergence_threshold ;
+  int ort_trn ;
 
   Eigen::MatrixXd s_c ;
   Eigen::MatrixXd xs_c ;
@@ -83,6 +85,7 @@ private :
   Eigen::VectorXd a_c ;
   Eigen::MatrixXd coord ;
   Eigen::MatrixXd ns ;
+  Eigen::MatrixXcd fermi_contact ;
 
   std::vector<tei> r12int ;
   int nbr_g ;
@@ -106,6 +109,7 @@ public :
   void mu( double n) ;
   void nrep( double f) ;
   void bnam( std::string n) ;
+  void biofinm( std::string n) ;
   void ngrid( int n) ;
 
 /* Algorithm control*/
@@ -115,17 +119,19 @@ public :
   void scfthresh( double d) ;
   void lvlshft( double d) ;
   bool use_shift( void) ;
+  void ortho( int i) ;
 
 /* Coordinates */
   void setcoord( std::vector<std::vector<double>> c) ;
 
 /* Set matrix elements */
-  void setS( Eigen::MatrixXd s) ;
-  void setXS( Eigen::MatrixXd xs) ;
-  void setH( Eigen::MatrixXd h) ;
+  void setS( Eigen::Ref<Eigen::MatrixXd> s) ;
+  void setXS( Eigen::Ref<Eigen::MatrixXd> xs) ;
+  void setH( Eigen::Ref<Eigen::MatrixXd> h) ;
   void setA( std::vector<double> a) ;
   void setC( std::vector<std::vector<double>> c) ;
   void setNS( std::vector<std::vector<double>> c) ;
+  void setFC( Eigen::Ref<Eigen::MatrixXcd> fc) ;
   void setr12( std::vector<tei> intarr) ;
   void setU( double u) ;
 
@@ -144,6 +150,7 @@ public :
   double mu( void) ;
   double nrep( void) ;
   std::string bnam( void) ;
+  std::string biofinm( void) ;
 /* Projection Data */
   int ngrid( void) ;
 
@@ -153,6 +160,7 @@ public :
   int prt( void) ;
   double scfthresh( void) ;
   double lvlshft( void) ;
+  int ortho( void) ;
 
 /* Retrieve a matrix */
   Eigen::MatrixXd getS( void) ;
@@ -161,6 +169,7 @@ public :
   Eigen::VectorXd getA( void) ;
   Eigen::MatrixXd getC( void) ;
   Eigen::MatrixXd getNS( void) ;
+  Eigen::MatrixXcd getFC( void) ;
   void getr12( std::vector<tei>*& intarr) ;
   double getU( void) ;
 

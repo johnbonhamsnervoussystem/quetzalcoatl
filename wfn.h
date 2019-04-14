@@ -17,7 +17,9 @@ class wfn {
     Eigen::Matrix< s, r, c> moc ;
     Eigen::VectorXd eig ;
   /* Name for the binary file */
-    std::string wfnfile = "tmp.bqtz";
+    std::string wfnfile ;
+    wfn ( ): wfnfile("quetz.bqtz"){ }
+    wfn ( std::string iofile): wfnfile(iofile){ }
 
 } ;
 

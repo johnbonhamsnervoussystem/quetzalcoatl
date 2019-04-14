@@ -10,9 +10,9 @@
 
 void symort( Eigen::Ref<Eigen::MatrixXd> const s, Eigen::Ref<Eigen::MatrixXcd> T) ;
 
-void canort( const Eigen::Ref<Eigen::MatrixXd> s, Eigen::Ref<Eigen::MatrixXcd> xs , int dim) ;
+void canort( const Eigen::Ref<Eigen::MatrixXd> s, Eigen::Ref<Eigen::MatrixXcd> xs) ;
 
-void canort( const Eigen::Ref<Eigen::MatrixXcd> s, Eigen::Ref<Eigen::MatrixXcd> xs , int dim) ;
+void canort( const Eigen::Ref<Eigen::MatrixXcd> s, Eigen::Ref<Eigen::MatrixXcd> xs) ;
 
 void scfdia ( Eigen::Ref<Eigen::MatrixXcd> const h, Eigen::Ref<Eigen::MatrixXcd> const x, std::vector<tei>& intarr, Eigen::Ref<Eigen::MatrixXcd> den) ;
 
