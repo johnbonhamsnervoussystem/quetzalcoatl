@@ -25,12 +25,15 @@
     hub_dim[0] = 1 ;
     hub_dim[1] = 1 ;
     hub_dim[2] = 1 ;
+    ort_trn = 0 ;
     return ;
   }
 
-/* This stores information which is needed in most routines.
- Set things --
-  General data for calculations */
+/* 
+  This stores information which is needed in most routines.
+  Set things --
+  General data for calculations 
+*/
   void common::hamil( int n) { hamiltonian += n ; return ;}
   void common::ini_guess( bool g){ guess = g; return ;} ;
   void common::methd( int n) { method += n ; return ;}
@@ -45,6 +48,7 @@
   void common::mu( double n) { chemical_potential = n ; return ;}
   void common::nrep( double f) { nn = f ; return ;}
   void common::bnam( std::string n) { basis_name = n ; return ; }
+  void common::biofinm( std::string n) { bin_outfile = n ; return ; }
   void common::ngrid( int n){ nbr_g = n ;} 
 
 /* Routine/algorithm control options */
@@ -53,9 +57,10 @@
   void common::prt( int n) { print = n ; return ;}
   void common::scfthresh( double d) { scf_convergence_threshold = d ; return ;}
   void common::lvlshft( double d) { lshift = d ; level_shift = true ; return ;}
+  void common::ortho( int i) { ort_trn = i ; return ;}
 
 /* Matrix elements */
-  void common::setS ( Eigen::MatrixXd s_in) {
+  void common::setS ( Eigen::Ref<Eigen::MatrixXd> s_in) {
     s_c.resize( nbasis, nbasis) ;
     s_c = s_in ;
     if ( print > 0 ){ 
@@ -65,7 +70,7 @@
     return ;
   }
 
-  void common::setH ( Eigen::MatrixXd h_in) {
+  void common::setH ( Eigen::Ref<Eigen::MatrixXd> h_in) {
     h_c.resize( nbasis, nbasis) ;
     h_c = h_in ;
     if ( print > 0 ){ 
@@ -75,7 +80,7 @@
     return ;
   }
 
-  void common::setXS ( Eigen::MatrixXd xs_in) {
+  void common::setXS ( Eigen::Ref<Eigen::MatrixXd> xs_in) {
     xs_c.resize( nbasis, nbasis) ;
     xs_c = xs_in ;
     if ( print > 0 ){ 
@@ -105,13 +110,21 @@
     return ;
     }
 
-/* Coordinates */
+/* Nuclear Spin */
   void common::setNS ( std::vector<std::vector<double>> c) {
     /* Save the Nuclear Spin vectors */
     ns.resize(natoms,3) ;
     for ( unsigned int i=0; i < c.size(); i++){
       ns.row(i) << c[i][0], c[i][1], c[i][2] ;
     }
+    return ;
+    }
+
+/* Fermi Contact */
+  void common::setFC ( Eigen::Ref<Eigen::MatrixXcd> fc) {
+    /* Save the Nuclear Spin vectors */
+    fermi_contact.resize( nbasis, nbasis) ;
+    fermi_contact = fc ;
     return ;
     }
 
@@ -138,6 +151,7 @@
   double common::mu( void) {return chemical_potential ;}
   double common::nrep( void) {return nn ;}
   std::string common::bnam( void) {return basis_name ;}
+  std::string common::biofinm( void) { return bin_outfile ; }
   int common::ngrid( void){ return nbr_g ;} 
 
   int common::mxscfit( void) {return max_scf_iter ;}
@@ -146,6 +160,7 @@
   double common::scfthresh( void) {return scf_convergence_threshold ;}
   double common::lvlshft( void) {return lshift ;}
   bool common::use_shift( void) {return level_shift ;}
+  int common::ortho( void) { return ort_trn ;}
 
 /* Retrieve a matrix */
   Eigen::MatrixXd common::getS( void) { return s_c ;}
@@ -154,6 +169,7 @@
   Eigen::VectorXd common::getA( void) { return a_c   ;}
   Eigen::MatrixXd common::getC( void) { return coord ;}
   Eigen::MatrixXd common::getNS( void) { return ns ;}
+  Eigen::MatrixXcd common::getFC( void) { return fermi_contact ;}
   void common::getr12( std::vector<tei>*& intarr) { 
     intarr = &r12int ;
     return ;

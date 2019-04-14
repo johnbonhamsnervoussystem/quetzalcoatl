@@ -325,19 +325,22 @@ void read_input( common& com, const std::string& inpfile){
   Parse random options we may want to use
 */
       getline( jobfile, line) ;
-      while( line.substr(0,5) != " end" ){
-        if ( line.substr(0,7) == "mxscfit" ) {
-          i_junk = stoi(line.substr(9)) ;
+      while( OUT[0] != "end" ){
+        process_input_line( line, OUT) ;
+        if ( OUT[0] == "mxscfit" ) {
+          i_junk = stoi(OUT[1]) ;
           com.mxscfit(i_junk) ;
-        } else if ( line.substr(0,7) == "mxpnit" ) {
-          i_junk = stoi(line.substr(9)) ;
+        } else if ( OUT[0] == "mxpnit" ) {
+          i_junk = stoi(OUT[1]) ;
           com.mxpnit(i_junk) ;
-        } else if ( line.substr(0,7) == "print  " ) {
-          i_junk = stoi(line.substr(9)) ;
+        } else if ( OUT[0] == "print" ) {
+          i_junk = stoi(OUT[1]) ;
           com.prt(i_junk) ;
-        } else if ( line.substr(0,7) == "lshift " ) {
-          d_junk = stod(line.substr(9)) ;
+        } else if ( OUT[0] == "lshift" ) {
+          d_junk = stod(OUT[1]) ;
           com.lvlshft(d_junk) ;
+        } else if ( OUT[0] == "canort" ) {
+          com.ortho(1) ;
           }
         getline( jobfile, line) ;
         }

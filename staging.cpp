@@ -7,6 +7,7 @@
 #include "nbodyint.h"
 #include "obarasaika.h"
 #include "qtzcntrl.h"
+#include "qtzio.h"
 #include "r12.h"
 #include "solver.h"
 #include "staging.h"
@@ -70,13 +71,18 @@ void molecular_hamiltonian( common& com){
   T.resize( nbas, nbas) ;
   V.resize( nbas, nbas) ;
   cV.resize( nbas, nbas) ;
+
   h_fc.resize( 2*nbas, 2*nbas) ;
   ao_overlap( natm, b, S) ;
   com.setS( S) ;
-  /*
-    I also have cannonical orthogonalization
-  */
-  symort( S, cV) ;
+
+  if ( com.ortho() == 1){
+    std::cout << " Doing cannonical orthogonalization " << std::endl ;
+    canort( S, cV) ;
+  } else {
+    symort( S, cV) ;
+    }
+
   T = cV.real() ;
   com.setXS( T) ;
   T.setZero() ;
@@ -85,6 +91,8 @@ void molecular_hamiltonian( common& com){
   ao_eN_V( natm, b, c, a, V) ;
   S = T + V ;
   com.setH( S) ;
+  S = com.getH() ;
+
   /*
     Generate our FC terms
   */

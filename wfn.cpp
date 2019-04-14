@@ -7,6 +7,7 @@
 #include "qtzio.h"
 #include "wfn.h"
 #include <sys/stat.h>
+#include <string>
 
 template<typename s, int r, int c>
 void save_wfn( wfn< s, r, c>& w, int cntl){

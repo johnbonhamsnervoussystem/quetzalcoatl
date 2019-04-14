@@ -54,7 +54,7 @@ void scf_drv( common& com) {
 */
 
 /*
-  Generate an inital guess from a converged HF calculation
+  Generate an initial guess from a converged HF calculation
 */
     wfnguess = 1 ;
     real_SlaDet( com, wfnguess) ;
@@ -204,6 +204,7 @@ void real_SlaDet( common& com, int& opt){
     int nalp = com.nalp() ;
     int nbet = com.nbet() ;
     int maxit = com.mxscfit() ;
+    int diistype = 1 ;
     double thresh = com.scfthresh() ;
     double lvlshft = com.lvlshft() ;
     bool lshift = com.use_shift() ;
@@ -222,9 +223,9 @@ void real_SlaDet( common& com, int& opt){
 
       w.eig.resize( nbas) ;
 
-      w.e_scf = rhfdia( h, X, nbas, nele, w.moc, w.eig, lshift, lvlshft, maxit, thresh) ;
-      std::cout << "Mean Field Energy : " << w.e_scf << std::endl ;
+      w.e_scf = rhfdia( h, X, nbas, nele, w.moc, w.eig, diistype, lshift, lvlshft, maxit, thresh) ;
       std::cout << "Nuclear Repulsion : " << com.nrep() << std::endl ;
+      std::cout << "Mean Field Energy : " << w.e_scf << std::endl ;
       std::cout << "Energy : " << w.e_scf + com.nrep() << std::endl ;
       print_mat( w.eig, "MO Eigenvalues : ") ;
       print_mat( w.moc, "MO coefficients : ") ;
@@ -252,7 +253,9 @@ void real_SlaDet( common& com, int& opt){
       w.moc.block(0, nbas, nbas, nbas) = cb ;
       cb.resize( 0, 0) ;
       ca.resize( 0, 0) ;
-      std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
+      std::cout << "Nuclear Repulsion : " << com.nrep() << std::endl ;
+      std::cout << "Mean Field Energy : " << w.e_scf << std::endl ;
+      std::cout << "Energy : " << w.e_scf + com.nrep() << std::endl ;
       print_mat( w.eig, " MO Eigenvalues (a/b) : " ) ;
       print_mat( w.moc, " MO Coeffcients (a/b): " ) ;
 
@@ -265,9 +268,11 @@ void real_SlaDet( common& com, int& opt){
 
       w.eig.resize( 2*nbas) ;
 
-      w.e_scf = ghfdia( h, X, nbas, nele, w.moc, w.eig, lshift, lvlshft, maxit, thresh) ;
+      w.e_scf = ghfdia( h, X, nbas, nele, w.moc, w.eig, diistype, lshift, lvlshft, maxit, thresh) ;
 
-      std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
+      std::cout << "Nuclear Repulsion : " << com.nrep() << std::endl ;
+      std::cout << "Mean Field Energy : " << w.e_scf << std::endl ;
+      std::cout << "Energy : " << w.e_scf + com.nrep() << std::endl ;
       print_mat( w.eig, "MO Eigenvalues : ") ;
       print_mat( w.moc, "MO coefficients : ") ;
 
@@ -334,7 +339,9 @@ void cplx_HFB( common& com, int& opt) {
 
       w.e_scf = rhfbdia( h, X, nbas, nele, p, k, w.moc, w.eig, lambda, lshift, maxit_scf, maxit_pn, thresh) ;
 
-      std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
+      std::cout << "Nuclear Repulsion : " << com.nrep() << std::endl ;
+      std::cout << "Mean Field Energy : " << w.e_scf << std::endl ;
+      std::cout << "Energy : " << w.e_scf + com.nrep() << std::endl ;
       print_mat( w.eig, "MO Eigenvalues : ") ;
       print_mat( w.moc, "MO coefficients : ") ;
 
@@ -375,7 +382,9 @@ void cplx_HFB( common& com, int& opt) {
       w.e_scf = ghfbdia( h, X, nbas, nele, p, k, w.moc, w.eig, lambda, lshift, maxit_scf, maxit_pn, thresh) ;
 
       com.mu( std::real(lambda)) ;
-      std::cout << "Mean Field Energy + NN : " << w.e_scf + com.nrep() << std::endl ;
+      std::cout << "Nuclear Repulsion : " << com.nrep() << std::endl ;
+      std::cout << "Mean Field Energy : " << w.e_scf << std::endl ;
+      std::cout << "Energy : " << w.e_scf + com.nrep() << std::endl ;
       std::cout << "Eigenvalues : " << std::endl << std::endl ;
       std::cout << w.eig << std::endl ;
     } else {
@@ -411,6 +420,7 @@ void cplx_SlaDet( common& com, int& opt){
     int nalp = com.nalp() ;
     int nbet = com.nbet() ;
     int maxit = com.mxscfit() ;
+    int diistype = 2 ;
     double thresh = com.scfthresh() ;
     double lvlshft = com.lvlshft() ;
     bool lshift = com.use_shift() ;
@@ -429,7 +439,7 @@ void cplx_SlaDet( common& com, int& opt){
 
       w.eig.resize( nbas) ;
 
-      w.e_scf = rhfdia( h, X, nbas, nele, w.moc, w.eig, lshift, lvlshft, maxit, thresh) ;
+      w.e_scf = rhfdia( h, X, nbas, nele, w.moc, w.eig, diistype, lshift, lvlshft, maxit, thresh) ;
       std::cout << "Mean Field Energy : " << w.e_scf << std::endl ;
       std::cout << "Nuclear Repulsion : " << com.nrep() << std::endl ;
       std::cout << "Energy : " << w.e_scf + com.nrep() << std::endl ;
@@ -467,17 +477,10 @@ void cplx_SlaDet( common& com, int& opt){
 
       w.eig.resize( 2*nbas) ;
 
-/*
-  Generate a fermi contact term to try and help break symmetry
-    - For tomorrow
-        Add a poiter to the basis set in common.
+      w.e_scf = ghfdia( h, X, nbas, nele, w.moc, w.eig, diistype, lshift, lvlshft, maxit, thresh) ;
 
-*/
-
-//      w.e_scf = ghfdia( h, X, nbas, nele, w.moc, w.eig, lshift, lvlshft, maxit, thresh) ;
-
-      hfc = com.getFC() ;
-      w.e_scf = ghfdia_fc( h, hfc, X, nbas, nele, w.moc, w.eig, lshift, lvlshft, maxit, thresh) ;
+//      hfc = com.getFC() ;
+//      w.e_scf = ghfdia_fc( h, hfc, X, nbas, nele, w.moc, w.eig, lshift, lvlshft, maxit, thresh) ;
 
       std::cout << "Mean Field Energy : " << w.e_scf + com.nrep() << std::endl ;
       print_mat( w.eig, "MO Eigenvalues : ") ;
@@ -502,7 +505,7 @@ void cplx_SlaDet( common& com, int& opt){
   } ;
 
 template < class matrix>
-double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const int& nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, bool lshift, double lvlshft, const int& maxit, const double& thresh) {
+double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const int& nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, int diistype, bool lshift, double lvlshft, const int& maxit, const double& thresh) {
 
   /* 
     Restricted Hartree-Fock solved by repeated diagonalization.
@@ -510,9 +513,11 @@ double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
   matrix f, g, p, p_prev ;
   Eigen::SelfAdjointEigenSolver<matrix> f_diag ;
   int iter=0 ;
-  int occ, diis_on = 0 ;
+  int occ, ls_iter = 1 ;
+  double n_pden ;
+  bool d_cntrl = false ;
   typename matrix::Scalar energy, prev_energy, t, tx, shift, zero, two ;
-  diis<typename matrix::Scalar> p_diis ( nbasis*nbasis, 6) ;
+  diis<typename matrix::Scalar> fdiis ( nbasis, 6, diistype) ;
   time_dbg rhfdia_time = time_dbg("rhfdia") ;
 
   zero = static_cast<typename matrix::Scalar>( d0) ;
@@ -540,35 +545,34 @@ double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
 
     energy = g.trace() ;
 
-    if ( false ){
-      f += -shift*p ;
+    if ( ! d_cntrl){
+      if ( std::real(std::abs(energy - prev_energy)) < 1.0e-3){
+        d_cntrl = true ;
+        }
+      }
+    fdiis.update( p, f, d_cntrl) ;
+
+    if ( lshift ){
+      f += -shift*p/static_cast<typename matrix::Scalar>( ls_iter) ;
+      ls_iter++ ;
+      if ( ls_iter > 5){
+        lshift = false ;
+        }
       }
     f_diag.compute( f) ;
     c = f_diag.eigenvectors() ;
     p = c.block( 0, 0, nbasis, occ)*c.block( 0, 0, nbasis, occ).adjoint() ;
 
-/*
-
-    if ( diis_on == 0){
-      tx = energy - prev_energy ;
-      t = std::abs( tx) ;
-      std::cout << " Energy difference between iterations is :  " << t << std::endl ;
-      if ( std::real(t) < 1.0e-3){
-        std::cout << " Turning on DIIS " << std::endl ;
-        diis_on = 1 ;
-        }
-      }
-
-    if ( diis_on == 1){
-      p_diis.update( p, diis_on) ;
-      }
-*/
-
     g = p - p_prev ;
     t = g.norm() ;
-    std::cout << "  rms difference in the densities: " << t << std::endl ;
-    if ( std::real(t) < thresh ) { break ;}
-
+    std::cout << " rms difference in the densities: " << t << std::endl ;
+    if ( std::real(t) < thresh ) { 
+      break ;
+    } else if ( std::real(t) > n_pden && iter > 1 ) { 
+      lshift = true ;
+      ls_iter = 1 ;
+      }
+    n_pden = std::real(t) ;
     }
 
   std::cout << " Number of iterations : " << iter << std::endl ;
@@ -587,9 +591,9 @@ double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
 
 } ;
 
-template double rhfdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, const int&, const int&, Eigen::MatrixXd&, Eigen::Ref<Eigen::VectorXd>, bool, double, const int&, const double&) ;
+template double rhfdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, const int&, const int&, Eigen::MatrixXd&, Eigen::Ref<Eigen::VectorXd>, int, bool, double, const int&, const double&) ;
 
-template double rhfdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, bool, double, const int&, const double&) ;
+template double rhfdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, int, bool, double, const int&, const double&) ;
 
 template < class matrix>
 double uhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const int& nalp, const int& nbet, matrix& c_a, matrix& c_b, Eigen::Ref<Eigen::VectorXd> eig, const int& maxit, const double& thresh){
@@ -668,7 +672,7 @@ template double uhfdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, cons
 template double uhfdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, const int&, Eigen::MatrixXcd&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, const int&, const double&) ;
 
 template < class matrix>
-double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const int& nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, bool lshift, double lvlshft, const int& maxit, const double& thresh) {
+double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const int& nele, matrix& c, Eigen::Ref<Eigen::VectorXd> eig, int diistype, bool lshift, double lvlshft, const int& maxit, const double& thresh) {
 
 /* 
   Generalized Hartree-Fock solved by repeated diagonalization. 
@@ -676,9 +680,10 @@ double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
   matrix f, g, p, p_prev ;
   Eigen::SelfAdjointEigenSolver<matrix> f_diag ;
   int iter=0 ;
-  int nbas, diis_on = 0 ;
+  int nbas ;
+  bool d_cntrl = true ;
   typename matrix::Scalar energy, prev_energy, t, tx, shift, zero ;
-  diis<typename matrix::Scalar> p_diis ( 2*2*nbasis*nbasis, 6) ;
+  diis<typename matrix::Scalar> fdiis ( 2*nbasis, 6, diistype) ;
   time_dbg ghfdia_time = time_dbg("ghfdia") ;
 
   zero = static_cast<typename matrix::Scalar>( d0) ;
@@ -704,25 +709,17 @@ double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
     g = p*( h + f) ;
 
     energy = g.trace() ;
-    if ( false ){
-      f += -shift*p ;
+
+    if ( ! d_cntrl){
+      if ( std::real(std::abs(energy - prev_energy)) < 1.0e-3){
+        d_cntrl = true ;
+        }
       }
+    fdiis.update( p, f, d_cntrl) ;
+
     f_diag.compute( f) ;
     c = f_diag.eigenvectors() ;
     p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
-
-    if ( diis_on == 0){
-      tx = energy - prev_energy ;
-      t = std::abs( tx) ;
-      std::cout << " Energy difference between iterations is :  " << t << std::endl ;
-      if ( std::real(t) < 1.0e-3){
-        std::cout << " Turning on DIIS " << std::endl ;
-        diis_on = 1 ;
-        }
-      }
-    if ( diis_on == 1){
-      p_diis.update( p, diis_on) ;
-      }
 
     g = p - p_prev ;
     t = g.norm() ;
@@ -747,11 +744,11 @@ double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
 
 } ;
 
-template double ghfdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, const int&, const int&, Eigen::MatrixXd&, Eigen::Ref<Eigen::VectorXd>, bool, double, const int&, const double&) ;
+template double ghfdia( const Eigen::MatrixXd&, nbodyint<Eigen::MatrixXd>*, const int&, const int&, Eigen::MatrixXd&, Eigen::Ref<Eigen::VectorXd>, int, bool, double, const int&, const double&) ;
 
-template double ghfdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, bool, double, const int&, const double&) ;
+template double ghfdia( const Eigen::MatrixXcd&, nbodyint<Eigen::MatrixXcd>*, const int&, const int&, Eigen::MatrixXcd&, Eigen::Ref<Eigen::VectorXd>, int, bool, double, const int&, const double&) ;
 
-double ghfdia_fc( const Eigen::Ref<Eigen::MatrixXcd> h, const Eigen::Ref<Eigen::MatrixXcd> fc, nbodyint<Eigen::MatrixXcd>* W, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, bool lshift, double lvlshft, const int& maxit, const double& thresh) {
+double ghfdia_fc( const Eigen::Ref<Eigen::MatrixXcd> h, const Eigen::Ref<Eigen::MatrixXcd> fc, nbodyint<Eigen::MatrixXcd>* W, const int& nbasis, const int& nele, Eigen::Ref<Eigen::MatrixXcd> c, Eigen::Ref<Eigen::VectorXd> eig, int diistype, bool lshift, double lvlshft, const int& maxit, const double& thresh) {
 
 /* 
   Generalized Hartree-Fock solved by repeated diagonalization. 
@@ -759,9 +756,10 @@ double ghfdia_fc( const Eigen::Ref<Eigen::MatrixXcd> h, const Eigen::Ref<Eigen::
   Eigen::MatrixXcd f, g, p, p_prev ;
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> f_diag ;
   int iter=1 ;
-  int nbas, diis_on = 0 ;
+  int nbas ;
+  bool d_cntrl = false ;
   cd energy, prev_energy, t, tx, shift, zero ;
-  diis<cd> p_diis ( 2*2*nbasis*nbasis, 6) ;
+  diis<cd> fdiis ( 2*nbasis, 6, diistype) ;
   time_dbg ghfdia_fc_time = time_dbg("ghfdia_fc") ;
 
   energy = z0 ;
@@ -786,25 +784,17 @@ double ghfdia_fc( const Eigen::Ref<Eigen::MatrixXcd> h, const Eigen::Ref<Eigen::
     g = p*( h + f) ;
 
     energy = g.trace() ;
-    if ( iter < 15 && iter % 2 == 0 ){
-      f += fc/z4 ;
+
+    if ( ! d_cntrl){
+      if ( std::real(std::abs(energy - prev_energy)) < 1.0e-3){
+        d_cntrl = true ;
+        }
       }
+    fdiis.update( p, f, d_cntrl) ;
+
     f_diag.compute( f) ;
     c = f_diag.eigenvectors() ;
     p = c.block( 0, 0, nbas, nele)*c.block( 0, 0, nbas, nele).adjoint() ;
-
-    if ( diis_on == 0){
-      tx = energy - prev_energy ;
-      t = std::abs( tx) ;
-      std::cout << " Energy difference between iterations is :  " << t << std::endl ;
-      if ( std::real(t) < 1.0e-3){
-        std::cout << " Turning on DIIS " << std::endl ;
-        diis_on = 1 ;
-        }
-      }
-    if ( diis_on == 1){
-      p_diis.update( p, diis_on) ;
-      }
 
     g = p - p_prev ;
     t = g.norm() ;

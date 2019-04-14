@@ -27,7 +27,7 @@ void generate_pk( int nbasis, int nele, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen:
 */
 
   int f, nbas = 2*nbasis ;
-  double temp = 3.0e4 ;
+  double temp = 1.0e5 ;
   Eigen::VectorXd A, B ;
   Eigen::MatrixXcd C, D, E ;
   wfn < cd, Eigen::Dynamic, Eigen::Dynamic> w ;
@@ -62,6 +62,8 @@ void generate_pk( int nbasis, int nele, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen:
 */
   D = C.adjoint() - C ;
   ahm_exp( D, C, nbas, 0) ;
+//  C *= z1/(z10) ;
+  C.setIdentity() ;
 
 /*
   Fill U and V according to the Bloch-Messiah decomposition
@@ -70,23 +72,30 @@ void generate_pk( int nbasis, int nele, Eigen::Ref<Eigen::MatrixXcd> rho, Eigen:
   E.setZero() ;
 
   for( f = 0; f < nbas; f += 2){
-    D( f, f+1) = static_cast<cd>(A( f/2)) ;
-    D( f+1, f) = static_cast<cd>(-A( f/2)) ;
-    E( nbas - f - 1, nbas - f - 1) = static_cast<cd>(B( f/2)) ;
-    E( nbas - f - 2, nbas - f - 2) = static_cast<cd>(B( f/2)) ;
+    D( f, f+1) = static_cast<cd>(std::sqrt(A( f/2))) ;
+    D( f+1, f) = static_cast<cd>(-std::sqrt(A( f/2))) ;
+    E( nbas - f - 1, nbas - f - 1) = static_cast<cd>(std::sqrt(B( f/2))) ;
+    E( nbas - f - 2, nbas - f - 2) = static_cast<cd>(std::sqrt(B( f/2))) ;
     }
 
   print_mat( D, "V occ") ;
+  C = D.conjugate()*D.transpose() ;
+  std::cout << " tr(Vocc) " << C.trace() << std::endl ;
   print_mat( E, "U occ") ;
 
 /*
   use the MO coeffcients and the random mixing to generate U and V
 */
-  rho = -C*w.moc*D*D*w.moc.adjoint()*C.adjoint() ;
-  kappa = C*w.moc*D*E*w.moc.transpose()*C.transpose() ;
+  C.setIdentity() ;
+  rho = C*w.moc*D.conjugate()*D.transpose()*w.moc.adjoint()*C.adjoint() ;
+  kappa = C*w.moc*D.conjugate()*E*w.moc.transpose()*C.transpose() ;
 
-  print_mat( rho, " rho ") ;
-  print_mat( kappa, " kappa ") ;
+  std::cout << " Checks on the initial guess " << std::endl ;
+  std::cout << " tr(rho) " << rho.trace() << std::endl ;
+  C = rho - rho.adjoint() ;
+  std::cout << " norm(rho - rho^{t}) " << C.norm() << std::endl ;
+  C = kappa + kappa.transpose() ;
+  std::cout << " norm(kappa + kappa^{T}) " << C.norm() << std::endl ;
 
   w.eig.resize( 0) ;
   w.moc.resize( 0, 0) ;
@@ -105,7 +114,7 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXcd> p, Eigen:
   Given an initial real Slater Determinant from Hartree-Fock, return
   a thermalized rho and kappa guess.
 */
-  double temp = 3.0e4 ;
+  double temp = 1.0e5 ;
   Eigen::MatrixXd A, B, C ;
   wfn < double, Eigen::Dynamic, Eigen::Dynamic> w ;
   A.resize( nbas, nbas) ;
@@ -118,6 +127,8 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXcd> p, Eigen:
   w.eig.resize( nbas) ;
   load_wfn( w) ;
   thermal_occm( nbas, nele, w.eig, temp, A, B) ;
+
+  print_mat( A, " Occupations ") ;
 
   C = w.moc*A*w.moc.adjoint() ;
   print_mat( C, " initial rho") ;
@@ -154,7 +165,7 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXd> p, Eigen::
   Given an initial real Slater Determinant from Hartree-Fock, return
   a thermalized rho and kappa guess.
 */
-  double temp = 3.0e4 ;
+  double temp = 1.0e5 ;
   Eigen::MatrixXd A, B, C ;
   wfn < double, Eigen::Dynamic, Eigen::Dynamic> w ;
   A.resize( nbas, nbas) ;
@@ -167,6 +178,8 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXd> p, Eigen::
   w.eig.resize( nbas) ;
   load_wfn( w) ;
   thermal_occm( nbas, nele, w.eig, temp, A, B) ;
+
+  print_mat( A, " Occupations ") ;
 
   C = w.moc*A*w.moc.adjoint() ;
   print_mat( C, " initial rho") ;
@@ -199,21 +212,22 @@ void thermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXd> p, Eigen::
 }
 
 template< class matrix>
-void homo_lumo_mix( matrix& w, const int i) {
+void homo_lumo_mix_r ( matrix& w, const int i, double angle) {
 /*
   Given a set of MOs, mix the ith and i + 1 orbitals
 */
   int n = w.rows() ;
-  typename matrix::Scalar two ;
-  two = static_cast<typename matrix::Scalar>( d2) ;
+  typename matrix::Scalar a, b ;
   matrix homo( n, 1), lumo( n, 1), homo_mix( n, 1), lumo_mix( n, 1) ;
 /*
   Eigen Matrices start at 0 not 1
 */
   homo = w.col( i-1) ;
   lumo = w.col( i) ;
-  homo_mix = (homo + lumo)/two ;
-  lumo_mix = (homo - lumo)/two ;
+  a = std::cos( angle) ;
+  b = std::sin( angle) ;
+  homo_mix = (a*homo + b*lumo) ;
+  lumo_mix = (a*homo - b*lumo) ;
   w.col( i-1) = homo_mix ;
   w.col( i) = lumo_mix ;
 
@@ -226,16 +240,46 @@ void homo_lumo_mix( matrix& w, const int i) {
 
   } ;
 
-template void homo_lumo_mix( Eigen::MatrixXd&, const int) ;
+template void homo_lumo_mix_r( Eigen::MatrixXd&, const int, double) ;
 
-template void homo_lumo_mix( Eigen::MatrixXcd&, const int) ;
+template void homo_lumo_mix_r( Eigen::MatrixXcd&, const int, double) ;
+
+void homo_lumo_mix_c( Eigen::Ref<Eigen::MatrixXcd> w, const int i, double angle) {
+/*
+  Given a set of MOs, mix the ith and i + 1 orbitals
+*/
+  int n = w.rows() ;
+  cd a, b ;
+  Eigen::MatrixXcd homo( n, 1), lumo( n, 1), homo_mix( n, 1), lumo_mix( n, 1) ;
+/*
+  Eigen Matrices start at 0 not 1
+*/
+  homo = w.col( i-1) ;
+  lumo = w.col( i) ;
+
+  a = std::cos( angle) ;
+  b = std::sin( angle) ;
+  homo_mix = (a*homo + zi*b*lumo) ;
+  lumo_mix = (a*homo - zi*b*lumo) ;
+
+  w.col( i-1) = homo_mix ;
+  w.col( i) = lumo_mix ;
+
+  lumo_mix.resize( 0, 0) ;
+  homo_mix.resize( 0, 0) ;
+  lumo.resize( 0, 0) ;
+  homo.resize( 0, 0) ;
+
+  return ;
+
+  } ;
 
 void Uthermal_guess( int& nele, int& nbas, Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> k) {
 /*
   Given an initial real Slater Determinant from Hartree-Fock, return
   a thermalized rho and kappa guess mixed with a random Unitary matrix.
 */
-  double temp = 3.0e4 ;
+  double temp = 1.0e5 ;
   Eigen::MatrixXd A, B ;
   Eigen::MatrixXcd C, D, U ;
   wfn < double, Eigen::Dynamic, Eigen::Dynamic> w ;
@@ -404,7 +448,7 @@ void thermal_occm( int& nbas, int& nele, Eigen::Ref<Eigen::VectorXd> eig, double
 
   /* We have our fermi energy, populate rho and kappa */
   for( i = 0; i < nbas; i++){
-    djunk = ( eig( i) - Ef)/(kb*3.0e4) ;
+    djunk = ( eig( i) - Ef)/(kb*T) ;
     A( i, i) = d1/( d1 + std::exp( djunk)) ;
     B( i, i) = std::sqrt( A( i, i) - A( i, i)*A( i, i)) ;
     }

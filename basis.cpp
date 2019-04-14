@@ -262,6 +262,100 @@
           basis.b.push_back(bf) ;
           break ;
 
+        case 7: // Z=7: Nitrogen
+          /* 1s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          bf.s.clear() ;
+          g.x = 99.1061690 ;
+          g.c = 0.15432897*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 18.0523120 ;
+          g.c = 0.53532814*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 4.8856602 ;
+          g.c = 0.44463454*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+
+          basis.nbas++ ;
+
+          /* 2s orbital */
+          s.g.clear() ;
+          s.l.setZero() ;
+          g.x = 3.7804559 ;
+          g.c = -0.09996723*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.8784966 ;
+          g.c = 0.39951283*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.2857144 ;
+          g.c = 0.70011547*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          /* 2px orbital */
+          s.g.clear() ;
+          s.l << 1,0,0 ;
+          g.x = 3.7804559 ;
+          g.c = 0.15591627*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.8784966 ;
+          g.c = 0.60768372*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.2857144 ;
+          g.c = 0.39195739*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          /* 2py orbital */
+          s.g.clear() ;
+          s.l << 0,1,0 ;
+          g.x = 3.7804559 ;
+          g.c = 0.15591627*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.8784966 ;
+          g.c = 0.60768372*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.2857144 ;
+          g.c = 0.39195739*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          /* 2pz orbital */
+          s.g.clear() ;
+          s.l << 0,0,1 ;
+          g.x = 3.7804559 ;
+          g.c = 0.15591627*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.8784966 ;
+          g.c = 0.60768372*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          g.x = 0.2857144 ;
+          g.c = 0.39195739*norm_gprm( g.x, s.l) ;
+          s.g.push_back(g) ;
+          s.nprm = 3 ;
+          bf.s.push_back(s) ;
+ 
+          basis.nbas++ ;
+
+          bf.c( 0) = c( a, 0) ;
+          bf.c( 1) = c( a, 1) ;
+          bf.c( 2) = c( a, 2) ;
+          bf.nshl = 5 ;
+          basis.b.push_back(bf) ;
+          break ;
+
         case 8: // Z=8: Oxygen
           /* 1s orbital */
           s.g.clear() ;

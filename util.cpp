@@ -851,7 +851,7 @@ void testing_magnetic_structure( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eige
 */
 
   int i, mchk, nzero, n = mx.cols() ;
-  double thresh = 1.0e-8 ;
+  double thresh = 1.0e-6 ;
   bool preal = false, mxreal = false, myreal = false, mzreal = false ;
   bool mxzero = false, myzero = false, mzzero = false ;
   bool colin = false, ncopla = false ;
@@ -952,7 +952,9 @@ void testing_magnetic_structure( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eige
     std::cout << v(i) << "    " << test << std::endl ;
     }
 
-  if ( nzero == 2){
+  if ( nzero == 3){
+     ;
+  } else if ( nzero == 2){
     colin = true ;
   } else if ( nzero < 2){
 /*
@@ -1157,3 +1159,4 @@ void wavefunction_characterization( int wt, const int& nbas, const int& nalp, co
   return ;
 
   } ;
+

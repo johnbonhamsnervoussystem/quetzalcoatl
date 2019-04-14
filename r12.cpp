@@ -15,19 +15,19 @@ void r12<matrix>::contract( matrix& m){
 /*
   rhf
 */
-    transform( 2, x, m) ;
+    transform( 1, x, m) ;
     ctr2er( *ints, m, G, dim) ;
-    transform( 2, xi, m) ;
-    transform( 2, x, G) ;
+    transform( 1, xi, m) ;
+    transform( 0, x, G) ;
   } else if ( itype == 3) {
 
 /*
   ghf
 */
-    transform( 2, x, m) ;
+    transform( 1, x, m) ;
     ctr2eg( *ints, m, G, dim) ;
-    transform( 2, xi, m) ;
-    transform( 2, x, G) ;
+    transform( 1, xi, m) ;
+    transform( 0, x, G) ;
     }
 
   return ;
@@ -46,26 +46,26 @@ void r12<matrix>::contract( matrix& m, matrix& n){
 /*
   uhf
 */
-    transform( 2, x, m) ;
-    transform( 2, x, n) ;
+    transform( 1, x, m) ;
+    transform( 1, x, n) ;
     ctr2eu( *ints, m, n, G, dim) ;
-    transform( 2, xi, m) ;
-    transform( 2, xi, n) ;
-    transform( 2, x, G) ;
+    transform( 1, xi, m) ;
+    transform( 1, xi, n) ;
+    transform( 0, x, G) ;
 
   } else if ( itype == 4){
 
 /*
   rhfb
 */
-    transform( 2, x, m) ;
-    transform( 2, x, n) ;
+    transform( 1, x, m) ;
+    transform( 1, x, n) ;
     ctr2er( *ints, m, G.block( 0, 0, dim, dim), dim) ;
     ctrPairr( *ints, n, G.block( 0, dim, dim, dim), dim) ;
-    transform( 2, xi, m) ;
-    transform( 2, xi, n) ;
-    transform( 2, x, G.block( 0, 0, dim, dim)) ;
-    transform( 2, x, G.block( 0, dim, dim, dim)) ;
+    transform( 1, xi, m) ;
+    transform( 1, xi, n) ;
+    transform( 0, x, G.block( 0, 0, dim, dim)) ;
+    transform( 0, x, G.block( 0, dim, dim, dim)) ;
     G.block( 0, dim, dim, dim) /= two ;
     G.block( dim, dim, dim, dim) = -G.block( 0, 0, dim, dim).conjugate() ;
     G.block( dim, 0, dim, dim) = -G.block( 0, dim, dim, dim).conjugate() ;
@@ -75,14 +75,14 @@ void r12<matrix>::contract( matrix& m, matrix& n){
 /*
   ghfb
 */
-    transform( 2, x, m) ;
-    transform( 2, x, n) ;
+    transform( 1, x, m) ;
+    transform( 1, x, n) ;
     ctr2eg( *ints, m, G.block( 0, 0, 2*dim, 2*dim), dim) ;
     ctrPairg( *ints, n, G.block( 0, 2*dim, 2*dim, 2*dim), dim) ;
-    transform( 2, xi, m) ;
-    transform( 2, xi, n) ;
-    transform( 2, x, G.block( 0, 0, 2*dim, 2*dim)) ;
-    transform( 2, x, G.block( 0, 2*dim, 2*dim, 2*dim)) ;
+    transform( 1, xi, m) ;
+    transform( 1, xi, n) ;
+    transform( 0, x, G.block( 0, 0, 2*dim, 2*dim)) ;
+    transform( 0, x, G.block( 0, 2*dim, 2*dim, 2*dim)) ;
     G.block( 0, 2*dim, 2*dim, 2*dim) /= two ;
     G.block( 2*dim, 2*dim, 2*dim, 2*dim) = -G.block( 0, 0, 2*dim, 2*dim).conjugate() ;
     G.block( 2*dim, 0, 2*dim, 2*dim) = -G.block( 0, 2*dim, 2*dim, 2*dim).conjugate() ;

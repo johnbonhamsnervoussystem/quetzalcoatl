@@ -14,7 +14,6 @@
 #include "common.h"
 #include "evalm.h"
 #include "hfrout.h"
-#include "guess.h"
 #include "integr.h"
 #include "obarasaika.h"
 #include "postscf.h"
@@ -151,6 +150,7 @@ int main(int argc, char *argv[]) {
   cd ejunk ;
   cd ojunk ;
   std::vector<std::string> wfn_vec ;
+  wfn< double, Eigen::Dynamic, Eigen::Dynamic> w ;
   std::ofstream tstfile ; 
   std::ifstream tstfe ; 
   std::srand((unsigned int) time(0)) ;
@@ -216,9 +216,10 @@ int main(int argc, char *argv[]) {
 //    guess_drv( com) ;
 //    }
 
-  if ( true ){
+  if ( true){
 //    scf_drv( com) ;
     prj_drv( com) ;
+
     }
 
   quetz_time.end() ;

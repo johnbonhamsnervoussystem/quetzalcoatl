@@ -32,15 +32,24 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
         */
         if ( ws == 1) {
           h.resize( nbas, nbas) ;
+          h.setZero() ;
           h.real() = com.getH() ;
           xs.resize( nbas, nbas) ;
           xs.setZero() ;
           xs.real() = com.getXS() ;
-          transform( 2, xs, h) ;
+          transform( 0, xs, h) ;
           com.getr12( intarr) ;
           W = new r12<matrix>( intarr, xs, 1, nbas) ;
         } else if ( ws == 2) {
-          qtzcntrl::shutdown( " UHF NYI") ;
+          h.resize( nbas, nbas) ;
+          h.setZero() ;
+          h.real() = com.getH() ;
+          xs.resize( nbas, nbas) ;
+          xs.setZero() ;
+          xs.real() = com.getXS() ;
+          transform( 0, xs, h) ;
+          com.getr12( intarr) ;
+          W = new r12<matrix>( intarr, xs, 2, nbas) ;
         } else if ( ws == 3) {
           h.resize( 2*nbas, 2*nbas) ;
           h.setZero() ;
@@ -49,7 +58,7 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
           xs.real() = com.getXS() ;
           h.block( 0, 0, nbas, nbas).real() = com.getH() ;
           h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
-          transform( 2, xs, h) ;
+          transform( 0, xs, h) ;
           com.getr12( intarr) ;
           W = new r12<matrix>( intarr, xs, 3, nbas) ;
         } else {
@@ -66,7 +75,7 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
           h.setZero() ;
           h.block( 0, 0, nbas, nbas).real() = com.getH() ;
           xs.real() = com.getXS() ;
-          transform( 2, xs, h.block( 0, 0, nbas, nbas)) ;
+          transform( 0, xs, h.block( 0, 0, nbas, nbas)) ;
           h.block( nbas, nbas, nbas, nbas) = -h.block( 0, 0, nbas, nbas) ;
           com.getr12( intarr) ;
           W = new r12<matrix>( intarr, xs, 4, nbas) ;
@@ -82,7 +91,7 @@ void initialize( int wt, int ws, int hm, common& com, matrix& h, nbodyint<matrix
           xs.block( nbas, nbas, nbas, nbas) = xs.block( 0, 0, nbas, nbas) ;
           h.block( 0, 0, nbas, nbas).real() = com.getH() ;
           h.block( nbas, nbas, nbas, nbas) = h.block( 0, 0, nbas, nbas) ;
-          transform( 2, xs, h) ;
+          transform( 0, xs, h) ;
           com.getr12( intarr) ;
           W = new r12<matrix>( intarr, xs, 6, nbas) ;
         } else {

@@ -48,22 +48,20 @@ void symort( Eigen::Ref<Eigen::MatrixXd> const s, Eigen::Ref<Eigen::MatrixXcd> T
 
 } ;
 
-void canort( Eigen::Ref<Eigen::MatrixXd> const s, Eigen::Ref<Eigen::MatrixXcd> xs , int dim) {
+void canort( Eigen::Ref<Eigen::MatrixXd> const s, Eigen::Ref<Eigen::MatrixXcd> xs) {
   /*  
  *    Find an orthogonal transformation using canonical orthogonalization for a real matrix
  *    */
 
   int indx=-1 ;
   double thresh = 1e-7 ;
+  Eigen::MatrixXd::Index dim = s.rows() ;
   std::complex<double> eig ;
-  Eigen::EigenSolver<Eigen::MatrixXd> s_diag( s, true) ;
-  Eigen::MatrixXcd s_U ;
-  Eigen::VectorXcd s_eig ;
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> s_diag( s) ;
+  Eigen::MatrixXcd s_U( dim, dim) ;
+  Eigen::VectorXcd s_eig( dim) ;
 
   /* Allocate some space to build our transformation matrix. */
-
-  s_eig.resize( dim) ;
-  s_U.resize( dim, dim) ;
 
   s_eig = s_diag.eigenvalues() ;
 
@@ -98,22 +96,20 @@ void canort( Eigen::Ref<Eigen::MatrixXd> const s, Eigen::Ref<Eigen::MatrixXcd> x
 
 } ;
 
-void canort( Eigen::Ref<Eigen::MatrixXcd> const s, Eigen::Ref<Eigen::MatrixXcd> xs , int dim) {
+void canort( Eigen::Ref<Eigen::MatrixXcd> const s, Eigen::Ref<Eigen::MatrixXcd> xs) {
   /*  
  *    Find an orthogonal transformation using canonical orthogonalization for a complex matrix
  *    */
 
   int indx=-1 ;
   double thresh = 1.0e-7 ;
+  Eigen::MatrixXcd::Index dim = s.rows() ;
   std::complex<double> eig ;
-  Eigen::ComplexEigenSolver<Eigen::MatrixXcd> s_diag( s, true) ;
-  Eigen::MatrixXcd s_U ;
-  Eigen::VectorXcd s_eig ;
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> s_diag( s) ;
+  Eigen::MatrixXcd s_U ( dim, dim) ;
+  Eigen::VectorXcd s_eig( dim) ;
 
   /* Allocate some space to build our transformation matrix. */
-
-  s_eig.resize( dim) ;
-  s_U.resize( dim, dim) ;
 
   s_eig = s_diag.eigenvalues() ;
 
@@ -123,7 +119,7 @@ void canort( Eigen::Ref<Eigen::MatrixXcd> const s, Eigen::Ref<Eigen::MatrixXcd> 
 
   for (int i = 0; i < dim; i++ ) {
     eig = s_eig(i) ;
-    if ( abs(std::real(eig)) <= thresh && abs(std::imag(eig)) <= thresh ) {
+    if ( std::real(std::abs(eig)) <= thresh ) {
       std::cout << "Linear dependency found in canort.  Reducing basis." << std::endl ;
       std::cout << s_eig(i) << " is less than the threshhold" << std::endl ;
       std::cout << "Reducing basis" << std::endl ;
