@@ -142,12 +142,12 @@ void proj_HFB( common& com){
 /*
   Set diis options for now.  Wrap into a constructor later
 */
-  diis_opt.set_switch( 2) ;
-  diis_opt.do_diis = false ;
-  diis_opt.diis_switch = false ;
-  diis_opt.ndiisv = 5 ;
+  diis_opt.set_switch( 3) ;
+  diis_opt.do_diis = true ;
+  diis_opt.diis_switch = 3 ;
+  diis_opt.ndiisv = 5;
   diis_opt.diistype = 2 ;
-  diis_opt.ediff_thr = 5.0e-2 ;
+  diis_opt.edif_v = 5.0e-2 ;
   
 /*
   Build rho and kappa
@@ -158,7 +158,7 @@ void proj_HFB( common& com){
   as an upper bound to ensure we have passed that solution.
 */
   load_wfn( w) ;
-  diis_opt.cntl_ref = w.e_scf ;
+  diis_opt.cntl_ref = w.e_scf - 0.03e0 ;
 
 //  jorge_guess( pt, kt, Nalp, norm) ;
   thermal_guess( nalp, nbas, pt, kt) ;
@@ -175,7 +175,7 @@ void proj_HFB( common& com){
 /*
   Build the particle number integration grid
 */
-  for ( int qz=2; qz < 3; qz+=2) {
+  for ( int qz=22; qz < 23; qz+=2) {
     trapezoid* ngrid = new trapezoid( d0, d2*pi, qz) ;
 /*
     h.setZero() ;
@@ -1404,18 +1404,15 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
 /*
   Implementing the more general version of the projected HFB effective Hamiltonian.  MEMORY HUNGRY
 */
-  int in, inmb = ngrid->ns(), iter = 0, dbas = 2*nbas ;
+  int in, inmb = ngrid->ns(), iter = 1, dbas = 2*nbas ;
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> H_diag ;
-//  diis<cd> fdiis( 2*nbas, diis_cntrl.ndiisv, diis_cntrl.diistype) ;
+  diis<cd> fdiis( 4*nbas, diis_cntrl.ndiisv, diis_cntrl.diistype) ;
   cd nrm, c_junk ;
   cd energy, pphase, nphase ;
   cd s_theta, intE_g, intx_g, fnx ;
   cd etr, gtr, dtr, d_phi ;
   cd shift ;
-//
-  cd c_p5p5 = cd( d1/d2, d1/d2) ;
-//
-  std::vector<cd> olap( inmb), x_phi( inmb), w_phi( inmb), e_hf( inmb), e_pr( inmb) ;
+  std::vector<cd> olap( inmb), x_phi( inmb), w_phi( inmb), e_hf( inmb), e_1e( inmb), e_2e( inmb), e_pr( inmb) ;
   std::vector<Eigen::MatrixXcd> Y_phi( inmb), Y_kap( inmb) ;
   std::vector<Eigen::MatrixXcd> R_phi( inmb), r_phi( inmb), k_phi( inmb), kbar_phi( inmb) ;
   std::vector<Eigen::MatrixXcd> C_phi( inmb), C_phi_i( inmb), f_phi( inmb), G_phi( inmb), D_phi( inmb), Dbar_phi( inmb) ;
@@ -1423,7 +1420,7 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
   Eigen::MatrixXcd epsilonN, gammaN, lambdaN, FockN, DeltaN ;
   Eigen::MatrixXcd I, rho_i, kappa_i ;
   Eigen::MatrixXcd int_Y_phi, int_Y_kap ;
-  Eigen::MatrixXcd scr1, scr2, scr3, R ;
+  Eigen::MatrixXcd scr1, scr2, scr3, R, R_save ;
   Eigen::MatrixXcd F_rho, F_kap, D_rho, D_kap, Heff, H ;
 
   time_dbg general_derivative_testing_time = time_dbg("General derivative testing") ;
@@ -1450,6 +1447,7 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
   H.resize( 4*nbas, 4*nbas) ;
   Heff.resize( 4*nbas, 4*nbas) ;
   R.resize( 4*nbas, 4*nbas) ;
+  R_save.resize( 4*nbas, 4*nbas) ;
   mu.resize( 4*nbas, 4*nbas) ;
 
   I.setIdentity() ;
@@ -1464,19 +1462,28 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
   R.block( 2*nbas, 0, 2*nbas, 2*nbas) = kappa.adjoint() ;
   R.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = I - rho.conjugate() ;
 
-  scr3.block( 0, 0, 2*nbas, 2*nbas) = -rho*kappa_i.conjugate() ;
-  scr3.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = rho.conjugate()*kappa_i ;
-  scr3.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
-  scr3.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
-
-  /* norm for pfaffians */
-  nrm = z1/pfaffian_H( scr3) ;
-  std::cout << " pfaffian norm " << nrm << std::endl ;
+  shift = z4 ;
 
   do {
 
-     p_rho = rho ;
-     p_kappa = kappa ;
+    p_rho = rho ;
+    p_kappa = kappa ;
+
+    R.block( 0, 0, 2*nbas, 2*nbas) = rho ;
+    R.block( 0, 2*nbas, 2*nbas, 2*nbas) = kappa ;
+    R.block( 2*nbas, 0, 2*nbas, 2*nbas) = kappa.adjoint() ;
+    R.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = I - rho.conjugate() ;
+
+    rho_i = rho.inverse() ;
+    kappa_i = kappa.inverse() ;
+   
+    scr3.block( 0, 0, 2*nbas, 2*nbas) = -rho*kappa_i.conjugate() ;
+    scr3.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = rho.conjugate()*kappa_i ;
+    scr3.block( 0, 2*nbas, 2*nbas, 2*nbas) = -I ;
+    scr3.block( 2*nbas, 0, 2*nbas, 2*nbas) = I ;
+   
+    /* norm for pfaffians */
+    nrm = z1/pfaffian_H( scr3) ;
 
     int_Y_phi.setZero() ;
     int_Y_kap.setZero() ;
@@ -1489,7 +1496,6 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
 
     for ( in = 0; in < inmb; in++){
       fnx = static_cast<cd>( ngrid->q()) ;
-      std::cout << fnx << std::endl ;
       /* w_phi */
       c_junk = ngrid->w() ;
       w_phi[in] = c_junk ;
@@ -1558,6 +1564,15 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
 
       Dbar_phi[in] = scr2 ;
 
+      scr1 = h*r_phi[in] ;
+      c_junk = scr1.trace() ;
+      e_1e[in] = c_junk ;
+
+
+      scr1 = G_phi[in]*r_phi[in] ;
+      c_junk = scr1.trace() ;
+      e_2e[in] = c_junk/z2 ;
+
       scr1 = h + G_phi[in] ;
       f_phi[in] = scr1 ;
 
@@ -1567,8 +1582,8 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
       c_junk = scr1.trace()/z2 ;
       e_hf[in] = c_junk ;
 
-      scr1 = D_phi[in]*kbar_phi[in].adjoint() + D_phi[in].transpose()*kbar_phi[in].conjugate() ;
-      c_junk = -scr1.trace()/z4 ;
+      scr1 = D_phi[in]*kbar_phi[in] + Dbar_phi[in]*k_phi[in] ;
+      c_junk = scr1.trace()/z4 ;
       e_pr[in] = c_junk ;
 
       intx_g += w_phi[in]*x_phi[in] ;
@@ -1577,6 +1592,10 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
 
     ngrid->set_s() ;
 
+    intE_g /= intx_g ;
+
+    std::cout << intE_g << std::endl ;
+/*
     for ( in = 0; in < inmb; in++){
       std::cout << e_hf[in] << std::endl ;
       }
@@ -1668,27 +1687,21 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
       std::cout << " " << in << std::endl ;
       print_mat( Y_kap[in]) ;
       }
-
+*/
     int_Y_phi /= intx_g ;
     int_Y_kap /= intx_g ;
 
-    print_mat( int_Y_phi, "int_Y_phi") ;
-    print_mat( int_Y_kap, "int_Y_kap") ;
-    scr1.setZero() ;
+//    print_mat( int_Y_phi, "int_Y_phi") ;
+//    print_mat( int_Y_kap, "int_Y_kap") ;
 
     for ( in = 0; in < inmb; in++){
-/*
       F_rho += w_phi[in]*x_phi[in]*((Y_phi[in] - int_Y_phi)*e_hf[in] + R_phi[in].adjoint()*C_phi[in]*rho*f_phi[in]*( I - r_phi[in])*R_phi[in] + 
       ( I - r_phi[in])*f_phi[in]*R_phi[in]*rho*R_phi[in].adjoint()*C_phi[in])/intx_g ;
-
       D_rho += w_phi[in]*x_phi[in]*( -(Y_phi[in] - int_Y_phi)*e_pr[in] + R_phi[in].adjoint()*C_phi[in]*rho*D_phi[in]*kbar_phi[in]*R_phi[in] + 
                 - (I - r_phi[in])*D_phi[in]*R_phi[in].conjugate()*kappa.conjugate()*R_phi[in].adjoint()*C_phi[in] + 
                 - R_phi[in].adjoint()*C_phi[in]*kappa*Dbar_phi[in]*(I - r_phi[in])*R_phi[in] + 
                k_phi[in]*Dbar_phi[in]*R_phi[in]*rho*R_phi[in].adjoint()*C_phi[in])/(intx_g*z2) ;
 
-      F_kap += w_phi[in]*x_phi[in]*( (Y_kap[in] + int_Y_kap)*e_hf[in] + R_phi[in].adjoint()*C_phi[in]*rho*f_phi[in]*k_phi[in]*R_phi[in].conjugate())/intx_g ;
-*/
-//      scr1 += w_phi[in]*x_phi[in]*( (-Y_kap[in] + int_Y_kap)*e_hf[in] + R_phi[in].adjoint()*C_phi[in]*rho*G_phi[in]*k_phi[in]*R_phi[in].conjugate())/intx_g ;
       D_kap += -w_phi[in]*x_phi[in]*( (-Y_kap[in] + int_Y_kap)*e_pr[in] + R_phi[in].adjoint()*C_phi[in]*rho*D_phi[in]*r_phi[in].transpose()*R_phi[in].conjugate()
                + R_phi[in].adjoint()*C_phi[in]*kappa*Dbar_phi[in]*k_phi[in]*R_phi[in].conjugate())/intx_g ;
       F_kap += w_phi[in]*x_phi[in]*( (-Y_kap[in] + int_Y_kap)*e_hf[in] + R_phi[in].adjoint()*C_phi[in]*rho*f_phi[in]*k_phi[in]*R_phi[in].conjugate())/intx_g ;
@@ -1714,7 +1727,6 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
       scr1 = -w_phi[in]*x_phi[in]*(Y_phi[in] - int_Y_phi)*e_pr[in]/z2 ;
       print_mat( scr1, " -y*w*e_pr*Y_phi/2") ;
 
-
       D_rho = R_phi[in].adjoint()*C_phi[in]*rho*D_phi[in]*kbar_phi[in]*R_phi[in] ;
       print_mat( D_rho, "R C p D kb R") ;
       D_rho = (I - r_phi[in])*D_phi[in]*R_phi[in].conjugate()*kappa.conjugate()*R_phi[in].adjoint()*C_phi[in] ;
@@ -1726,28 +1738,34 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
 */
       }
 
-//    print_mat( scr1, "gamma ~") ;
-    print_mat( F_kap, "Epsilon + gamma ~") ;
-    print_mat( D_kap, "Delta ~") ;
     Heff.block( 0, 0, 2*nbas, 2*nbas) = (F_rho + F_rho.adjoint())/z2 + (D_rho + D_rho.adjoint())/z2 ;
-    Heff.block( 0, 2*nbas, 2*nbas, 2*nbas) = (F_kap - F_kap.transpose()) + (D_kap - D_kap.transpose())/z2  ;
+    Heff.block( 0, 2*nbas, 2*nbas, 2*nbas) = (-F_kap + F_kap.transpose()) - (D_kap - D_kap.transpose())/z2  ;
     Heff.block( 2*nbas, 0, 2*nbas, 2*nbas) = -Heff.block( 0, 2*nbas, 2*nbas, 2*nbas).conjugate() ;
     Heff.block( 2*nbas, 2*nbas, 2*nbas, 2*nbas) = -Heff.block( 0, 0, 2*nbas, 2*nbas).conjugate() ;
 
-    print_mat( Heff, "Heff") ;
- 
-    return ;
-
     /* Some crude level shifting */
     scr3.setIdentity() ;
-    Heff += -z4*R ;
-    Heff += z4*( scr3 - R) ;
 
-    H_diag.compute( Heff) ;
-    scr3 = H_diag.eigenvectors() ;
-    R = scr3.block( 0, 0, 4*nbas, 2*nbas)*scr3.block( 0, 0, 4*nbas, 2*nbas).adjoint() ;
+    Heff += -shift*R ;
+    Heff += shift*( scr3 - R) ;
 
-//    chemical_potential( nele, dbas, lambda, H_diag, R, mu, scr3, Heff, rho, H) ;
+    if ( diis_cntrl.do_diis){
+
+      R_save = R ;
+
+      }
+
+    chemical_potential( nele, dbas, lambda, H_diag, R, mu, scr3, Heff, rho, H) ;
+
+    if ( diis_cntrl.do_diis){
+      diis_cntrl.toggle( std::real(intE_g)) ;
+      fdiis.update( R_save, H, diis_cntrl.diis_switch) ;
+//      if ( ! diis_cntrl.diis_switch ) {
+      if ( false ) {
+        Heff = H ;
+        chemical_potential ( nele, dbas, lambda, H_diag, R, mu, scr3, Heff, rho, H) ;
+        }
+      }
 
     rho = (R.block( 0, 0, 2*nbas, 2*nbas) + R.block( 0, 0, 2*nbas, 2*nbas).adjoint())/z2 ;
     kappa = (R.block( 0, 2*nbas, 2*nbas, 2*nbas) - R.block( 0, 2*nbas, 2*nbas, 2*nbas).transpose())/z2 ;
@@ -1765,7 +1783,7 @@ void general_derivative_testing( int& nbas, Eigen::Ref<Eigen::MatrixXcd> h, nbod
      break ;
      }
 
-  } while ( ++iter < 300) ;
+  } while ( ++iter < 500) ;
 
   general_derivative_testing_time.end() ;
 

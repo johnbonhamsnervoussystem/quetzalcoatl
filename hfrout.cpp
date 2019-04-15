@@ -515,7 +515,8 @@ double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
   int iter=0 ;
   int occ, ls_iter = 1 ;
   double n_pden ;
-  bool d_cntrl = false ;
+//  bool d_cntrl = false ;
+  int d_cntrl = 1 ;
   typename matrix::Scalar energy, prev_energy, t, tx, shift, zero, two ;
   diis<typename matrix::Scalar> fdiis ( nbasis, 6, diistype) ;
   time_dbg rhfdia_time = time_dbg("rhfdia") ;
@@ -545,9 +546,9 @@ double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
 
     energy = g.trace() ;
 
-    if ( ! d_cntrl){
+    if ( d_cntrl){
       if ( std::real(std::abs(energy - prev_energy)) < 1.0e-3){
-        d_cntrl = true ;
+        d_cntrl = 0 ;
         }
       }
     fdiis.update( p, f, d_cntrl) ;
@@ -681,7 +682,8 @@ double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
   Eigen::SelfAdjointEigenSolver<matrix> f_diag ;
   int iter=0 ;
   int nbas ;
-  bool d_cntrl = true ;
+//  bool d_cntrl = true ;
+  int d_cntrl = 1 ;
   typename matrix::Scalar energy, prev_energy, t, tx, shift, zero ;
   diis<typename matrix::Scalar> fdiis ( 2*nbasis, 6, diistype) ;
   time_dbg ghfdia_time = time_dbg("ghfdia") ;
@@ -710,9 +712,9 @@ double ghfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
 
     energy = g.trace() ;
 
-    if ( ! d_cntrl){
+    if ( d_cntrl){
       if ( std::real(std::abs(energy - prev_energy)) < 1.0e-3){
-        d_cntrl = true ;
+        d_cntrl = 0 ;
         }
       }
     fdiis.update( p, f, d_cntrl) ;
@@ -757,7 +759,8 @@ double ghfdia_fc( const Eigen::Ref<Eigen::MatrixXcd> h, const Eigen::Ref<Eigen::
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> f_diag ;
   int iter=1 ;
   int nbas ;
-  bool d_cntrl = false ;
+//  bool d_cntrl = false ;
+  int d_cntrl = 1 ;
   cd energy, prev_energy, t, tx, shift, zero ;
   diis<cd> fdiis ( 2*nbasis, 6, diistype) ;
   time_dbg ghfdia_fc_time = time_dbg("ghfdia_fc") ;
@@ -785,9 +788,9 @@ double ghfdia_fc( const Eigen::Ref<Eigen::MatrixXcd> h, const Eigen::Ref<Eigen::
 
     energy = g.trace() ;
 
-    if ( ! d_cntrl){
+    if ( d_cntrl){
       if ( std::real(std::abs(energy - prev_energy)) < 1.0e-3){
-        d_cntrl = true ;
+        d_cntrl = 0 ;
         }
       }
     fdiis.update( p, f, d_cntrl) ;

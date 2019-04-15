@@ -63,8 +63,8 @@ class diis {
         }
       }
 
-  void update( Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> f, bool& d_cntrl) ;
-  void update( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> f, bool& d_cntrl) ;
+  void update( Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> f, int& d_cntrl) ;
+  void update( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> f, int& d_cntrl) ;
 
 } ;
 
@@ -81,15 +81,20 @@ class diis_control{
     /* Are we doing diis in the routine? */
     bool do_diis ;
     /* Is diis currently active? */
-    bool diis_switch ;
+    int diis_switch ;
     /* Number of diis vectors to use */
     int ndiisv ;
     /* Real or complex diis */
     int diistype ;
-    /* Energy difference threshhold */
-    double ediff_thr ;
-    /* Diis control reference value */
+
+    /* Threshold value for the energy difference test */
+    double edif_v ;
+
+    /* Value to check the energy difference against */
+    double cntl_dif ;
+    /* Value to chekc the threshold against */
     double cntl_ref ;
+
     void set_switch( int opt) ;
     void toggle( double e) ;
 

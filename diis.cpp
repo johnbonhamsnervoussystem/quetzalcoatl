@@ -8,7 +8,7 @@
 #include "qtzio.h"
 
 template< class s>
-void diis<s>::update( Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> f, bool& ex_cond){
+void diis<s>::update( Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> f, int& ex_cond){
 
   int i, j, np ;
   /*
@@ -31,7 +31,7 @@ void diis<s>::update( Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd>
     Check if we should do the DIIS
   */
   if ( ! diis_on){
-    if ( scr.cwiseAbs().maxCoeff() < 0.1 && ex_cond ){
+    if ( scr.cwiseAbs().maxCoeff() < 0.1 && ! ex_cond ){
       std::cout << " Maximum error is below threshhold. Turning on diis" << std::endl ;
       diis_on = true ;
       }
@@ -78,10 +78,10 @@ void diis<s>::update( Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd>
 
 } ;
 
-template void diis<double>::update( Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> f, bool& ex_cond) ;
+template void diis<double>::update( Eigen::Ref<Eigen::MatrixXd> p, Eigen::Ref<Eigen::MatrixXd> f, int& ex_cond) ;
 
 template< class s>
-void diis<s>::update( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> f, bool& ex_cond){
+void diis<s>::update( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> f, int& ex_cond){
 
   int i, j, np ;
   /*
@@ -105,7 +105,7 @@ void diis<s>::update( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXc
   */
 
   if ( ! diis_on){
-    if ( scr.cwiseAbs().maxCoeff() < 0.1 && ex_cond ){
+    if ( scr.cwiseAbs().maxCoeff() < 0.1 && ! ex_cond ){
       std::cout << " Maximum error is below threshhold. Turning on diis" << std::endl ;
       diis_on = true ;
       }
@@ -134,6 +134,9 @@ void diis<s>::update( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXc
     c.setZero() ;
     v( 2*n_e) = -z2 ;
     c = B.colPivHouseholderQr().solve(v) ;
+    cd nrm = c.head(n_e).cwiseAbs().sum() ;
+    c /= nrm ;
+    std::cout << c << std::endl ;
 
     t.setZero() ;
 
@@ -158,7 +161,7 @@ void diis<s>::update( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXc
 
 } ;
 
-template void diis<std::complex<double>>::update( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> f, bool& ex_cond) ;
+template void diis<std::complex<double>>::update( Eigen::Ref<Eigen::MatrixXcd> p, Eigen::Ref<Eigen::MatrixXcd> f, int& ex_cond) ;
 
 void diis_control::set_switch( int opt){
 
@@ -171,20 +174,30 @@ void diis_control::set_switch( int opt){
 void diis_control::toggle( double e){
 
   /* Check if diis should be turned on */
-  if ( ! diis_switch){
-    if ( control_switch == 1) {
+  /* Bitwise options 
+     0001 (1) - Check the difference between iterations 
+     0010 (2) - Check that the value is below a threshold
+  */
+  if ( diis_switch){
+    if ( (control_switch & 1) == 1) {
       /* Check against the previous value and then update the previous value */
-      if ( std::abs(e - cntl_ref) < ediff_thr){
-        diis_switch = true ;
+      std::cout << " Iteration difference for diis " << std::endl ;
+      std::cout << std::abs(e - cntl_dif) << std::endl ;
+      if ( std::abs(e - cntl_dif) < edif_v){
+        diis_switch &= 2 ;
         }
-      cntl_ref = e ;
-    } else if ( control_switch == 2) {
+      cntl_dif = e ;
+      }
+    if ( (control_switch & 2) == 2) {
       /* Check that it is below a certain value by the threshhold */
-      if ( e - cntl_ref < -ediff_thr){
-        diis_switch = true ;
+      std::cout << " Threshold difference for diis " << std::endl ;
+      std::cout << e - cntl_ref << std::endl ;
+      if ( e < cntl_ref ){
+        diis_switch &= 1 ;
         }
-    } else {
-      qtzcntrl::shutdown( "DIIS is requrested but no condition set to turn it on.") ;
+      }
+    if ( (control_switch ^ 7) == 7) {
+      qtzcntrl::shutdown( " DIIS is requested but no control options are set ") ;
       }
     }
 
