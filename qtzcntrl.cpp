@@ -2,7 +2,7 @@
 #include "qtzcntrl.h"
 #include <string>
 
-void qtzcntrl::shutdown( std::string s) {
+void qtzcntrl::shutdown(std::string s) {
 /*
   Super basic shutdown function.
 */
