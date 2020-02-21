@@ -5,7 +5,6 @@
 #include "constants.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <fstream>
 #include "qtzcntrl.h"
 #include "qtzio.h"
 #include <sys/stat.h>
@@ -14,8 +13,11 @@
 #include <unordered_map>
 #include <vector>
 */
+#include <json_parser.hpp>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <ptree.hpp>
 #include <string>
 
 /*
@@ -35,10 +37,26 @@ void parse_arguments(int argc, char *argv[]){
   /*
    * Ensure that the command line arguments are valid and exit if they are incorrect.
    */
+  int i;
   if (argc != 2){
     std::cout << "Expected 1 argument but received " << (argc - 1) << std::endl;
     std::exit(EXIT_FAILURE);
     }
+
+  std::string extension = "";
+  std::string filename(*(argv + 1));
+  auto itr = filename.begin();
+
+  for (i = (filename.length() - 5); i < filename.length(); i++){
+    extension += *(itr + i);
+    }
+
+  if (extension != ".json"){
+    std::cout << "Expected a .json file but received " << extension << std::endl;
+    std::exit(EXIT_FAILURE);
+    }
+
+  std::cout << "Input file: " << filename << std::endl;
 
   return;
 
