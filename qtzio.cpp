@@ -14,21 +14,13 @@
 #include <vector>
 */
 #include <json_parser.hpp>
+#include <ptree.hpp>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <ptree.hpp>
 #include <string>
 
-/*
-
-  Reading and parsing the input for traversal through the program may end
-  up being the most complicated part of the whole program
-
-  This needs to be clear and easy to modify which is currently is not. 
-  Unfortunately this is likely the last thing to be cleaned.
-
-*/
 
 /* Routines to swtich between string options */
 namespace qtzio {
@@ -57,6 +49,13 @@ void parse_arguments(int argc, char *argv[]){
     }
 
   std::cout << "Input file: " << filename << std::endl;
+
+  boost::property_tree::ptree input_specifications;
+
+// Load the json file in this ptree
+  boost::property_tree::read_json(filename, input_specifications);
+
+  std::cout << input_specifications.get<double>("H") << std::endl;
 
   return;
 
