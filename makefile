@@ -1,8 +1,9 @@
 CPP = g++
-#CFLAGS = -std=c++11 -Wall -g -O0
+CFLAGS = -std=c++11 -Wall -g -O0
 #HFLAGS = -I ~/working/Eigen -I  ~/working/Eigen/unsupported -I /usr/local/lib64
 #LFLAGS = -lgsl -lgslcblas -lm
 #LFLAGS = -lgsl -lgslcblas -lm
+LDFLAGS = -L /home/xiuhtecuhtli/working/jsoncpp/build/debug/src/lib_json -ljsoncpp
 OBJ = main.o qtzio.o
 
 #quetzalcoatl : $(OBJ) 
@@ -10,15 +11,15 @@ OBJ = main.o qtzio.o
 #
 
 quetzalcoatl : $(OBJ) 
-	$(CPP) -o quetzalcoatl $(OBJ)
+	$(CPP) -o quetzalcoatl $(OBJ) $(LDFLAGS)
 
 all: $(OBJ)
 
 main.o : %.o: %.cpp
-	$(CPP) $(CFLAGS) $(HFLAGS) -c $< -o $@ $(LFLAGS)
+	$(CPP) $(CFLAGS) -L/home/xiuhtecuhtli/working/jsoncpp/build/debug/lib -ljsoncpp -I/home/xiuhtecuhtli/working/jsoncpp/include/json -c $< -o $@ $(LFLAGS)
 
 qtzio.o : qtzio.cpp
-	$(CPP) -I $(BOOST_ROOT)/boost/property_tree/ -c $< -o $@
+	$(CPP) $(CFLAGS) $(LDFLAGS) -I/home/xiuhtecuhtli/working/jsoncpp/include/json -I$(BOOST_ROOT) -c $< -o $@
 
 #$(OBJ) : %.o: %.cpp
 #	$(CPP) $(CFLAGS) $(HFLAGS) -c $< -o $@ $(LFLAGS)

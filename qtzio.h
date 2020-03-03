@@ -14,7 +14,7 @@
 namespace qtzio {
 
 void parse_arguments(int c, char *v[]);
-void read_input(const std::string& i);
+int read_input(const std::string& i);
 
 }
 /*

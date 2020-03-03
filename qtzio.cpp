@@ -1,35 +1,35 @@
 /* Routines for Quetz I/O and printing
-#include <algorithm>
 #include "common.h"
 #include <complex>
 #include "constants.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include "qtzcntrl.h"
-#include "qtzio.h"
 #include <sys/stat.h>
 #include "tei.h"
 #include "time_dbg.h"
 #include <unordered_map>
-#include <vector>
 */
-#include <json_parser.hpp>
-#include <ptree.hpp>
+#include <boost/algorithm/string.hpp>
+#include <algorithm>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <ptree.hpp>
+#include <json.h>
+#include "periodic_table.h"
+#include "qtzio.h"
 #include <string>
+#include <vector>
 
 
 /* Routines to swtich between string options */
+
 namespace qtzio {
 
 void parse_arguments(int argc, char *argv[]){
   /*
    * Ensure that the command line arguments are valid and exit if they are incorrect.
    */
-  int i;
   if (argc != 2){
     std::cout << "Expected 1 argument but received " << (argc - 1) << std::endl;
     std::exit(EXIT_FAILURE);
@@ -39,7 +39,7 @@ void parse_arguments(int argc, char *argv[]){
   std::string filename(*(argv + 1));
   auto itr = filename.begin();
 
-  for (i = (filename.length() - 5); i < filename.length(); i++){
+  for (auto i = (filename.length() - 5); i < filename.length(); i++){
     extension += *(itr + i);
     }
 
@@ -50,27 +50,42 @@ void parse_arguments(int argc, char *argv[]){
 
   std::cout << "Input file: " << filename << std::endl;
 
-  boost::property_tree::ptree input_specifications;
-
-// Load the json file in this ptree
-  boost::property_tree::read_json(filename, input_specifications);
-
-  std::cout << input_specifications.get<double>("H") << std::endl;
+  qtzio::read_input(filename);
 
   return;
 
   }
 
-void read_input(const std::string& inpfile){
+int read_input(const std::string& inpfile){
   /*
    * Read the input file and save the information into common.
    */
+  std::vector<double> a;
+  std::vector<std::vector<double>> c;
+  Json::Value root;
+  std::ifstream ifs;
+  std::string data;
+  Json::CharReaderBuilder builder;
+  Json::StreamWriterBuilder cnvrt;
+  JSONCPP_STRING errs;
 
-  return ;
+  ifs.open(inpfile, std::ifstream::in);
+  if (!parseFromStream(builder, ifs, &root, &errs)) {
+    std::cout << errs << std::endl;
+    return EXIT_FAILURE;
+    }
+  for (Json::Value::iterator itr = root["geometry"]["atoms"].begin(); itr != root["geometry"]["atoms"].end(); itr++){
+//    data = Json::writeString(cnvrt, *itr);
+//    std::cout << periodic_table::symbol_conversion["h"] << std::endl;
+    std::cout << periodic_table::symbol_conversion[boost::algorithm::to_lower_copy((*itr).asString())] << std::endl;
+    }
+  return EXIT_SUCCESS;
 
 };
 
 }
+
+
 
 //bool open_text( std::ofstream& F_OUT, int cntl, const std::string& filename) {
 ///*
