@@ -4,9 +4,9 @@
 #include <Eigen/Dense>
 #include <fstream>
 #include "tei.h"
-#include <vector>
 */
 #include <string>
+#include <vector>
 
 #ifndef QTZIO_H
 #define QTZIO_H
@@ -15,6 +15,7 @@ namespace qtzio {
 
 void parse_arguments(int c, char *v[]);
 int read_input(const std::string& i);
+void print_system(std::vector<double> a, std::vector<std::vector<double>> c);
 
 }
 /*

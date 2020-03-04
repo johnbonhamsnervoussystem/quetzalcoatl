@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <json.h>
 #include "periodic_table.h"
@@ -60,13 +61,13 @@ int read_input(const std::string& inpfile){
   /*
    * Read the input file and save the information into common.
    */
-  std::vector<double> a;
-  std::vector<std::vector<double>> c;
+  int natoms;
+  std::vector<double> atoms;
+  std::vector<std::vector<double>> coordinates;
   Json::Value root;
   std::ifstream ifs;
   std::string data;
   Json::CharReaderBuilder builder;
-  Json::StreamWriterBuilder cnvrt;
   JSONCPP_STRING errs;
 
   ifs.open(inpfile, std::ifstream::in);
@@ -74,14 +75,48 @@ int read_input(const std::string& inpfile){
     std::cout << errs << std::endl;
     return EXIT_FAILURE;
     }
+  natoms = root["geometry"]["atoms"].size();
+  atoms.reserve(natoms);
+  coordinates.reserve(natoms);
+
   for (Json::Value::iterator itr = root["geometry"]["atoms"].begin(); itr != root["geometry"]["atoms"].end(); itr++){
-//    data = Json::writeString(cnvrt, *itr);
-//    std::cout << periodic_table::symbol_conversion["h"] << std::endl;
-    std::cout << periodic_table::symbol_conversion[boost::algorithm::to_lower_copy((*itr).asString())] << std::endl;
+    atoms.push_back(static_cast<double>(periodic_table::symbol_conversion[boost::algorithm::to_lower_copy((*itr).asString())]));
     }
+//  std::cout.precision(2);
+//  for (std::vector<double>::iterator itr = atoms.begin(); itr != atoms.end(); itr++){
+//    std::cout << std::fixed << *itr << std::endl;
+//    }
+
+  for (Json::Value::iterator itr = root["geometry"]["coordinates"].begin(); itr != root["geometry"]["coordinates"].end(); itr++){
+    std::vector<double> tmp;
+    for (unsigned int itc = 0; itc < (*itr).size(); itc ++){
+      tmp.push_back((*itr)[itc].asDouble());
+      }
+    coordinates.push_back(tmp);
+    }
+
+  qtzio::print_system(atoms, coordinates);
+
   return EXIT_SUCCESS;
 
 };
+
+void print_system(std::vector<double> a, std::vector<std::vector<double>> c){
+  std::vector<double>::iterator itr;
+  std::cout << " atoms ";
+  std::cout << "    x       ";
+  std::cout << "    y       ";
+  std::cout << "    z       ";
+  std::cout << std::endl;
+  for (auto atom = 0; atom < a.size(); atom++){
+    std::cout << " " << std::setw(2) << periodic_table::atomic_number_conversion[a[atom]];
+    for (auto itr = c[atom].begin(); itr != c[atom].end(); itr++){
+      std::cout << std::setw(11) << *itr << " ";
+      }
+    std::cout << std::endl;
+    }
+  return;
+}
 
 }
 
