@@ -73,9 +73,8 @@ void quetzalcoatl(const bool print){
 int main(int argc, char *argv[]) {
   
   quetzalcoatl(false);
-  qtzio::parse_arguments(argc, argv);
-
-//  qtzio::read_input(inpfile) ;
+  qtzio::QtzInput parser(argc, argv);
+  parser.parse_input();
 
   return 0 ;
 

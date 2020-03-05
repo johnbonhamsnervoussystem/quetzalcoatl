@@ -5,6 +5,7 @@
 #include <fstream>
 #include "tei.h"
 */
+#include <json.h>
 #include <string>
 #include <vector>
 
@@ -13,11 +14,21 @@
 
 namespace qtzio {
 
-void parse_arguments(int c, char *v[]);
-int read_input(const std::string& i);
-void print_system(std::vector<double> a, std::vector<std::vector<double>> c);
+  class QtzInput {
+    private:
+      std::string inputfile;
+      void parse_molecular_input(Json::Value m);
+      void print_system(std::vector<double> a, std::vector<std::vector<double>> c);
+    public:
+      QtzInput(int argc, char *argv[]);
+      void parse_input(void);
+    };
 
 }
+//int read_input(const std::string& i);
+//void parse_molecular_input(const Json::Value r);
+//void print_system(std::vector<double> a, std::vector<std::vector<double>> c);
+
 /*
 bool open_text( std::ofstream& F_OUT, int cntl, const std::string& f = "qtztemp") ;
 

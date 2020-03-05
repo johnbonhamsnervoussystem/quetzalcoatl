@@ -23,105 +23,93 @@
 #include <vector>
 
 
-/* Routines to swtich between string options */
-
 namespace qtzio {
 
-void parse_arguments(int argc, char *argv[]){
-  /*
-   * Ensure that the command line arguments are valid and exit if they are incorrect.
-   */
-  if (argc != 2){
-    std::cout << "Expected 1 argument but received " << (argc - 1) << std::endl;
-    std::exit(EXIT_FAILURE);
-    }
+  QtzInput::QtzInput(int argc, char *argv[]) {
+    if (argc != 2){
+      std::cout << "Expected 1 argument but received " << (argc - 1) << std::endl;
+      std::exit(EXIT_FAILURE);
+      }
+    
+    inputfile = *(argv + 1);
+    std::string::iterator itr = inputfile.begin();
+    
+    std::string extension = "";
+    for (auto i = (inputfile.length() - 5); i < inputfile.length(); i++){
+      extension += *(itr + i);
+      }
+    
+    if (extension != ".json"){
+      std::cout << "Expected a .json file but received " << extension << std::endl;
+      std::exit(EXIT_FAILURE);
+      }
+    
+    std::cout << "input file: " << inputfile << std::endl;
+    };
 
-  std::string extension = "";
-  std::string filename(*(argv + 1));
-  auto itr = filename.begin();
+  void QtzInput::parse_input(void){
+    Json::Value root_input;
+    Json::CharReaderBuilder builder;
+    JSONCPP_STRING errs;
+    std::ifstream ifs;
+    
+    ifs.open(inputfile, std::ifstream::in);
+    if (!parseFromStream(builder, ifs, &root_input, &errs)) {
+      std::cout << errs << std::endl;
+      std::exit(EXIT_FAILURE);
+      }
 
-  for (auto i = (filename.length() - 5); i < filename.length(); i++){
-    extension += *(itr + i);
-    }
+    parse_molecular_input(root_input["geometry"]);
 
-  if (extension != ".json"){
-    std::cout << "Expected a .json file but received " << extension << std::endl;
-    std::exit(EXIT_FAILURE);
-    }
+    return;
 
-  std::cout << "Input file: " << filename << std::endl;
+    };
 
-  qtzio::read_input(filename);
+  void QtzInput::parse_molecular_input(Json::Value molecule){
+      int natoms = molecule["atoms"].size();
+      Json::Value::iterator itr;
+      std::vector<double> atoms;
+      atoms.reserve(natoms);
+      std::vector<std::vector<double>> coordinates;
+      coordinates.reserve(natoms);
+    
+      for (itr = molecule["atoms"].begin(); itr != molecule["atoms"].end(); itr++){
+        atoms.push_back(static_cast<double>(periodic_table::symbol_conversion[boost::algorithm::to_lower_copy((*itr).asString())]));
+        }
+    
+      for (itr = molecule["coordinates"].begin(); itr != molecule["coordinates"].end(); itr++){
+        std::vector<double> tmp;
+        for (unsigned int itc = 0; itc < (*itr).size(); itc ++){
+          tmp.push_back((*itr)[itc].asDouble());
+          }
+        coordinates.push_back(tmp);
+        }
+    
+      print_system(atoms, coordinates);
+    
+      return;
 
-  return;
+    };
+
+    void QtzInput::print_system(std::vector<double> a, std::vector<std::vector<double>> c){
+      std::vector<double>::iterator itr;
+      std::cout << " atoms ";
+      std::cout << "   _x_      ";
+      std::cout << "   _y_      ";
+      std::cout << "   _z_      ";
+      std::cout << std::endl;
+      for (auto atom = 0; atom < a.size(); atom++){
+        std::cout << " " << std::setw(2) << periodic_table::atomic_number_conversion[a[atom]];
+        for (auto itr = c[atom].begin(); itr != c[atom].end(); itr++){
+          std::cout << std::setw(11) << *itr << " ";
+          }
+        std::cout << std::endl;
+        }
+      return;
+    };
 
   }
-
-int read_input(const std::string& inpfile){
-  /*
-   * Read the input file and save the information into common.
-   */
-  int natoms;
-  std::vector<double> atoms;
-  std::vector<std::vector<double>> coordinates;
-  Json::Value root;
-  std::ifstream ifs;
-  std::string data;
-  Json::CharReaderBuilder builder;
-  JSONCPP_STRING errs;
-
-  ifs.open(inpfile, std::ifstream::in);
-  if (!parseFromStream(builder, ifs, &root, &errs)) {
-    std::cout << errs << std::endl;
-    return EXIT_FAILURE;
-    }
-  natoms = root["geometry"]["atoms"].size();
-  atoms.reserve(natoms);
-  coordinates.reserve(natoms);
-
-  for (Json::Value::iterator itr = root["geometry"]["atoms"].begin(); itr != root["geometry"]["atoms"].end(); itr++){
-    atoms.push_back(static_cast<double>(periodic_table::symbol_conversion[boost::algorithm::to_lower_copy((*itr).asString())]));
-    }
-//  std::cout.precision(2);
-//  for (std::vector<double>::iterator itr = atoms.begin(); itr != atoms.end(); itr++){
-//    std::cout << std::fixed << *itr << std::endl;
-//    }
-
-  for (Json::Value::iterator itr = root["geometry"]["coordinates"].begin(); itr != root["geometry"]["coordinates"].end(); itr++){
-    std::vector<double> tmp;
-    for (unsigned int itc = 0; itc < (*itr).size(); itc ++){
-      tmp.push_back((*itr)[itc].asDouble());
-      }
-    coordinates.push_back(tmp);
-    }
-
-  qtzio::print_system(atoms, coordinates);
-
-  return EXIT_SUCCESS;
-
-};
-
-void print_system(std::vector<double> a, std::vector<std::vector<double>> c){
-  std::vector<double>::iterator itr;
-  std::cout << " atoms ";
-  std::cout << "    x       ";
-  std::cout << "    y       ";
-  std::cout << "    z       ";
-  std::cout << std::endl;
-  for (auto atom = 0; atom < a.size(); atom++){
-    std::cout << " " << std::setw(2) << periodic_table::atomic_number_conversion[a[atom]];
-    for (auto itr = c[atom].begin(); itr != c[atom].end(); itr++){
-      std::cout << std::setw(11) << *itr << " ";
-      }
-    std::cout << std::endl;
-    }
-  return;
-}
-
-}
-
-
-
+//
 //bool open_text( std::ofstream& F_OUT, int cntl, const std::string& filename) {
 ///*
 //  cntl :
