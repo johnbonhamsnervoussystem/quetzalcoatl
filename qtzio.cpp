@@ -50,6 +50,7 @@ namespace qtzio {
   void QtzInput::parse_input(void){
     Json::Value root_input;
     Json::CharReaderBuilder builder;
+    Json::Value::iterator itr;
     JSONCPP_STRING errs;
     std::ifstream ifs;
     
@@ -59,11 +60,27 @@ namespace qtzio {
       std::exit(EXIT_FAILURE);
       }
 
-    parse_molecular_input(root_input["geometry"]);
+    parse_method(root_input["method"]);
+
+    if (root_input["hamiltonian"] == "molecular") {
+      parse_molecular_input(root_input["geometry"]);
+      };
 
     return;
 
     };
+
+  void QtzInput::parse_method(Json::Value method){
+    if (method == "rhf") {
+      std::cout << "Restricted Hartree-Fock" << std::endl;
+    } else {
+      std::cout << "Unrecognized method" << std::endl;
+      std::exit(EXIT_FAILURE);
+      }
+
+    return;
+
+    }
 
   void QtzInput::parse_molecular_input(Json::Value molecule){
       int natoms = molecule["atoms"].size();
@@ -84,9 +101,9 @@ namespace qtzio {
           }
         coordinates.push_back(tmp);
         }
-    
+
       print_system(atoms, coordinates);
-    
+
       return;
 
     };
@@ -109,6 +126,7 @@ namespace qtzio {
     };
 
   }
+
 //
 //bool open_text( std::ofstream& F_OUT, int cntl, const std::string& filename) {
 ///*

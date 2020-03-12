@@ -17,6 +17,7 @@ namespace qtzio {
   class QtzInput {
     private:
       std::string inputfile;
+      void parse_method(Json::Value m);
       void parse_molecular_input(Json::Value m);
       void print_system(std::vector<double> a, std::vector<std::vector<double>> c);
     public:
