@@ -27,6 +27,7 @@
 *.lib
 
 # Executables
+qtz_dbg
 quetzalcoatl
 *.exe
 *.out
