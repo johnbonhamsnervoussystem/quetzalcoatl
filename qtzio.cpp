@@ -17,7 +17,9 @@
 #include <iomanip>
 #include <iostream>
 #include <json.h>
+#include <libint2.hpp>
 #include "periodic_table.h"
+#include "qtzctl.h"
 #include "qtzio.h"
 #include <string>
 #include <vector>
@@ -47,6 +49,15 @@ namespace qtzio {
     std::cout << "input file: " << inputfile << std::endl;
     };
 
+  QtzControl QtzInput::control(void){
+    QtzControl qtz_control;
+    qtz_control.directive = "wavefunction";
+    return qtz_control;
+    }
+
+  std::vector<libint2::Atom> QtzInput::atoms(void){
+    }
+
   void QtzInput::parse_input(void){
     Json::Value root_input;
     Json::CharReaderBuilder builder;
@@ -60,7 +71,8 @@ namespace qtzio {
       std::exit(EXIT_FAILURE);
       }
 
-    parse_method(root_input["method"]);
+      check_members(root_input);
+      parse_method(root_input["method"]);
 
     if (root_input["hamiltonian"] == "molecular") {
       parse_molecular_input(root_input["geometry"]);
@@ -69,6 +81,29 @@ namespace qtzio {
     return;
 
     };
+
+  void QtzInput::check_members(Json::Value input_json){
+    /*
+     * Check that the json input has all the required members.
+     * */
+    bool error = false;
+    std::vector<std::string>::iterator itr;
+    std::vector<std::string> molecular_requirements{"geometry", "basis-set"};
+    if (input_json["hamiltonian"] == "molecular") {
+      for (itr = molecular_requirements.begin(); itr != molecular_requirements.end(); itr++){
+        if (not input_json.isMember(*itr)){
+          error = true;
+          std::cout << *itr << " is missing" << std::endl;
+          }
+        }
+      }
+    if (error){
+      std::exit(EXIT_FAILURE);
+      }
+
+    return;
+
+    }
 
   void QtzInput::parse_method(Json::Value method){
     if (method == "rhf") {
