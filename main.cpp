@@ -4,6 +4,7 @@
     email :: ktthross@gmail.com
 */
 #include <iostream>
+#include <libint2.hpp>
 #include "qtzctl.h"
 #include "qtzio.h"
 #include <string>
@@ -75,10 +76,10 @@ void quetzalcoatl(const bool print){
 int main(int argc, char *argv[]) {
   
   quetzalcoatl(false);
-  qtzio::QtzInput parser(argc, argv);
+  QtzInput parser(argc, argv);
   parser.parse_input();
   QtzControl qtz_control = parser.control();
-  std::vector<Atom> atoms = parser.atoms();
+  std::vector<libint2::Atom> atoms = parser.atoms();
   if (qtz_control.directive == "wavefunction"){
     std::cout << "Solving for a wavefunction" << std::endl;
     }
