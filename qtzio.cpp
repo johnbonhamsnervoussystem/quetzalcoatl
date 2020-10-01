@@ -31,11 +31,11 @@ QtzInput::QtzInput(int argc, char *argv[]) {
     std::exit(EXIT_FAILURE);
     }
   
-  inputfile = *(argv + 1);
-  std::string::iterator itr = inputfile.begin();
+  this->inputfile = *(argv + 1);
+  std::string::iterator itr = this->inputfile.begin();
   
   std::string extension = "";
-  for (auto i = (inputfile.length() - 5); i < inputfile.length(); i++){
+  for (auto i = (this->inputfile.length() - 5); i < this->inputfile.length(); i++){
     extension += *(itr + i);
     }
   
@@ -44,7 +44,7 @@ QtzInput::QtzInput(int argc, char *argv[]) {
     std::exit(EXIT_FAILURE);
     }
   
-  std::cout << "input file: " << inputfile << std::endl;
+  std::cout << "input file: " << this->inputfile << std::endl;
   };
 
 QtzControl QtzInput::control(void){
@@ -54,27 +54,27 @@ QtzControl QtzInput::control(void){
   }
 
 std::vector<libint2::Atom> QtzInput::atoms(void){
-    int natoms = root_input["geometry"]["atoms"].size();
+    std::cout << "inside atoms" << std::endl;
     Json::Value::iterator itr;
     std::vector<libint2::Atom> atoms;
     std::vector<libint2::Atom>::iterator ita;
+    Json::Value atoms_parsed = this->root_input["geometry"];
+    int natoms = atoms_parsed["atoms"].size();
+    std::cout << "natoms " << natoms << std::endl;
     for (auto itn = 0; itn < natoms; itn++) {atoms.push_back(libint2::Atom());}
 
     ita = atoms.begin();
     for (itr = root_input["geometry"]["atoms"].begin(); itr != root_input["geometry"]["atoms"].end(); itr++){
       ita->atomic_number = static_cast<double>(periodic_table::symbol_conversion[boost::algorithm::to_lower_copy((*itr).asString())]);
+      std::cout << ita->atomic_number << std::endl;
       ita++;
       }
   
-    ita = atoms.begin();
+//    ita = atoms.begin();
     for (itr = root_input["geometry"]["coordinates"].begin(); itr != root_input["geometry"]["coordinates"].end(); itr++){
-       std::cout << *itr << std::endl;
-/*
-      ita->x = static_cast<double>(itr[0]);
-      ita->y = static_cast<double>(itr[1]);
-      ita->z = static_cast<double>(itr[2]);
-      ita++;
-*/
+      for (unsigned int itc = 0; itc < (*itr).size(); itc ++){
+        std::cout << (*itr)[itc].asDouble() << std::endl;
+        }
       }
 
     return atoms;
@@ -82,39 +82,36 @@ std::vector<libint2::Atom> QtzInput::atoms(void){
   };
 
 void QtzInput::parse_input(void){
-  Json::Value root_input;
   Json::CharReaderBuilder builder;
   Json::Value::iterator itr;
   JSONCPP_STRING errs;
   std::ifstream ifs;
   
-  ifs.open(inputfile, std::ifstream::in);
-  if (!parseFromStream(builder, ifs, &root_input, &errs)) {
+  ifs.open(this->inputfile, std::ifstream::in);
+  if (!parseFromStream(builder, ifs, &this->root_input, &errs)) {
     std::cout << errs << std::endl;
     std::exit(EXIT_FAILURE);
     }
 
-    check_members(root_input);
-    parse_method(root_input["method"]);
+  this->check_members();
+  this->parse_method();
 
   if (root_input["hamiltonian"] == "molecular") {
-    parse_molecular_input(root_input["geometry"]);
+    parse_molecular_input(this->root_input["geometry"]);
     };
-
   return;
-
   };
 
-void QtzInput::check_members(Json::Value input_json){
+void QtzInput::check_members(void){
   /*
    * Check that the json input has all the required members.
    * */
   bool error = false;
   std::vector<std::string>::iterator itr;
   std::vector<std::string> molecular_requirements{"geometry", "basis-set"};
-  if (input_json["hamiltonian"] == "molecular") {
+  if (this->root_input["hamiltonian"] == "molecular") {
     for (itr = molecular_requirements.begin(); itr != molecular_requirements.end(); itr++){
-      if (not input_json.isMember(*itr)){
+      if (not this->root_input.isMember(*itr)){
         error = true;
         std::cout << *itr << " is missing" << std::endl;
         }
@@ -128,16 +125,14 @@ void QtzInput::check_members(Json::Value input_json){
 
   }
 
-void QtzInput::parse_method(Json::Value method){
-  if (method == "rhf") {
+void QtzInput::parse_method(void){
+  if (this->root_input["method"] == "rhf") {
     std::cout << "Restricted Hartree-Fock" << std::endl;
   } else {
     std::cout << "Unrecognized method" << std::endl;
     std::exit(EXIT_FAILURE);
     }
-
   return;
-
   }
 
 void QtzInput::parse_molecular_input(Json::Value molecule){

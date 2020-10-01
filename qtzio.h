@@ -20,8 +20,8 @@ class QtzInput {
   private:
     std::string inputfile;
     Json::Value root_input;
-    void check_members(Json::Value m);
-    void parse_method(Json::Value m);
+    void check_members(void);
+    void parse_method();
     void parse_molecular_input(Json::Value m);
     void print_system(std::vector<double> a, std::vector<std::vector<double>> c);
   public:
