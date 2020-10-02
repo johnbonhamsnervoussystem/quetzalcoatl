@@ -1,1 +1,1 @@
-{"hamiltonian": "molecular", "basis-set": "sto-3g", "method": "rhf", "geometry": {"units": "angstrom", "atoms": ["H", "H"], "coordinates": [[0.111, 0.122, 0.123], [0.121, 2.122, 0.123]]}}
+{"hamiltonian": "molecular", "basis-set": "sto-3g", "method": "rhf", "geometry": {"units": "angstrom", "atoms": ["H", "H"], "coordinates": [[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]]}}

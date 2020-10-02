@@ -47,34 +47,42 @@ QtzInput::QtzInput(int argc, char *argv[]) {
   std::cout << "input file: " << this->inputfile << std::endl;
   };
 
+
+std::string QtzInput::basis_set(void) {
+  Json::StreamWriterBuilder builder;
+  return Json::writeString(builder, this->root_input["basis-set"]);
+};
+
+
 QtzControl QtzInput::control(void){
   QtzControl qtz_control;
   qtz_control.directive = "wavefunction";
   return qtz_control;
   }
 
-std::vector<libint2::Atom> QtzInput::atoms(void){
-    std::cout << "inside atoms" << std::endl;
+std::vector<libint2::Atom> QtzInput::parse_atoms(void){
     Json::Value::iterator itr;
     std::vector<libint2::Atom> atoms;
     std::vector<libint2::Atom>::iterator ita;
-    Json::Value atoms_parsed = this->root_input["geometry"];
-    int natoms = atoms_parsed["atoms"].size();
-    std::cout << "natoms " << natoms << std::endl;
+    Json::Value atom_block = this->root_input["geometry"]["atoms"];
+    Json::Value coordinate_block = this->root_input["geometry"]["coordinates"];
+    int natoms = atom_block.size();
     for (auto itn = 0; itn < natoms; itn++) {atoms.push_back(libint2::Atom());}
 
     ita = atoms.begin();
-    for (itr = root_input["geometry"]["atoms"].begin(); itr != root_input["geometry"]["atoms"].end(); itr++){
+    for (itr = atom_block.begin(); itr != atom_block.end(); itr++) {
       ita->atomic_number = static_cast<double>(periodic_table::symbol_conversion[boost::algorithm::to_lower_copy((*itr).asString())]);
-      std::cout << ita->atomic_number << std::endl;
       ita++;
       }
   
-//    ita = atoms.begin();
-    for (itr = root_input["geometry"]["coordinates"].begin(); itr != root_input["geometry"]["coordinates"].end(); itr++){
-      for (unsigned int itc = 0; itc < (*itr).size(); itc ++){
-        std::cout << (*itr)[itc].asDouble() << std::endl;
+    ita = atoms.begin();
+    for (itr = coordinate_block.begin(); itr != coordinate_block.end(); itr++) {
+      for (unsigned int itc = 0; itc < (*itr).size(); itc++) {
+	if (itc == 0) {ita->x = (*itr)[itc].asDouble();}
+	if (itc == 1) {ita->y = (*itr)[itc].asDouble();}
+	if (itc == 2) {ita->z = (*itr)[itc].asDouble();}
         }
+      ita++;
       }
 
     return atoms;

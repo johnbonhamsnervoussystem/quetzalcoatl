@@ -79,22 +79,19 @@ int main(int argc, char *argv[]) {
   QtzInput parser(argc, argv);
   parser.parse_input();
   QtzControl qtz_control = parser.control();
-  /*
-  std::vector<libint2::Atom> atoms = parser.atoms();
-  std::vector<libint2::Atom>::iterator ita;
+  std::vector<libint2::Atom> atoms = parser.parse_atoms();
 
-  std::cout << "Iterating over atoms" << std::endl;
-  for(ita = atoms.begin(); ita != atoms.end(); ita++){
-    std::cout << ita->atomic_number << std::endl;
-  }
-
-  if (qtz_control.directive == "wavefunction"){
-    std::cout << "Solving for a wavefunction" << std::endl;
-    }
-    */
   /*
    * Figure out what we need to do.  Let's start with solving for wavefunction
    * */
+  if (qtz_control.directive == "wavefunction") {
+    std::cout << "Solving for a wavefunction" << std::endl;
+    /*
+     * Let's generate our integrals
+     */
+    std::cout << parser.basis_set() << std::endl;
+    libint2::BasisSet basis_set(parser.basis_set(), atoms);
+    }
 
   return 0 ;
 

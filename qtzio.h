@@ -28,7 +28,8 @@ class QtzInput {
     QtzInput(int argc, char *argv[]);
     void parse_input(void);
     QtzControl control(void);
-    std::vector<libint2::Atom> atoms(void);
+    std::vector<libint2::Atom> parse_atoms(void);
+    std::string basis_set(void);
   };
 //int read_input(const std::string& i);
 //void parse_molecular_input(const Json::Value r);
