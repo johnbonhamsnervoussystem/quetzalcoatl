@@ -90,7 +90,14 @@ int main(int argc, char *argv[]) {
      * Let's generate our integrals
      */
     std::cout << parser.basis_set() << std::endl;
+    libint2::initialize();
     libint2::BasisSet basis_set(parser.basis_set(), atoms);
+    std::cout << basis_set.max_nprim() << std::endl;
+    std::cout << basis_set.max_l() << std::endl;
+    libint2::Engine s_engine(libint2::Operator::overlap, basis_set.max_nprim(), basis_set.max_l());
+    libint2::Engine t_engine(libint2::Operator::kinetic, basis_set.max_nprim(), basis_set.max_l());
+    libint2::Engine v_engine(libint2::Operator::nuclear, basis_set.max_nprim(), basis_set.max_l());
+    libint2::finalize();
     }
 
   return 0 ;

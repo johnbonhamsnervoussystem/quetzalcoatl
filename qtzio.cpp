@@ -50,7 +50,9 @@ QtzInput::QtzInput(int argc, char *argv[]) {
 
 std::string QtzInput::basis_set(void) {
   Json::StreamWriterBuilder builder;
-  return Json::writeString(builder, this->root_input["basis-set"]);
+  std::string source = Json::writeString(builder, this->root_input["basis-set"]);
+  source.erase(remove(source.begin(), source.end(), '\"'), source.end());
+  return source;
 };
 
 
