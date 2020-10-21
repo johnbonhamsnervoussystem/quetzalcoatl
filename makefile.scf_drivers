@@ -11,3 +11,6 @@ scf_drivers_yard.o: scf_drivers_yard.cpp
 qtzio.o : qtzio.cpp
 	$(CPP) $(CFLAGS) $(LDFLAGS) -I/home/xiuhtecuhtli/working/jsoncpp/include/json -I$(BOOST_ROOT) -I/home/xiuhtecuhtli/libint-2.7.0-beta.3/include -I/usr/local/include/eigen3 -c $< -o $@
 
+integrals.o : integrals.cpp
+	$(CPP) $(CFLAGS) $(LDFLAGS) -L/home/xiuhtecuhtli/libint-2.7.0-beta.3/lib -lint2 -I/usr/local/include/eigen3 -c $< -o $@
+

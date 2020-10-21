@@ -14,3 +14,5 @@ main.o : %.o: %.cpp
 qtzio.o : qtzio.cpp
 	$(CPP) $(CFLAGS) $(LDFLAGS) -I/home/xiuhtecuhtli/working/jsoncpp/include/json -I$(BOOST_ROOT) -I/home/xiuhtecuhtli/libint-2.7.0-beta.3/include -I/usr/local/include/eigen3 -c $< -o $@
 
+clean:
+	rm *.o
