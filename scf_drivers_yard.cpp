@@ -1,5 +1,6 @@
 #include <iostream>
 #include <libint2.hpp>
+#include "integrals.h"
 #include "qtzctl.h"
 #include "qtzio.h"
 #include <string>
@@ -22,12 +23,11 @@ int main(int argc, char *argv[]) {
     libint2::BasisSet basis_set(parser.basis_set(), atoms);
     int nbasis = basis_set.nbf();
     std::cout << "Number of basis functions " << nbasis << std::endl;
-    Eigen::MatrixXd S;
-    S.resize(nbasis, nbasis);
     libint2::Engine s_engine(libint2::Operator::overlap, basis_set.max_nprim(), basis_set.max_l());
 
-//    libint2::Engine t_engine(libint2::Operator::kinetic, basis_set.max_nprim(), basis_set.max_l());
-//    libint2::Engine v_engine(libint2::Operator::nuclear, basis_set.max_nprim(), basis_set.max_l());
+
+    compute_overlap(s_engine, basis_set);
+
     libint2::finalize();
     }
 

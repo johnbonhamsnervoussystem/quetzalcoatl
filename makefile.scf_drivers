@@ -2,11 +2,11 @@ CPP = g++
 CFLAGS = -std=c++11 -Wall -g -O0
 LDFLAGS = -L/home/xiuhtecuhtli/working/jsoncpp/build/debug/src/lib_json -ljsoncpp
 
-debug: scf_drivers_yard.o
-	$(CPP) -o debug.x scf_drivers_yard.o qtzio.o $(LDFLAGS) -L/home/xiuhtecuhtli/libint-2.7.0-beta.3/lib -lint2
+debug: scf_drivers_yard.o qtzio.o integrals.o
+	$(CPP) -o debug.x scf_drivers_yard.o qtzio.o integrals.o $(LDFLAGS) -L/home/xiuhtecuhtli/libint-2.7.0-beta.3/lib -lint2
 
 scf_drivers_yard.o: scf_drivers_yard.cpp
-	$(CPP) $(CFLAGS) -L/home/xiuhtecuhtli/working/jsoncpp/build/debug/lib -ljsoncpp -I/home/xiuhtecuhtli/libint-2.7.0-beta.3/include -I/usr/local/include/eigen3 -I/home/xiuhtecuhtli/working/jsoncpp/include/json -c $< -o $@ $(LFLAGS)
+	$(CPP) $(CFLAGS) -L/home/xiuhtecuhtli/working/jsoncpp/build/debug/lib -ljsoncpp -I/integrals -I/home/xiuhtecuhtli/libint-2.7.0-beta.3/include -I/usr/local/include/eigen3 -I/home/xiuhtecuhtli/working/jsoncpp/include/json -lintegrals -c $< -o $@ $(LFLAGS)
 
 qtzio.o : qtzio.cpp
 	$(CPP) $(CFLAGS) $(LDFLAGS) -I/home/xiuhtecuhtli/working/jsoncpp/include/json -I$(BOOST_ROOT) -I/home/xiuhtecuhtli/libint-2.7.0-beta.3/include -I/usr/local/include/eigen3 -c $< -o $@
