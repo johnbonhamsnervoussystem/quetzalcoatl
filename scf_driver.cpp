@@ -36,10 +36,10 @@ double rhfdia( const matrix& h, nbodyint<matrix>* W, const int& nbasis, const in
   typename matrix::Scalar energy, t, shift, two ;
   time_dbg rhfdia_time = time_dbg("rhfdia") ;
 
-  two = static_cast<typename matrix::Scalar>( d2) ;
+  two = static_cast<typename matrix::Scalar>(d2) ;
   occ = nele/2 ;
-  if ( lshift){
-    shift = static_cast<typename matrix::Scalar>( lvlshft) ;
+  if (lshift){
+    shift = static_cast<typename matrix::Scalar>(lvlshft) ;
     }
   f.resize( nbasis, nbasis) ;
   g.resize( nbasis, nbasis) ;

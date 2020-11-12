@@ -5,4 +5,4 @@
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix; 
 
-void compute_overlap(libint2::Engine e, libint2::BasisSet b);
+void compute_onebody(libint2::Engine e, libint2::BasisSet b, Eigen::MatrixXd& m);

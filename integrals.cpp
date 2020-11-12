@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 
 
-void compute_overlap(libint2::Engine engine, libint2::BasisSet basis) {
+void compute_onebody(libint2::Engine engine, libint2::BasisSet basis, Eigen::MatrixXd& ObI) {
   auto shell2bf = basis.shell2bf();
   const auto& buf_vec = engine.results();
   
@@ -23,10 +23,15 @@ void compute_overlap(libint2::Engine engine, libint2::BasisSet basis) {
       auto bf2 = shell2bf[s2];
       auto n2 = basis[s2].size();
   
-      for(auto f1=0; f1!=n1; ++f1)
-        for(auto f2=0; f2!=n2; ++f2)
+      for(auto f1=0; f1!=n1; ++f1) {
+        for(auto f2=0; f2!=n2; ++f2) {
           std::cout << "  " << bf1+f1 << " " << bf2+f2 << " " << ints_shellset[f1*n2+f2] << std::endl;
+      	  ObI(bf1+f1, bf2+f2) = ints_shellset[f1*n2+f2];
+          }
+        }
     }
   }
   return;
 };
+
+

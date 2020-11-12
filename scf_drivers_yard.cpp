@@ -24,9 +24,12 @@ int main(int argc, char *argv[]) {
     int nbasis = basis_set.nbf();
     std::cout << "Number of basis functions " << nbasis << std::endl;
     libint2::Engine s_engine(libint2::Operator::overlap, basis_set.max_nprim(), basis_set.max_l());
+    libint2::Engine t_engine(libint2::Operator::kinetic, basis_set.max_nprim(), basis_set.max_l());
 
-
-    compute_overlap(s_engine, basis_set);
+    Eigen::MatrixXd test;
+    test.resize(nbasis, nbasis);
+    compute_onebody(t_engine, basis_set, test);
+    std::cout << test << std::endl;
 
     libint2::finalize();
     }
