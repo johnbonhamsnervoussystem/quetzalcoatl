@@ -14,3 +14,6 @@ qtzio.o : qtzio.cpp
 integrals.o : integrals.cpp
 	$(CPP) $(CFLAGS) $(LDFLAGS) -L/home/xiuhtecuhtli/libint-2.7.0-beta.3/lib -lint2 -I/usr/local/include/eigen3 -c $< -o $@
 
+
+qtzscratch: qtzscratch.h qtzscratch.cpp
+	$(CPP) -I/usr/local/include/eigen3 -I/qtzscratch -o debug.x qtzscratch.cpp

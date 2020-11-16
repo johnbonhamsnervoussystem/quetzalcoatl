@@ -7,6 +7,7 @@
 #include <vector>
 #include <Eigen/Core>
 
+
 int main(int argc, char *argv[]) {
   
   QtzInput parser(argc, argv);
