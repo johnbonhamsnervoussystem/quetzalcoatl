@@ -79,17 +79,13 @@ int main(int argc, char *argv[]) {
   QtzInput parser(argc, argv);
   parser.parse_input();
   QtzControl qtz_control = parser.control();
+  /*
   std::vector<libint2::Atom> atoms = parser.parse_atoms();
 
-  /*
-   * Figure out what we need to do.  Let's start with solving for wavefunction
-   * */
   if (qtz_control.directive == "wavefunction") {
     std::cout << "Solving for a wavefunction" << std::endl;
+    QtzScratch scratch = qtz_control.init_run()
     QtzWavefunction wfn = WfnSolver(control_data);
-    /*
-     * Let's generate our integrals
-     */
     libint2::initialize();
     libint2::BasisSet basis_set(parser.basis_set(), atoms);
     libint2::Engine s_engine(libint2::Operator::overlap, basis_set.max_nprim(), basis_set.max_l());
@@ -97,7 +93,7 @@ int main(int argc, char *argv[]) {
     libint2::Engine v_engine(libint2::Operator::nuclear, basis_set.max_nprim(), basis_set.max_l());
     libint2::finalize();
     }
-
+  */
   return 0 ;
 
 } /* End Quetzacoatl */

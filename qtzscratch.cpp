@@ -9,8 +9,9 @@ bool QtzScratch::is_member(std::string key) {
 }
 
 
-void QtzScratch::new_dblmat(std::string key) {
+void QtzScratch::new_dblmat(std::string key, int nbasis) {
   Eigen::MatrixXd* dmp = new Eigen::MatrixXd;
+  dmp->resize(nbasis, nbasis);
   this->_doublemat.insert({key, dmp});
 }
 
@@ -31,19 +32,20 @@ Eigen::MatrixXd* QtzScratch::dblmat(std::string key) {
 
 
 int main(int argc, char* argv[]){
+  int nbasis = 2;
   QtzScratch a;
-  a.new_dblmat("overlap");
+  a.new_dblmat("overlap", nbasis);
   if (a.is_member("overlap")) {
     std::cout << "overlap is member" << std::endl;
     }
   std::cout << "accessing pointer" << std::endl;
   Eigen::MatrixXd* s = a.dblmat("overlap");
-  std::cout << "trying to resize" << std::endl;
-  s->resize(2, 2);
   (*s)(0, 0) = 1.0;
   (*s)(1, 0) = 2.0;
   (*s)(0, 1) = 3.0;
   (*s)(1, 1) = 4.0;
   a.print("overlap");
+
   return 0;
+
   }
